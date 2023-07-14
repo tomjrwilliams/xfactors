@@ -222,7 +222,7 @@ class Instrumented_Weights(typing.NamedTuple):
         model=None,
     ):
 
-        # the embedding gives you weights
+        # the kernel gives you weights
         # ie. features @ instrumnts = weights
 
         # that are then multiplied onto the factor path
@@ -266,7 +266,7 @@ def variational_instrumented_weights(
     # as themselves like factor paths
     # lower dim representations (combinations) of the features
     # linear, invertible
-    # so they're a combination of feature, but also can reconstruct the feature by just multiply by embedding.T
+    # so they're a combination of feature, but also can reconstruct the feature by just multiply by kernel.T
 
     # then fit a covariance structure to the weight distribution
     # so its sample-able from
@@ -380,7 +380,7 @@ def variational_instrumented_weights_factors(
 
 @xtuples.nTuple.decorate
 class Results_Kernel_Weights(typing.NamedTuple):
-    embeddings: pandas.DataFrame # ?
+    kernels: pandas.DataFrame # ?
 
     # this is eg. then a dataframe of params
     # for eg. linear, quadratic, interpolated lookup, etc.
@@ -392,19 +392,7 @@ class Results_Kernel_Weights(typing.NamedTuple):
 @xtuples.nTuple.decorate
 class Results_Kernel_Factors(typing.NamedTuple):
     weights: pandas.DataFrame
-    embeddings: pandas.DataFrame # ?
-
-    # this is eg. then a dataframe of params
-    # for eg. linear, quadratic, interpolated lookup, etc.
-    # per factor
-
-    factors: pandas.DataFrame
-    eigenvalues: pandas.Series = None
-
-@xtuples.nTuple.decorate
-class Results_Kernel(typing.NamedTuple):
-    embeddings_weights: pandas.DataFrame
-    embeddings_factors: pandas.DataFrame # ?
+    kernels: pandas.DataFrame # ?
 
     # this is eg. then a dataframe of params
     # for eg. linear, quadratic, interpolated lookup, etc.
@@ -423,12 +411,12 @@ def kernel_weights(
 ):
 
     # instead of using index based factors
-    # here, we use embeddings
+    # here, we use kernels
 
-    # ( embedding(features) ) @ factor_paths = results
+    # ( kernel(features) ) @ factor_paths = results
 
     # eg. grid of weights
-    # and then a lookup from the embedding to the relevant weight cells
+    # and then a lookup from the kernel to the relevant weight cells
     
     # or, a slope function of the features:
     # weights = (features * beta) + intercept
@@ -449,7 +437,7 @@ def kernel_factors(
     model=None,
 ):
 
-    # weights @ ( embedding(features) ) = results
+    # weights @ ( kernel(features) ) = results
 
     return
 
@@ -469,7 +457,7 @@ def kernel_weights_factors(
     # else, assume both kernel
 
 
-    # weights @ ( embedding(features) ) = results
+    # weights @ ( kernel(features) ) = results
 
     return
 
