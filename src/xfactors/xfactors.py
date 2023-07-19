@@ -62,6 +62,63 @@ def weights_df(model):
 
 # ---------------------------------------------------------------
 
+# def meta_loss_fn(params, data):
+#   """Computes the loss after one step of SGD."""
+#   grads = jax.grad(loss_fn)(params, data)
+#   return loss_fn(params - lr * grads, data)
+
+# def update(theta, x, y, lr=0.1):
+#   return theta - lr * jax.grad(loss_fn)(theta, x, y)
+
+# meta_grads = jax.grad(meta_loss_fn)(params, data)
+
+def loss_mse(X1, X2):
+    return jax.numpy.square(jax.numpy.subtract(X1, X2)).mean()
+
+def loss_mse_zero(X):
+    return loss_mse(X, jax.numpy.zeros(X.shape))
+
+def loss_mean_zero(X, axis):
+    return loss_mse_zero(X.mean(axis=axis))
+
+# (right - left) min implies left > right, so *-1 -> right > left
+def loss_descending(x):
+    xl = x[..., :-1]
+    xr = x[..., 1:]
+    return -1 * jax.numpy.subtract(xl, xr).mean()
+
+def loss_abs_descending(x):
+    return loss_descending(jax.numpy.abs(x))
+
+def loss_ascending(x):
+    xl = x[..., :-1]
+    xr = x[..., 1:]
+    return -1 * jax.numpy.subtract(xr, xl).mean()
+
+def loss_abs_ascending(x):
+    return loss_ascending(jax.numpy.abs(x))
+
+def loss_orthogonal(X):
+    eye = jax.numpy.eye(X.shape[0])
+    XXt = jax.numpy.matmul(X, X.T)
+    return loss_mse(XXt, eye)
+
+def loss_cov_eye(X):
+    cov = jax.numpy.cov(X)
+    return loss_mse(cov, jax.numpy.eye(cov.shape[0]))
+
+def loss_cov_diag(X, diag):
+    cov = jax.numpy.cov(X)
+    eye = jax.numpy.eye(cov.shape[0])
+    return loss_mse(cov, jax.numpy.matmul(eye, diag))
+
+# def loss_yield_cov(scales, weights, yc_history):
+#     lhs = torch.matmul(torch.cov(yc_history.T), weights.T)
+#     rhs = torch.matmul(weights.T, scales.unsqueeze(-1))
+#     return torch.sub(lhs, rhs).square().mean()
+
+# ---------------------------------------------------------------
+
 def encode_data_pca(data, weights):
     if isinstance(data, pandas.DataFrame):
         return jax.numpy.matmul(data.values, weights)
@@ -148,12 +205,15 @@ class Flags_PPCA(typing.NamedTuple):
 
 # ---------------------------------------------------------------
 
+def init_ppca_weights(df):
+    return
+
 @xtuples.nTuple.decorate
 class PPCA(typing.NamedTuple):
 
     columns: xtuples.iTuple
-    weights: pandas.DataFrame
     eigvals: pandas.Series
+    weights: pandas.DataFrame
 
     # flags_nan: Flags_NaN = None
 
@@ -164,62 +224,62 @@ class PPCA(typing.NamedTuple):
     decode = decode_factors
 
     weights_df = weights_df
+
+    # orthogonal includes unit norm (?)
+    @classmethod
+    def loss(cls, eigvals, weights, data):
+        factors = encode_data_pca(data, weights)
+        preds = decode_factors_pca(factors, weights)
+        return (
+            loss_descending(eigvals)
+            - loss_mse_zero(eigvals)
+            + loss_orthogonal(weights.T)
+            + loss_mean_zero(factors, 0)
+            + loss_cov_diag(factors.T, eigvals)
+            + loss_mse(preds, data)
+        )
+
+    @classmethod
+    def update(cls, weights, eigvals, data, lr = 0.01):
+        grads = jax.grad(cls.loss)(eigvals, weights, data)
+        return (
+            eigvals - lr * grads[0],
+            weights - lr * grads[1],
+        )
+
+    # presumably a way of iteratively adding dims>
+    # in the outer fit loop?
+    # or incrementally change a weight decay parameter that is ramped down for the later dims as they come into play
     
     @classmethod
-    def fit(cls, df: pandas.DataFrame, n = None):
-
-        # factor fit but via gradient descent
-
-        # not robust for efficiency
-        # as that makes indexing more complicated?
-
-        return
-
-# ---------------------------------------------------------------
-
-@xtuples.nTuple.decorate
-class PPCA_Robust(typing.NamedTuple):
-
-    weights: pandas.DataFrame = None
-    eigvals: pandas.Series = None
-
-    flags_nan: Flags_NaN = None
-    flags_ppca: Flags_PPCA = None
-    # flag to cache factors on fit?
-
-    def encode_data(self, data):
-        return
-
-    def decode_factors(self, factors):
-        return
-
-    encode = encode_data
-    decode = decode_factors
-
     def fit(
+        cls,
         df: pandas.DataFrame,
-        flags_nan: Flags_NaN,
-        flags_ppca: Flags_PPCA,
-        model=None,
+        n = None,
+        iters = 1000,
+        lr = 0.01,
         #
     ):
-        # parametrise the orthogonality contraint?
-        # ie. how strongly we enforce?
+        eigvals = jax.numpy.ones(n)
+        weights = init_ppca_weights(df, n)
 
-        # instead of pca, use alternating least squares
-        # to least squares minimise the reconstructed path
+        # plus null mask on mse(pred, data)
+        # optional additional null mask df kwarg
+        # eg. rolling index membership
 
-        # each point in the path needs at least some values?
-        # else completely unconstrained
-        # max_na / min_values together limit which rows are dropped
-        # from the result
+        data = df.values
 
-        # this doesn't take fill_nan as we just don't put into optimiser
-
-        # this and the above are still index based factors
-        # the below is not
-
-        return
+        for i in range(iters):
+            eigvals, weights = cls.update(
+                eigvals, weights, data, lr = lr
+            )
+            # print etc.
+        
+        return cls(
+            xtuples.iTuple(df.columns),
+            eigvals,
+            weights,
+        )
 
 # ---------------------------------------------------------------
 
