@@ -1,4 +1,5 @@
 
+import jax.numpy
 
 # ---------------------------------------------------------------
 
@@ -13,6 +14,11 @@ def calc_returns(
 
 
 # ---------------------------------------------------------------
+
+def cov(data):
+    return jax.numpy.cov(
+        jax.numpy.transpose(data.values)
+    )
 
 def center_zscore(data):
     return

@@ -4,9 +4,14 @@ import datetime
 
 import numpy
 import pandas
+
 import jax
+import jax.numpy
+import jax.numpy.linalg
 
 import xtuples
+
+import utils
 
 # # ---------------------------------------------------------------
 
@@ -48,46 +53,88 @@ def clean_df_nan(
 
 # ---------------------------------------------------------------
 
+# w = n_tickers, n_factors
+def weights_df(model):
+    return pandas.DataFrame(
+        model.weights.T.real,
+        columns=model.columns,
+    )
+
+# ---------------------------------------------------------------
+
+def encode_data_pca(data, weights):
+    if isinstance(data, pandas.DataFrame):
+        return jax.numpy.matmul(data.values, weights)
+    elif isinstance(data, jax.numpy.ndarray):
+        return jax.numpy.matmul(data, weights)
+    else:
+        assert False, type(data)
+
+def encode_data(model, data):
+    if isinstance(model, PCA):
+        return encode_data_pca(data, model.weights)
+    assert False, model
+
+# ---------------------------------------------------------------
+
+def clip_factors_pca(eigvals, weights, n):
+    if n is None:
+        return eigvals, weights
+    return eigvals[..., :n], weights[..., :n]
+
+# w = n_tickers, n_factors
+# wT = n_factors, n_tickers
+def decode_factors_pca(factors, weights):
+    wT = jax.numpy.transpose(weights)
+    if isinstance(factors, jax.numpy.ndarray):
+        return jax.numpy.matmul(factors, wT)
+    elif isinstance(factors, pandas.DataFrame):
+        return jax.numpy.matmul(factors.values, wT)
+    else:
+        assert False, type(factors)
+
+# result = n_days, n_tickers
+def decode_factors(model, factors):
+    if isinstance(model, PCA):
+        return decode_factors_pca(factors, model.weights)
+    assert False, model
+
+# ---------------------------------------------------------------
+
+# print(dict(
+#     data=data.values.shape,
+#     weights=weights.shape,
+#     eigvals=eigvals.shape,
+# ))
+
 @xtuples.nTuple.decorate
 class PCA(typing.NamedTuple):
 
-    weights: pandas.DataFrame = None
-    eigenvalues: pandas.Series = None
+    columns: xtuples.iTuple
+    eigvals: pandas.Series
+    weights: pandas.DataFrame
 
-    flags_nan: Flags_NaN = None
-    # flag to cache factors on fit?
+    # flags_nan: Flags_NaN = None
 
-    def encode_data(self, data):
-        return
-
-    def decode_factors(self, factors):
-        return
+    encode_data = encode_data
+    decode_factors = decode_factors
 
     encode = encode_data
     decode = decode_factors
 
-    def fit(self, data: pandas.DataFrame):
+    weights_df = weights_df
 
-        # data_type = dict(
-        #     prices=prices,
-        #     retns=retns,
-        # )
-        # assert len(list(
-        #     v for v in data_type.values() if v
-        #     #
-        # )) == 1, data_type
-        
-        # above not needed?
-        # whether price or return (ie. if need centering) etc. first
-        # is not the concern of the factor decomp
+    @property
+    def n(self):
+        return len(self.eigvals)
 
-        # return self.update(weights = weights)
-
-        # and the factor path, eigenvalues
-
-        # but the path is separate, don't cache?
-
-        return
+    @classmethod
+    def fit(cls, df: pandas.DataFrame, n = None):
+        eigvals, weights = jax.numpy.linalg.eig(utils.cov(df))
+        return cls(
+            xtuples.iTuple(df.columns),
+            *clip_factors_pca(eigvals, weights, n)
+        )
 
 # ---------------------------------------------------------------
 
@@ -104,28 +151,22 @@ class Flags_PPCA(typing.NamedTuple):
 @xtuples.nTuple.decorate
 class PPCA(typing.NamedTuple):
 
-    weights: pandas.DataFrame = None
-    eigenvalues: pandas.Series = None
+    columns: xtuples.iTuple
+    weights: pandas.DataFrame
+    eigvals: pandas.Series
 
-    flags_nan: Flags_NaN = None
-    flags_ppca: Flags_PPCA = None
-    # flag to cache factors on fit?
+    # flags_nan: Flags_NaN = None
 
-    def encode_data(self, data):
-        return
-
-    def decode_factors(self, factors):
-        return
+    encode_data = encode_data
+    decode_factors = decode_factors
 
     encode = encode_data
     decode = decode_factors
 
-    # interesting idea of option for only fitting the factors
-    # given a fixed set of weights
-    # so eg. only store the weights
-    # then re-fit the factor path
-
-    def fit(self, data: pandas.DataFrame):
+    weights_df = weights_df
+    
+    @classmethod
+    def fit(cls, df: pandas.DataFrame, n = None):
 
         # factor fit but via gradient descent
 
@@ -140,7 +181,7 @@ class PPCA(typing.NamedTuple):
 class PPCA_Robust(typing.NamedTuple):
 
     weights: pandas.DataFrame = None
-    eigenvalues: pandas.Series = None
+    eigvals: pandas.Series = None
 
     flags_nan: Flags_NaN = None
     flags_ppca: Flags_PPCA = None
@@ -205,7 +246,7 @@ class PPCA_Robust(typing.NamedTuple):
 class Instrumented_Weights(typing.NamedTuple):
     instruments: pandas.DataFrame
     factors: pandas.DataFrame
-    eigenvalues: pandas.Series = None
+    eigvals: pandas.Series = None
 
     def encode_features(self, features):
         return
@@ -282,7 +323,7 @@ def variational_instrumented_weights(
 class Results_Instruments_Factors(typing.NamedTuple):
     weights: pandas.DataFrame
     instruments: pandas.DataFrame
-    eigenvalues: pandas.Series = None
+    eigvals: pandas.Series = None
     
 def instruments_factors(
     df: pandas.DataFrame,
@@ -329,7 +370,7 @@ def variational_instrumented_factors(
 class Results_Instrumented(typing.NamedTuple):
     instruments_weights: pandas.DataFrame
     instruments_factors: pandas.DataFrame
-    eigenvalues: pandas.Series = None
+    eigvals: pandas.Series = None
     
 def instrumented_weights_factors(
     df: pandas.DataFrame,
@@ -387,7 +428,7 @@ class Results_Kernel_Weights(typing.NamedTuple):
     # per factor
 
     factors: pandas.DataFrame
-    eigenvalues: pandas.Series = None
+    eigvals: pandas.Series = None
 
 @xtuples.nTuple.decorate
 class Results_Kernel_Factors(typing.NamedTuple):
@@ -399,7 +440,7 @@ class Results_Kernel_Factors(typing.NamedTuple):
     # per factor
 
     factors: pandas.DataFrame
-    eigenvalues: pandas.Series = None
+    eigvals: pandas.Series = None
 
 def kernel_weights(
     df: pandas.DataFrame,

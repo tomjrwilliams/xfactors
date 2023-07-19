@@ -10,7 +10,7 @@ import jax
 
 
 
-def s_curve(x, upper = 1, mid = 0, rate = 1):
+def sigmoid_curve(x, upper = 1, mid = 0, rate = 1):
     return upper / (
         1 + torch.exp(-1 * rate * (x - mid))
     )
