@@ -72,63 +72,127 @@ def weights_df(model):
 
 # meta_grads = jax.grad(meta_loss_fn)(params, data)
 
+import jax.lax
+
+@jax.jit
 def loss_mse(X1, X2):
-    return jax.numpy.square(jax.numpy.subtract(X1, X2)).mean()
+    vmax = 10. ** 5
+    diffs = jax.numpy.square(jax.numpy.subtract(X1, X2))
+    return diffs.mean()
+    # jax.lax.clamp(
+    #     -vmax,
+    #     diffs,
+    #     vmax,
+    # ).mean()
 
-def loss_mse_zero(X):
-    return loss_mse(X, jax.numpy.zeros(X.shape))
+@jax.jit
+def zero_mask(X, should_mask):
+    return jax.numpy.multiply(X, 1 + (-1 * should_mask))
 
-def loss_mean_zero(X, axis):
-    return loss_mse_zero(X.mean(axis=axis))
+@jax.jit
+def loss_mse_masked(X1, X2, should_mask):
+    diff = jax.numpy.subtract(X1, X2)
+    return jax.numpy.square(zero_mask(diff, should_mask)).mean()
 
-# (right - left) min implies left > right, so *-1 -> right > left
+@jax.jit
+def loss_mse_zero(X1):
+    # X2 = jax.numpy.zeros(X1.shape)
+    return jax.numpy.square(X1).mean()
+    # return loss_mse(X1, X2)
+
+def loss_mean_zero(axis, cls = False):
+    @jax.jit
+    def f(X):
+        return loss_mse_zero(X.mean(axis=axis))
+    if not cls:
+        return f
+    def cls_f(cls, X):
+        return f(X)
+    return cls_f
+
+@jax.jit
 def loss_descending(x):
+    acc = jax.numpy.cumsum(jax.numpy.flip(x))
     xl = x[..., :-1]
-    xr = x[..., 1:]
+    xr = acc[..., 1:]
+    return -1 * jax.numpy.subtract(xl, xr).mean()
+    # return -1 * jax.numpy.log(jax.numpy.divide(xl, xr)).mean()
+
+@jax.jit
+def loss_abs_descending(x):
+    x = jax.numpy.abs(x)
+    acc = jax.numpy.cumsum(jax.numpy.flip(x))
+    xl = x[..., :-1]
+    xr = acc[..., 1:]
     return -1 * jax.numpy.subtract(xl, xr).mean()
 
-def loss_abs_descending(x):
-    return loss_descending(jax.numpy.abs(x))
-
+@jax.jit
 def loss_ascending(x):
+    acc = jax.numpy.cumsum(jax.numpy.flip(x))
     xl = x[..., :-1]
-    xr = x[..., 1:]
+    xr = acc[..., 1:]
     return -1 * jax.numpy.subtract(xr, xl).mean()
 
+@jax.jit
 def loss_abs_ascending(x):
-    return loss_ascending(jax.numpy.abs(x))
+    x = jax.numpy.abs(x)
+    acc = jax.numpy.cumsum(jax.numpy.flip(x))
+    xl = x[..., :-1]
+    xr = acc[..., 1:]
+    return -1 * jax.numpy.subtract(xr, xl).mean()
 
+@jax.jit
 def loss_orthogonal(X):
     eye = jax.numpy.eye(X.shape[0])
     XXt = jax.numpy.matmul(X, X.T)
-    return loss_mse(XXt, eye)
+    return jax.numpy.square(jax.numpy.subtract(XXt, eye)).mean()
+    # return loss_mse(XXt, eye)
 
+
+@jax.jit
+def loss_unit_norm(X):
+    X2 = jax.numpy.sum(jax.numpy.square(X), axis = 0)
+    return jax.numpy.square(X2 - 1).mean()
+
+@jax.jit
 def loss_cov_eye(X):
     cov = jax.numpy.cov(X)
-    return loss_mse(cov, jax.numpy.eye(cov.shape[0]))
+    eye = jax.numpy.eye(cov.shape[0])
+    return jax.numpy.square(jax.numpy.subtract(cov, eye)).mean()
+    return loss_mse(cov, eye)
 
-def loss_cov_diag(X, diag):
+@jax.jit
+def loss_cov_diag(X, scales):
     cov = jax.numpy.cov(X)
     eye = jax.numpy.eye(cov.shape[0])
-    return loss_mse(cov, jax.numpy.matmul(eye, diag))
+    diag = jax.numpy.multiply(eye, scales.T)
+    return jax.numpy.square(jax.numpy.subtract(cov, diag)).mean()
+    # return loss_mse(cov, diag)
 
-# def loss_yield_cov(scales, weights, yc_history):
-#     lhs = torch.matmul(torch.cov(yc_history.T), weights.T)
-#     rhs = torch.matmul(weights.T, scales.unsqueeze(-1))
-#     return torch.sub(lhs, rhs).square().mean()
+@jax.jit
+def loss_cov_invariance(eigvals, weights, data):
+    lhs = jax.numpy.matmul(jax.numpy.cov(data.T), weights)
+    eigvals = jax.numpy.expand_dims(eigvals, -1)
+    rhs = jax.numpy.matmul(weights, eigvals)
+    return jax.numpy.square(jax.numpy.subtract(lhs, rhs)).mean()
 
 # ---------------------------------------------------------------
 
+# @jax.jit
 def encode_data_pca(data, weights):
     if isinstance(data, pandas.DataFrame):
         return jax.numpy.matmul(data.values, weights)
     elif isinstance(data, jax.numpy.ndarray):
+        return jax.numpy.matmul(data, weights)
+    elif isinstance(data, numpy.ndarray):
         return jax.numpy.matmul(data, weights)
     else:
         assert False, type(data)
 
 def encode_data(model, data):
     if isinstance(model, PCA):
+        return encode_data_pca(data, model.weights)
+    if isinstance(model, PPCA):
         return encode_data_pca(data, model.weights)
     assert False, model
 
@@ -141,9 +205,12 @@ def clip_factors_pca(eigvals, weights, n):
 
 # w = n_tickers, n_factors
 # wT = n_factors, n_tickers
+# @jax.jit
 def decode_factors_pca(factors, weights):
     wT = jax.numpy.transpose(weights)
     if isinstance(factors, jax.numpy.ndarray):
+        return jax.numpy.matmul(factors, wT)
+    elif isinstance(factors, numpy.ndarray):
         return jax.numpy.matmul(factors, wT)
     elif isinstance(factors, pandas.DataFrame):
         return jax.numpy.matmul(factors.values, wT)
@@ -153,6 +220,8 @@ def decode_factors_pca(factors, weights):
 # result = n_days, n_tickers
 def decode_factors(model, factors):
     if isinstance(model, PCA):
+        return decode_factors_pca(factors, model.weights)
+    if isinstance(model, PPCA):
         return decode_factors_pca(factors, model.weights)
     assert False, model
 
@@ -205,8 +274,20 @@ class Flags_PPCA(typing.NamedTuple):
 
 # ---------------------------------------------------------------
 
-def init_ppca_weights(df):
-    return
+def init_ppca_weights(data, n):
+    shape = (data.shape[1], n,)
+    # for w in utils.uniform_spherical(shape, 1):
+    #     return w
+    # for w in utils.random_orthogonal(shape, 1):
+    for w in utils.random_normal(shape, 1):
+        norm = jax.numpy.sqrt(
+            jax.numpy.sum(jax.numpy.square(w), axis=0)
+        )
+        return jax.numpy.divide(w, norm)
+
+def init_ppca_eigvals(data, weights):
+    factors = encode_data_pca(data, weights)
+    return jax.numpy.log(jax.numpy.var(factors.T, axis = 1))
 
 @xtuples.nTuple.decorate
 class PPCA(typing.NamedTuple):
@@ -225,43 +306,69 @@ class PPCA(typing.NamedTuple):
 
     weights_df = weights_df
 
-    # orthogonal includes unit norm (?)
+    loss_mean_zero = classmethod(loss_mean_zero(0, cls = True))
+
     @classmethod
-    def loss(cls, eigvals, weights, data):
+    def update_param(cls, param, grad, lr = 0.1):
+        assert grad.shape == param.shape, grad.shape
+        assert not jax.numpy.isnan(grad).any()
+        return param - lr * grad
+
+    @classmethod
+    def loss_preds(cls, weights, data):
         factors = encode_data_pca(data, weights)
         preds = decode_factors_pca(factors, weights)
+        return loss_mse(preds, data)
+
+    @classmethod
+    def update_preds(cls, eigvals, weights, data, lr = 0.01):
+        grad = jax.jacrev(cls.loss_preds)(weights, data)
+        weights = cls.update_param(weights, grad, lr = lr)
+        return eigvals, weights
+
+    @classmethod
+    def loss_orthogonal(cls, weights):
+        return loss_orthogonal(weights.T)
+
+    @classmethod
+    def update_orthogonal(cls, eigvals, weights, data, lr = 0.01):
+        grad = jax.jacrev(cls.loss_orthogonal)(weights)
+        weights = cls.update_param(weights, grad, lr = lr)
+        return eigvals, weights
+
+    @classmethod
+    def loss(cls, weights, data):
+        factors = encode_data_pca(data, weights)
+        eigvals = jax.numpy.var(factors, axis=0)
         return (
-            loss_descending(eigvals)
-            - loss_mse_zero(eigvals)
+            - jax.numpy.product(1 + eigvals[:-1])
+            + loss_descending(eigvals)
             + loss_orthogonal(weights.T)
-            + loss_mean_zero(factors, 0)
+            + cls.loss_mean_zero(factors)
             + loss_cov_diag(factors.T, eigvals)
-            + loss_mse(preds, data)
+            + cls.loss_preds(weights, data)
         )
 
     @classmethod
-    def update(cls, weights, eigvals, data, lr = 0.01):
-        grads = jax.grad(cls.loss)(eigvals, weights, data)
-        return (
-            eigvals - lr * grads[0],
-            weights - lr * grads[1],
-        )
+    def update(cls, weights, data, lr = 0.01):
+        grad = jax.jacrev(cls.loss)(weights, data)
+        weights = cls.update_param(weights, grad, lr = lr)
+        return weights
 
     # presumably a way of iteratively adding dims>
     # in the outer fit loop?
     # or incrementally change a weight decay parameter that is ramped down for the later dims as they come into play
-    
+
     @classmethod
     def fit(
         cls,
         df: pandas.DataFrame,
-        n = None,
-        iters = 1000,
-        lr = 0.01,
+        n = 1,
+        noise=1,
+        iters = 2500,
+        lr = 0.1,
         #
     ):
-        eigvals = jax.numpy.ones(n)
-        weights = init_ppca_weights(df, n)
 
         # plus null mask on mse(pred, data)
         # optional additional null mask df kwarg
@@ -269,12 +376,26 @@ class PPCA(typing.NamedTuple):
 
         data = df.values
 
+        weights = init_ppca_weights(data, n + noise)
+
+        print(dict(
+            weights=weights.shape,
+            data=data.shape,
+        ))
+
         for i in range(iters):
-            eigvals, weights = cls.update(
-                eigvals, weights, data, lr = lr
+            weights = cls.update(
+                weights, data, lr = lr
             )
-            # print etc.
-        
+            if i % (iters / 10) == 0 or i == iters - 1:
+                eigvals = numpy.round(numpy.var(
+                    encode_data_pca(data, weights), axis=0
+                ), 3)
+                print(i, ":", iters, eigvals)
+
+        eigvals = eigvals[..., :n]
+        weights = weights[..., :n]
+    
         return cls(
             xtuples.iTuple(df.columns),
             eigvals,

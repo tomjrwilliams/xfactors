@@ -4,5 +4,10 @@
 
 from .utils import (
     cov,
+    random_beta,
+    random_normal,
+    random_orthogonal,
+    norm_gaussian,
+    uniform_spherical,
     #
 )
