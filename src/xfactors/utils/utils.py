@@ -2,6 +2,9 @@
 
 import jax.numpy
 
+def unsqueeze(X, axis = -1):
+    return jax.numpy.expand_dims(X, axis)
+
 # ---------------------------------------------------------------
 
 # log = False
@@ -28,6 +31,27 @@ def random_keys(n, seed = 69):
 def random_sample(n, f, seed = 69):
     for subkey in random_keys(n, seed=seed):
         yield f(subkey)
+
+def random_uniform(shape, n):
+    f = lambda subkey: jax.random.uniform(subkey, shape=shape)
+    yield from random_sample(n, f)
+
+def random_uniform_indices(shape, n, threshold):
+    for probs in random_uniform(shape, n):
+        mask = probs <= threshold
+        yield mask
+
+def random_choices(v, shape, n, p = None):
+    f = lambda subkey: jax.random.choice(
+        subkey, v, shape=shape, p=p
+    )
+    yield from random_sample(n, f)
+
+def random_indices(l, shape, n, p = None):
+    f = lambda subkey: jax.random.choice(
+        subkey, jax.numpy.arange(l), shape=shape, p=p, replace=False
+    )
+    yield from random_sample(n, f)
 
 def random_beta(shape, n, a, b):
     f = lambda subkey: jax.random.beta(subkey, a, b, shape = shape)
