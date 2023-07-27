@@ -17,6 +17,8 @@ def calc_returns(
 
 # ---------------------------------------------------------------
 
+# wrap up in a context manager
+
 KEYS = {}
 
 def random_keys(n, seed = 69):
