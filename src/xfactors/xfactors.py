@@ -98,9 +98,26 @@ def input_bindings(**kfs):
 
 @input_bindings()
 @xtuples.nTuple.decorate
-class Input_DataFrame(typing.NamedTuple):
+class Input_DataFrame_Wide(typing.NamedTuple):
 
-    orientation: Orientation = Orientation.WIDE
+    loc: int = None
+    shape: xtuples.iTuple = None
+
+    def init_shape(self, model, data):
+        return data[self.loc].values.shape
+
+    def init_params(self, model, params, results):
+        return ()
+    
+    def apply(self, params_results):
+        df = params_results[1][self.loc]
+        return df.values
+
+@input_bindings()
+@xtuples.nTuple.decorate
+class Input_DataFrame_Tall(typing.NamedTuple):
+
+    # fields to specify if keep index and ticker map
 
     loc: int = None
     shape: xtuples.iTuple = None
@@ -117,11 +134,11 @@ class Input_DataFrame(typing.NamedTuple):
 
 # ---------------------------------------------------------------
 
-def check_factor(model, obj):
+def check_operator(model, obj):
     return True
 
-def add_factor(model, obj):
-    assert check_factor(model, obj)
+def add_operator(model, obj):
+    assert check_operator(model, obj)
     return model._replace(
         factors = model.factors.append(obj._replace(
             loc=len(model.factors)
@@ -129,11 +146,11 @@ def add_factor(model, obj):
         #
     )
 
-def factor_bindings(**kfs):
+def operator_bindings(**kfs):
     def decorator(cls):
         methods = dict(
-            check = check_factor,
-            add = add_factor,
+            check = check_operator,
+            add = add_operator,
         )
         for k, f in kfs.items():
             methods[k] = f
@@ -144,9 +161,13 @@ def factor_bindings(**kfs):
 
 # ---------------------------------------------------------------
 
-@factor_bindings()
+# pca eigen decomposition as an operator
+# even though no optimisation is necessary?
+# so for optimise, if no constraints, just return
+
+@operator_bindings()
 @xtuples.nTuple.decorate
-class Factor_PCA(typing.NamedTuple):
+class PCA_Encoder(typing.NamedTuple):
     
     n: int
     sites: xtuples.iTuple # [of ituples]
@@ -177,6 +198,33 @@ class Factor_PCA(typing.NamedTuple):
             weights,
         )
 
+@operator_bindings()
+@xtuples.nTuple.decorate
+class PCA_Decoder(typing.NamedTuple):
+    
+    sites: xtuples.iTuple
+
+    # TODO: generalise to sites_weight and sites_data
+    # so that can spread across multiple prev stages
+    # and then concat both, or if size = 1, then as below
+    # can also pass as a nested tuple? probs cleaner to have separate
+
+    loc: int = None
+    shape: xtuples.iTuple = None
+
+    def init_shape(self, model, data):
+        return ()
+
+    def init_params(self, model, params, results):
+        return ()
+
+    def apply(self, params_results):
+        assert len(self.sites) == 2
+        l_site, r_site = self.sites
+        return jax.numpy.matmul(
+            get_site(r_site, params_results), 
+            get_site(l_site, params_results).T
+        )
 
 # ---------------------------------------------------------------
 
@@ -184,31 +232,7 @@ def check_latent(model, obj):
     assert obj.axis in [None, 0, 1]
     return True
 
-def add_latent(model, obj):
-    assert check_latent(model, obj)
-    return model._replace(
-        latents = model.latents.append(obj._replace(
-            loc=len(model.latents)
-        ))
-        #
-    )
-
-def latent_bindings(**kfs):
-    def decorator(cls):
-        methods = dict(
-            check = check_latent,
-            add = add_latent,
-        )
-        for k, f in kfs.items():
-            methods[k] = f
-        for k, f in methods.items():
-            setattr(cls, k, f)
-        return cls
-    return decorator
-
-# ---------------------------------------------------------------
-
-@latent_bindings()
+@operator_bindings(check = check_latent)
 @xtuples.nTuple.decorate
 class Latent(typing.NamedTuple):
     """
@@ -235,58 +259,6 @@ class Latent(typing.NamedTuple):
         assert shape_latent is not None, obj
         latent = rand.normal(shape_latent)
         return latent
-
-# ---------------------------------------------------------------
-
-def check_output(model, obj):
-    return True
-
-def add_output(model, obj):
-    assert check_output(model, obj)
-    return model._replace(
-        outputs = model.outputs.append(obj._replace(
-            loc=len(model.outputs)
-        ))
-        #
-    )
-
-def output_bindings(**kfs):
-    def decorator(cls):
-        methods = dict(
-            check = check_output,
-            add = add_output,
-        )
-        for k, f in kfs.items():
-            methods[k] = f
-        for k, f in methods.items():
-            setattr(cls, k, f)
-        return cls
-    return decorator
-
-# ---------------------------------------------------------------
-
-@output_bindings()
-@xtuples.nTuple.decorate
-class Output_PCA(typing.NamedTuple):
-    
-    sites: xtuples.iTuple
-
-    loc: int = None
-    shape: xtuples.iTuple = None
-
-    def init_shape(self, model, data):
-        return ()
-
-    def init_params(self, model, params, results):
-        return ()
-
-    def apply(self, params_results):
-        assert len(self.sites) == 2
-        l_site, r_site = self.sites
-        return jax.numpy.matmul(
-            get_site(r_site, params_results), 
-            get_site(l_site, params_results).T
-        )
 
 # ---------------------------------------------------------------
 
@@ -458,7 +430,32 @@ class Params(typing.NamedTuple):
 
 # ---------------------------------------------------------------
 
-def init_shape(model, data):
+@xtuples.nTuple.decorate
+class Stage(typing.NamedTuple):
+
+    operators: xtuples.iTuple = xtuples.iTuple()
+
+    loc: int = None
+
+    # mehtods for init shapes, params
+    # recursed into
+
+def check_stage(model, stage):
+    # check dependency structure of all operators
+    return True
+
+def add_stage(model, stage):
+    check_stage(model, stage)
+    return model._replace(
+        stages = model.stages.append(stage._replace(
+            loc=len(model.stages)
+        ))
+        #
+    )
+
+# ---------------------------------------------------------------
+
+def init_shapes(model, data):
     model = model._replace(inputs = model.inputs.map(
         lambda o: o._replace(shape=o.init_shape(model, data))
     ))
@@ -502,6 +499,7 @@ def init_objective(model, init_params, data):
         lambda f: f.apply((init_params, data,))
     ))
     def f(params, results):
+        # recursive into stages 
         results = results._replace(factors = model.factors.map(
             lambda f: f.apply((params, results,))
         ))
@@ -520,6 +518,7 @@ def init_objective(model, init_params, data):
 
 def init_apply(model):
     def f(params, data, sites = None):
+        # recursive into stages 
         results = Results()
         results = results._replace(inputs = model.inputs.map(
             lambda f: f.apply((init_params, data,))
@@ -561,6 +560,7 @@ def optimise_model(
     lr = 0.01,
     iters=1000,
 ):
+    # if no constraints, just return
     
     opt = optax.adam(lr)
     solver = jaxopt.OptaxSolver(
@@ -585,31 +585,38 @@ def optimise_model(
 
 # ---------------------------------------------------------------
 
+# TODO: keep constraints separate
+
+# and inputs as they take data not results
+# all else as stages
+
+# but can keep the taxonomy above
+# with different support methods
+# though all need consistent call signatures
+
+# fold stages
+
+# if we start deleting old values does it break backprop tree?
+# ie. can then calc dpendency structure
+# how many stages ahead each is depended on
+# to free memory
+# not per operation, only per stage
+
+# can still use enum like structure local to model for stage names
+# even separate variables stages = range(3) X, Y, Z = stages
+
 @xtuples.nTuple.decorate
 class Model(typing.NamedTuple):
 
     inputs: xtuples.iTuple = xtuples.iTuple()
-    factors: xtuples.iTuple = xtuples.iTuple()
-    latents: xtuples.iTuple = xtuples.iTuple()
-    outputs: xtuples.iTuple = xtuples.iTuple()
+    stages: xtuples.iTuple = xtuples.iTuple()
     constraints: xtuples.iTuple = xtuples.iTuple()
 
-    check_input = check_input
     add_input = add_input
-
-    check_factor = check_factor
-    add_factor = add_factor
-
-    check_latent = check_latent
-    add_latent = add_latent
-
-    check_output = check_output
-    add_output = add_output
-
-    check_constraint = check_constraint
+    add_stage = add_stage
     add_constraint = add_constraint
 
-    init_shape = init_shape
+    init_shapes = init_shapes
     init_params = init_params
 
     init_objective = init_objective
@@ -617,9 +624,6 @@ class Model(typing.NamedTuple):
 
     build = build_model
     optimise = optimise_model
-
-
-# ---------------------------------------------------------------
 
 
 # ---------------------------------------------------------------

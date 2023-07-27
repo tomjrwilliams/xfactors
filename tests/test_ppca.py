@@ -5,9 +5,9 @@ import numpy
 import pandas
 import jax
 
-from src.xfactors import xfactors
-from src.xfactors import dates
 from src.xfactors import rand
+from src.xfactors import dates
+from src.xfactors import xfactors
 
 def test_ppca():
 
@@ -26,8 +26,8 @@ def test_ppca():
 
     model, params, results, objective, apply = (
         xfactors.Model()
-        .add_input(xfactors.Input_DataFrame(
-            orientation=xfactors.Orientation.WIDE,
+        .add_input(xfactors.Input_DataFrame_Wide(
+            
         ))
         .add_factor(xfactors.Factor_PCA(
             n=3,
