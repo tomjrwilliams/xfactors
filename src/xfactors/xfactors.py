@@ -676,6 +676,13 @@ def optimise_model(
 
         # TODO: early termination if error stops changing
 
+    # TODO: for all operators (inputs / constraints) that
+    # sepcify they need a key
+
+    # generate a key map, with the same shape as state
+    # that can be indexed into (expand the function sig to then be:
+    # (state, keys)
+
     return model, params
 
 # ---------------------------------------------------------------
