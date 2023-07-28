@@ -10,6 +10,8 @@ from src.xfactors import rand
 from src.xfactors import dates
 from src.xfactors import xfactors as xf
 
+from tests import utils
+
 def test_linreg():
 
     ds = dates.starting(datetime.date(2020, 1, 1), 100)
@@ -60,35 +62,23 @@ def test_linreg():
     )
     betas_post = params[REGRESS][0].T
 
-    tolerances=dict(
-        rtol=1e-3,
-        atol=1e-2,
-    )
-
     results = dict(
         betas=betas.squeeze(),
         pre=betas_pre.squeeze(),
         post=betas_post.squeeze(),
     )
 
-    def assert_is_close(v1, v2, b):
-        diff = numpy.subtract(v1, v2)
-        assert (
-            numpy.isclose(v1, v2, **tolerances).all()
-        ) == b, dict(
-            **results,
-            diff=diff,
-        )
-
-    assert_is_close(
+    utils.assert_is_close(
         results["betas"],
         results["pre"],
         False,
+        results,
     )
-    assert_is_close(
+    utils.assert_is_close(
         results["betas"],
         results["post"],
-        True
+        True,
+        results,
     )
 
     return True

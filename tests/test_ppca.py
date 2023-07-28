@@ -11,6 +11,8 @@ from src.xfactors import rand
 from src.xfactors import dates
 from src.xfactors import xfactors as xf
 
+from tests import utils
+
 def test_ppca():
 
     ds = dates.starting(datetime.date(2020, 1, 1), 100)
@@ -34,7 +36,7 @@ def test_ppca():
         .add_input(xf.Input_DataFrame_Wide())
         .add_stage()
         .add_operator(ENCODE, xf.PCA_Encoder(
-            n=3,
+            n=4,
             sites=xt.iTuple.one(
                 xf.Loc.result(INPUT, 0),
             ),
@@ -58,16 +60,37 @@ def test_ppca():
             sites=xf.xt.iTuple(
                 xf.Loc.param(ENCODE, 0),
                 xf.Loc.result(ENCODE, 0),
-            )
+            ),
+            n_check=4,
         ))
         .build(data)
     )
 
     model, params = model.optimise(params, results, objective)
+    results = apply(params, data)
 
-    # assert is the same results as if we did an explicit pca
+    eigen_vec = params[ENCODE][0]
+    factors = results[ENCODE][0]
 
-    return dict(
-        betas=betas,
-        factors=params[ENCODE][0].T,
+    cov = jax.numpy.cov(factors.T)
+    eigen_vals = jax.numpy.diag(cov)
+
+    assert eigen_vals.shape[0] == 4, eigen_vals.shape
+
+    order = numpy.flip(numpy.argsort(eigen_vals))
+
+    eigen_vals = eigen_vals[order]
+    eigen_vec = eigen_vec[..., order]
+
+    eigvals, eigvecs = numpy.linalg.eig(numpy.cov(
+        numpy.transpose(data[0].values)
+    ))
+
+    # for now we just check pc1 matches
+    utils.assert_is_close(
+        eigen_vec.real[..., :1],
+        eigvecs.real[..., :1],
+        True,
+        atol=.1,
     )
+    return True

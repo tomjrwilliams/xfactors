@@ -266,6 +266,39 @@ def init_stages(n):
 # even though no optimisation is necessary?
 # so for optimise, if no constraints, just return
 
+
+@operator_bindings()
+@xt.nTuple.decorate
+class PCA(typing.NamedTuple):
+    
+    n: int
+    sites: xt.iTuple
+
+    loc: Location = None
+    shape: xt.iTuple = None
+
+    def init_shape(self, model, data):
+        objs = self.sites.map(f_get_location(model))
+        return self._replace(
+            shape = (
+                objs.map(lambda o: o.shape[1]).pipe(sum),
+                self.n,
+            )
+        )
+
+    def init_params(self, model, state):
+        return self, ()
+
+    def apply(self, state):
+        data = jax.numpy.concatenate(
+            self.sites.map(f_get_location(state)),
+            axis=1,
+        )
+        eigvals, weights = jax.numpy.linalg.eig(jax.numpy.cov(
+            jax.numpy.transpose(data)
+        ))
+        return eigvals, weights
+
 @operator_bindings()
 @xt.nTuple.decorate
 class PCA_Encoder(typing.NamedTuple):
@@ -278,24 +311,21 @@ class PCA_Encoder(typing.NamedTuple):
     shape: xt.iTuple = None
 
     def init_shape(self, model, data):
-        return self
+        objs = self.sites.map(f_get_location(model))
+        return self._replace(
+            shape = (
+                objs.map(lambda o: o.shape[1]).pipe(sum),
+                self.n,
+            )
+        )
 
     def init_params(self, model, state):
         if self.site is None:
-            objs = self.sites.map(f_get_location(model))
-            try:
-                shape = (
-                    objs.map(lambda o: o.shape[1]).pipe(sum),
-                    self.n,
-                )
-            except:
-                assert False, dict(
-                    objs=objs,
-                    self=self,
-                )
             return self._replace(
                 site=Location.param(*self.loc.path)
-            ), rand.normal(shape)
+            ), rand.normal(self.shape)
+        # TODO: check below, assumes weights generated elsewhere
+        return self, rand.normal(self.shape)
 
     def apply(self, state):
         weights = get_location(self.site, state)
@@ -479,6 +509,8 @@ class Constraint_EigenVLike(typing.NamedTuple):
 
     eigval_max: bool = True
 
+    n_check: int = None
+
     def apply(self, state):
         assert len(self.sites) == 2
         w_site, f_site = self.sites
@@ -486,6 +518,10 @@ class Constraint_EigenVLike(typing.NamedTuple):
         f = get_location(f_site, state)
         cov = jax.numpy.cov(f.T)
         eigvals = jax.numpy.diag(cov)
+        if self.n_check is not None:
+            assert eigvals.shape[0] == self.n_check, (
+                self, eigvals.shape,
+            )
         res = (
             + loss_descending(eigvals)
             + loss_orthogonal(w.T)
@@ -541,6 +577,7 @@ def init_params(model, data):
 # ---------------------------------------------------------------
 
 def init_objective(model, init_params, data):
+
     # init_results = just inputs (ie. parsed data)
     # no model results yet
     init_results = xt.iTuple().append(
@@ -548,18 +585,20 @@ def init_objective(model, init_params, data):
             operator.methodcaller("apply", (init_params, data,))
         )
     )
+
     def f(params, results):
         results = model.stages[1:].fold(
             lambda res, stage: res.append(stage.operators.map(
                 operator.methodcaller("apply", (params, res,))
             )),
-            initial=init_results,
+            initial=xt.iTuple(results),
         )
         return jax.numpy.stack(
             model.constraints.map(
                 operator.methodcaller("apply", (params, results,))
             ).pipe(list)
         ).sum()
+
     return init_results, f
 
 def init_apply(model):
@@ -577,7 +616,7 @@ def init_apply(model):
             )),
             initial=init_results,
         )
-        if results is None:
+        if sites is None:
             return results
         return {
             k: get_location(s, results)
