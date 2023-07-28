@@ -367,6 +367,11 @@ class PCA_Decoder(typing.NamedTuple):
             get_location(l_site, state).T
         )
 
+# TODO:
+
+# PPCA EM E
+# PPCA EM M
+
 # ---------------------------------------------------------------
 
 def check_latent(obj, model):

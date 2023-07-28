@@ -15,10 +15,12 @@ from tests import utils
 
 def test_ppca():
 
+    N = 3
+
     ds = dates.starting(datetime.date(2020, 1, 1), 100)
 
-    vs_norm = rand.normal((100, 3,))
-    betas = rand.normal((3, 5,))
+    vs_norm = rand.normal((100, N,))
+    betas = rand.normal((N, 5,))
     vs = numpy.matmul(vs_norm, betas)
 
     data = (
@@ -36,7 +38,7 @@ def test_ppca():
         .add_input(xf.Input_DataFrame_Wide())
         .add_stage()
         .add_operator(ENCODE, xf.PCA_Encoder(
-            n=4,
+            n=N,
             sites=xt.iTuple.one(
                 xf.Loc.result(INPUT, 0),
             ),
@@ -61,7 +63,7 @@ def test_ppca():
                 xf.Loc.param(ENCODE, 0),
                 xf.Loc.result(ENCODE, 0),
             ),
-            n_check=4,
+            n_check=N,
         ))
         .build(data)
     )
@@ -75,7 +77,7 @@ def test_ppca():
     cov = jax.numpy.cov(factors.T)
     eigen_vals = jax.numpy.diag(cov)
 
-    assert eigen_vals.shape[0] == 4, eigen_vals.shape
+    assert eigen_vals.shape[0] == N, eigen_vals.shape
 
     order = numpy.flip(numpy.argsort(eigen_vals))
 
