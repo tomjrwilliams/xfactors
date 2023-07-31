@@ -63,11 +63,11 @@ def f_follow_path(acc):
     return f
 
 def get_location(loc, acc):
-    if loc.domain == RESULT and isinstance(acc, Model):
-        return follow_path(
-            (loc.path[0], 0, *loc.path[1:]),
-            acc[loc.domain]
-        )
+    # if loc.domain == RESULT and isinstance(acc, Model):
+        # return follow_path(
+        #     (loc.path[0], 0, *loc.path[1:]),
+        #     acc[loc.domain]
+        # )
     return follow_path(loc.path, acc[loc.domain])
 
 def f_get_location(acc):
@@ -78,7 +78,7 @@ def f_get_location(acc):
 @xt.nTuple.decorate
 class Location(typing.NamedTuple):
 
-    domain: int # [0, 1]
+    domain: int # [0, 1, 2]
     path: xt.iTuple
 
     check = check_location
@@ -100,6 +100,9 @@ Loc = Location
 
 # ---------------------------------------------------------------
 
+class Stage(xt.iTuple):
+    pass
+
 def update_stage(model, i, stage):
     return model._replace(
         stages = (
@@ -108,6 +111,17 @@ def update_stage(model, i, stage):
         )
     )
 
+def add_stage(model, stage = None):
+    return model._replace(
+        stages = model.stages.append((
+            stage if stage is not None else Stage()
+        ))
+    )
+
+# 1 + n as we always have input stage pre-defined
+def init_stages(n):
+    return xt.iTuple.range(1 + n)
+    
 # ---------------------------------------------------------------
 
 def check_input(obj, model):
@@ -121,12 +135,11 @@ def add_input(model, obj):
     """
     assert check_input(obj, model)
     stage = model.stages[0]
-    stage = stage._replace(
-        operators=stage.operators.append(obj._replace(
-            loc=Location.result(0, len(stage.operators))
+    return update_stage(
+        model, 0, stage.append(obj._replace(
+            loc=Location.result(0, stage.len())
         ))
     )
-    return update_stage(model, 0, stage)
 
 def input_bindings(**kfs):
     def decorator(cls):
@@ -185,47 +198,19 @@ class Input_DataFrame_Tall(typing.NamedTuple):
 
 # ---------------------------------------------------------------
 
-def check_stage(obj, model):
-    assert hasattr(obj, "operators"), obj
-    assert hasattr(obj, "loc"), obj
-    # check dependency structure of all operators
-    return True
-
-def add_stage(model, obj = None):
-    if obj is None:
-        obj = Stage()
-    check_stage(obj, model)
-    return model._replace(
-        stages = model.stages.append(obj._replace(
-            loc=Location.result(len(model.stages))
-        ))
-        #
-    )
-
-def stage_bindings(**kfs):
-    def decorator(cls):
-        methods = dict(
-            check = check_stage,
-            add = add_stage,
-        )
-        return add_bindings(cls, methods, kfs)
-    return decorator
-
-def check_operator(obj, stage, model):
+def check_operator(obj, model):
     assert hasattr(obj, "loc"), obj
     assert hasattr(obj, "shape"), obj
     return True
 
 def add_operator(model, i, obj):
     stage = model.stages[i]
-    assert check_operator(obj, stage, model)
+    assert check_operator(obj, model)
     return update_stage(
-        model, i, stage._replace(
-            operators = stage.operators.append(obj._replace(
-                loc=Location.result(
-                    *stage.loc.path, len(stage.operators)
-                )
-            ))
+        model, i, stage.append(
+            obj._replace(
+                loc=Location.result(i, stage.len())
+            )
             #
         )
     )
@@ -239,33 +224,11 @@ def operator_bindings(**kfs):
         return add_bindings(cls, methods, kfs)
     return decorator
 
-@stage_bindings()
-@xt.nTuple.decorate
-class Stage(typing.NamedTuple):
-
-    operators: xt.iTuple = xt.iTuple()
-
-    loc: Location = None
-
-    @classmethod
-    @property
-    def INPUT(cls):
-        return 0
-
-    # commenting as confusing
-    # @classmethod
-    # def result(cls, stage):
-    #     return stage + 1
-
-def init_stages(n):
-    return xt.iTuple.range(1 + n)
-
 # ---------------------------------------------------------------
 
 # pca eigen decomposition as an operator
 # even though no optimisation is necessary?
 # so for optimise, if no constraints, just return
-
 
 @operator_bindings()
 @xt.nTuple.decorate
@@ -545,25 +508,23 @@ class Constraint_EigenVLike(typing.NamedTuple):
 def init_shapes(model, data):
     return model.stages.fold(
         lambda model, stage: model._replace(
-            stages=model.stages.append(stage._replace(
-                operators = stage.operators.map(
+            stages=model.stages.append(
+                stage.map(
                     operator.methodcaller(
                         "init_shape", model, data
                     )
                 )
-            ))
+            )
         ),
         initial=model._replace(stages=xt.iTuple()),
     )
 
 def acc_init_params(model, params, stage, data):
-    stage_operators, stage_params = stage.operators.map(
+    stage, stage_params = stage.map(
         operator.methodcaller("init_params", model, data)
     ).zip().map(xt.iTuple) # zip returns tuple not iTuple
     return model._replace(
-        stages=model.stages.append(stage._replace(
-            operators=stage_operators
-        )),
+        stages=model.stages.append(stage),
     ), params.append(stage_params)
 
 def init_params(model, data):
@@ -586,14 +547,14 @@ def init_objective(model, init_params, data):
     # init_results = just inputs (ie. parsed data)
     # no model results yet
     init_results = xt.iTuple().append(
-        model.stages[0].operators.map(
+        model.stages[0].map(
             operator.methodcaller("apply", (init_params, data,))
         )
     )
 
     def f(params, results):
         results = model.stages[1:].fold(
-            lambda res, stage: res.append(stage.operators.map(
+            lambda res, stage: res.append(stage.map(
                 operator.methodcaller("apply", (params, res,))
             )),
             initial=xt.iTuple(results),
@@ -611,12 +572,12 @@ def init_apply(model):
         # init_results = just inputs (ie. parsed data)
         # no model results yet
         init_results = xt.iTuple().append(
-            model.stages[0].operators.map(
+            model.stages[0].map(
                 operator.methodcaller("apply", (params, data,))
             )
         )
         results = model.stages[1:].fold(
-            lambda res, stage: res.append(stage.operators.map(
+            lambda res, stage: res.append(stage.map(
                 operator.methodcaller("apply", (params, res,))
             )),
             initial=init_results,
@@ -639,7 +600,7 @@ def build_model(model, data):
     return model, params, results, objective, apply
 
 def to_tuple_rec(v):
-    if isinstance(v, xt.iTuple):
+    if isinstance(v, (xt.iTuple, Stage)):
         return v.map(to_tuple_rec).pipe(tuple)
     return v
 
