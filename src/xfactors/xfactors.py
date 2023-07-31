@@ -27,22 +27,35 @@ from . import dates
 
 # ---------------------------------------------------------------
 
-from jax.config import config 
-# config.update("jax_debug_nans", True) 
+NULL_SHAPE = "NULL_SHAPE"
+NO_PARAMS = "NO_PARAMS"
 
-# ---------------------------------------------------------------
+def init_shape_null(self, model, data):
+    return self
+
+def init_params_null(obj, model, state):
+    return obj, ()
 
 def add_bindings(cls, methods, kfs):
     for k, f in kfs.items():
-        methods[k] = f
+        if k == "init_shape" and f == "NULL_SHAPE":
+            methods[k] = init_shape_null
+        elif k == "init_params" and f == "NO_PARAMS":
+            methods[k] = init_params_null
+        else:
+            methods[k] = f
     for k, f in methods.items():
         setattr(cls, k, f)
+    if not hasattr(cls, "init_shape"):
+        setattr(cls, "init_shape", init_shape_null)
+    if not hasattr(cls, "init_params"):
+        setattr(cls, "init_params", init_params_null)
     return cls
 
 # ---------------------------------------------------------------
 
 def check_location(loc):
-    assert loc.domain in [0, 1, 2], loc
+    assert loc.domain in [None, 0, 1, 2], loc
     return True
 
 PARAM = 0
@@ -85,6 +98,10 @@ class Location(typing.NamedTuple):
     access = get_location
 
     @classmethod
+    def model(cls, *path):
+        return cls(None, path)
+
+    @classmethod
     def param(cls, *path):
         return cls(PARAM, path)
 
@@ -96,7 +113,18 @@ class Location(typing.NamedTuple):
     def constraint(cls, *path):
         return cls(CONSTRAINT, path)
 
+    def as_param(self):
+        return Location(PARAM, *self.path)
+
+    def as_result(self):
+        return Location(RESULT, *self.path)
+
+    def as_constraint(self):
+        return Location(CONSTRAINT, *self.path)
+
 Loc = Location
+
+# the model location shouldn't have domains?
 
 # ---------------------------------------------------------------
 
@@ -152,52 +180,6 @@ def input_bindings(**kfs):
 
 # ---------------------------------------------------------------
 
-@input_bindings()
-@xt.nTuple.decorate
-class Input_DataFrame_Wide(typing.NamedTuple):
-
-    loc: Location = None
-    shape: xt.iTuple = None
-
-    def init_shape(self, model, data):
-        # path[0] = stage, so path[1] = index of data element
-        return self._replace(
-            shape=data[self.loc.path[1]].values.shape
-        )
-
-    def init_params(self, model, state):
-        return self, ()
-    
-    def apply(self, state):
-        params, data = state
-        df = data[self.loc.path[-1]]
-        return jax.numpy.array(df.values)
-
-@input_bindings()
-@xt.nTuple.decorate
-class Input_DataFrame_Tall(typing.NamedTuple):
-
-    # fields to specify if keep index and ticker map
-
-    loc: Location = None
-    shape: xt.iTuple = None
-
-    def init_shape(self, model, data):
-        # path[0] = stage, so path[1] = index of data element
-        return self._replace(
-            shape=data[self.loc.path[1]].values.shape
-        )
-
-    def init_params(self, model, state):
-        return self, ()
-    
-    def apply(self, state):
-        params, data = state
-        df = data[self.loc.path[-1]]
-        return jax.numpy.array(df.values)
-
-# ---------------------------------------------------------------
-
 def check_operator(obj, model):
     assert hasattr(obj, "loc"), obj
     assert hasattr(obj, "shape"), obj
@@ -226,151 +208,6 @@ def operator_bindings(**kfs):
 
 # ---------------------------------------------------------------
 
-# pca eigen decomposition as an operator
-# even though no optimisation is necessary?
-# so for optimise, if no constraints, just return
-
-@operator_bindings()
-@xt.nTuple.decorate
-class PCA(typing.NamedTuple):
-    
-    n: int
-    sites: xt.iTuple
-
-    loc: Location = None
-    shape: xt.iTuple = None
-
-    def init_shape(self, model, data):
-        objs = self.sites.map(f_get_location(model))
-        return self._replace(
-            shape = (
-                objs.map(lambda o: o.shape[1]).pipe(sum),
-                self.n,
-            )
-        )
-
-    def init_params(self, model, state):
-        return self, ()
-
-    def apply(self, state):
-        data = jax.numpy.concatenate(
-            self.sites.map(f_get_location(state)),
-            axis=1,
-        )
-        eigvals, weights = jax.numpy.linalg.eig(jax.numpy.cov(
-            jax.numpy.transpose(data)
-        ))
-        return eigvals, weights
-
-@operator_bindings()
-@xt.nTuple.decorate
-class PCA_Encoder(typing.NamedTuple):
-    
-    n: int
-    sites: xt.iTuple
-    site: Location = None
-
-    loc: Location = None
-    shape: xt.iTuple = None
-
-    def init_shape(self, model, data):
-        objs = self.sites.map(f_get_location(model))
-        return self._replace(
-            shape = (
-                objs.map(lambda o: o.shape[1]).pipe(sum),
-                self.n,
-            )
-        )
-
-    def init_params(self, model, state):
-        if self.site is None:
-            return self._replace(
-                site=Location.param(*self.loc.path)
-            ), rand.normal(self.shape)
-        # TODO: check below, assumes weights generated elsewhere
-        return self, rand.normal(self.shape)
-
-    def apply(self, state):
-        weights = get_location(self.site, state)
-        return jax.numpy.matmul(
-            jax.numpy.concatenate(
-                self.sites.map(f_get_location(state)),
-                axis=1,
-            ),
-            weights,
-        )
-
-Lin_Reg = PCA_Encoder
-
-@operator_bindings()
-@xt.nTuple.decorate
-class PCA_Decoder(typing.NamedTuple):
-    
-    sites: xt.iTuple
-
-    # TODO: generalise to sites_weight and sites_data
-    # so that can spread across multiple prev stages
-    # and then concat both, or if size = 1, then as below
-    # can also pass as a nested tuple? probs cleaner to have separate
-
-    loc: Location = None
-    shape: xt.iTuple = None
-
-    def init_shape(self, model, data):
-        return self
-
-    def init_params(self, model, state):
-        return self, ()
-
-    def apply(self, state):
-        assert len(self.sites) == 2
-        l_site, r_site = self.sites
-        return jax.numpy.matmul(
-            get_location(r_site, state), 
-            get_location(l_site, state).T
-        )
-
-# TODO:
-
-# PPCA EM E
-# PPCA EM M
-
-# ---------------------------------------------------------------
-
-def check_latent(obj, model):
-    assert obj.axis in [None, 0, 1]
-    return check_operator(obj, model)
-
-@operator_bindings(check = check_latent)
-@xt.nTuple.decorate
-class Latent(typing.NamedTuple):
-    """
-    axis: None = scalar, 0 = time series, 1 = ticker
-    """
-
-    axis: int
-    # TODO init: collections.abc.Iterable = None
-
-    loc: Location = None
-    shape: xt.iTuple = None
-
-    def init_shape(self, model, data):
-        return self
-
-    def init_params(self, model, params):
-        axis = self.axis
-        shape_latent = (
-            (1,) if axis is None
-            else (model.shape[axis], 1,) if axis == 0
-            else (1, model.shape[axis],) if axis == 1
-            else None
-        )
-        assert shape_latent is not None, self
-        latent = rand.normal(shape_latent)
-        return self, latent
-
-# ---------------------------------------------------------------
-
 def check_constraint(obj, model):
     return True
 
@@ -383,125 +220,15 @@ def add_constraint(model, obj):
         #
     )
 
-# def init_shape_constraint(obj, model, data):
-#     return obj
-
-def init_params_constraint(obj, model, state):
-    return obj, ()
-
-def constraint_bindings(**kfs):
+def constraint_bindings(init_params = NO_PARAMS, **kfs):
     def decorator(cls):
         methods = dict(
             check = check_constraint,
             add = add_constraint,
-            # init_shape = init_shape_constraint,
-            init_params = init_params_constraint,
         )
+        kfs["init_params"] = init_params
         return add_bindings(cls, methods, kfs)
     return decorator
-
-# ---------------------------------------------------------------
-
-def loss_mse(l, r):
-    return jax.numpy.square(jax.numpy.subtract(l, r)).mean()
-
-def loss_mse_zero(X1):
-    return jax.numpy.square(X1).mean()
-
-@functools.lru_cache(maxsize=4)
-def loss_mean_zero(axis):
-    def f(X):
-        return loss_mse_zero(X.mean(axis=axis))
-    return f
-
-# ascending just reverse order of xl and xr
-def loss_descending(x):
-    order = jax.numpy.flip(jax.numpy.argsort(x))
-    x_sort = x[order]
-    acc = jax.numpy.cumsum(jax.numpy.flip(x_sort))
-    xl = x_sort[..., :-1]
-    xr = acc[..., 1:]
-    return -1 * jax.numpy.subtract(xl, xr).mean()
-
-def loss_cov_diag(cov, diag):
-    diag = jax.numpy.multiply(
-        jax.numpy.eye(cov.shape[0]), diag
-    )
-    return loss_mse(cov, diag)
-
-def loss_orthogonal(X, scale = 1.):
-    eye = jax.numpy.eye(X.shape[0])
-    XXt = jax.numpy.matmul(X, X.T) / scale
-    # return jax.numpy.square(jax.numpy.subtract(XXt, eye)).mean()
-    return loss_mse(XXt, eye)
-
-# ---------------------------------------------------------------
-
-@constraint_bindings()
-@xt.nTuple.decorate
-class Constraint_MSE(typing.NamedTuple):
-    
-    sites: xt.iTuple
-
-    loc: Location = None
-    shape: xt.iTuple = None
-
-    def apply(self, state):
-        assert self.sites.len() == 2
-        l_site, r_site = self.sites
-        l = get_location(l_site, state)
-        r = get_location(r_site, state)
-        return loss_mse(l, r)
-
-@constraint_bindings()
-@xt.nTuple.decorate
-class Constraint_Orthogonal(typing.NamedTuple):
-    
-    site: xt.iTuple
-
-    loc: Location = None
-    shape: xt.iTuple = None
-
-    def apply(self, state):
-        X = get_location(self.site, state)
-        return loss_orthogonal(X)
-
-@constraint_bindings()
-@xt.nTuple.decorate
-class Constraint_EigenVLike(typing.NamedTuple):
-    
-    sites: xt.iTuple
-
-    loc: Location = None
-    shape: xt.iTuple = None
-
-    eigval_max: bool = True
-
-    n_check: int = None
-
-    def apply(self, state):
-        assert len(self.sites) == 2
-        w_site, f_site = self.sites
-        w = get_location(w_site, state)
-        f = get_location(f_site, state)
-        cov = jax.numpy.cov(f.T)
-        eigvals = jax.numpy.diag(cov)
-        if self.n_check is not None:
-            assert eigvals.shape[0] == self.n_check, (
-                self, eigvals.shape,
-            )
-        res = (
-            + loss_descending(eigvals)
-            + loss_orthogonal(w.T)
-            + loss_mean_zero(0)(f)
-            + loss_cov_diag(cov, eigvals)
-        )
-        if self.eigval_max:
-            return res + (
-                - jax.numpy.sum(jax.numpy.log(1 + eigvals))
-                # ridge penalty to counteract eigval max
-            )
-        return res
 
 # ---------------------------------------------------------------
 
@@ -542,16 +269,25 @@ def init_params(model, data):
 
 # ---------------------------------------------------------------
 
-def init_objective(model, init_params, data):
+# TODO: might be value in multi step inputs?
 
-    # init_results = just inputs (ie. parsed data)
-    # no model results yet
+# ie. for those calcs that only have to be run once?
+
+# or, no, have a caching flag that says they're static, pure function of inputs
+
+# keep the inputs as a separate first layer, that only depends on the values of the data
+# can then have a flag for static operators that only depend on the value of the inputs
+
+# and then the rest are dynamic, eg. value of params (which change during optimisation)
+
+# init_results = just inputs (ie. parsed data)
+# no model results yet
+def init_objective(model, init_params, data):
     init_results = xt.iTuple().append(
         model.stages[0].map(
             operator.methodcaller("apply", (init_params, data,))
         )
     )
-
     def f(params, results):
         results = model.stages[1:].fold(
             lambda res, stage: res.append(stage.map(
@@ -564,7 +300,6 @@ def init_objective(model, init_params, data):
                 operator.methodcaller("apply", (params, results,))
             ).pipe(list)
         ).sum()
-
     return init_results, f
 
 def init_apply(model):
@@ -651,7 +386,7 @@ def optimise_model(
 @xt.nTuple.decorate
 class Model(typing.NamedTuple):
 
-    null: xt.iTuple = xt.iTuple()
+    params: xt.iTuple = xt.iTuple()
     stages: xt.iTuple = xt.iTuple.one(Stage())
     constraints: xt.iTuple = xt.iTuple()
 

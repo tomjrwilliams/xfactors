@@ -3,6 +3,17 @@
 # similar idea to ppca gp
 
 
+# hierarchical means separate mu and covar
+
+# l in lgp means the similarity is over a fitten latent 
+# similarity space
+
+# so we can also have non hierarchical - single similarity space
+# whereas hierarchical we first split on class
+
+
+
+
 # but we fit a separate mean per (presumed non overlapping) label
 
 # h being hierarchical

@@ -2,7 +2,7 @@
 import functools
 import datetime
 
-import xtuples
+import xtuples as xt
 
 def y(y, m = 1):
     return datetime.date(y, m, 1)

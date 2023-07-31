@@ -1,8 +1,4 @@
 
-
-import jax
-
-
 # plot the derivatives as well of the below curves
 # over the domain
 
