@@ -56,6 +56,8 @@ def test_pca():
         numpy.transpose(data[0].values)
     ))
 
+    # multiply by root(eigenval) -> beta?
+
     utils.assert_is_close(
         eigen_val[:3],
         eigvals.real[:3],

@@ -56,7 +56,7 @@ class Weights_Normal(typing.NamedTuple):
     shape: xt.iTuple = None
 
     def init_params(self, model, params):
-        return self, rand.normal(self.shape)
+        return self, rand.gaussian(self.shape)
 
 @xf.operator_bindings()
 @xt.nTuple.decorate
@@ -90,7 +90,7 @@ class Latent(typing.NamedTuple):
     axis: int
     # TODO init: collections.abc.Iterable = None
 
-    # kwargs for specifying the init - orthogonal, normal, etc.
+    # kwargs for specifying the init - orthogonal, gaussian, etc.
 
     loc: xf.Location = None
     shape: xt.iTuple = None
@@ -104,7 +104,7 @@ class Latent(typing.NamedTuple):
             else None
         )
         assert shape_latent is not None, self
-        latent = rand.normal(shape_latent)
+        latent = rand.gaussian(shape_latent)
         return self, latent
 
 

@@ -85,9 +85,9 @@ class PCA_Encoder(typing.NamedTuple):
         if self.site is None:
             return self._replace(
                 site=self.loc.as_param()
-            ), rand.normal(self.shape)
+            ), rand.gaussian(self.shape)
         # TODO: check below, assumes weights generated elsewhere
-        return self, rand.normal(self.shape)
+        return self, rand.gaussian(self.shape)
 
     def apply(self, state):
         weights = xf.get_location(self.site, state)

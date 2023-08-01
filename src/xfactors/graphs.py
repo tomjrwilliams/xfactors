@@ -3,6 +3,7 @@ import itertools
 import functools
 
 import typing
+from xml.etree.ElementInclude import XINCLUDE
 import numpy
 import pandas
 
@@ -12,7 +13,7 @@ from plotly.express.colors import sample_colorscale
 from . import rendering
 from . import densities
 
-import xtuples
+import xtuples as xt
 
 
 # ---------------------------------------------------------------
@@ -261,31 +262,48 @@ def f_df_density_pair_chart(columns, gk, clip_quantile=.01):
     return f
 
 def df_density_pair_chart(
-    df, key="key", clip_quantile=.01, columns = None, facet_col=None, **kwargs
+    df,
+    key="key",
+    clip_quantile=.01,
+    columns = None,
+    excluding=xt.iTuple(),
+    facet_col=None,
+    **kwargs
 ):
+    if facet_col is not None:
+        excluding = excluding.append(facet_col)
+
     if columns is None:
-        columns = df.columns
+        columns = [
+            col for col in df.columns if col not in excluding
+        ]
+
+    f_df = f_df_density_pair_chart(
+        columns, key, clip_quantile=clip_quantile
+    )
 
     if facet_col is not None:
-        # df = ...
-
-        # split and calc and then remerge
-
-        pass
+        by_v = {
+            v: f_df(df[df[facet_col] == v])
+            for v in df[facet_col].unique()
+        }
+        df = pandas.concat([
+            sub_df.assign(**{
+                facet_col: [v for _ in sub_df.index]
+            }) for v, sub_df in by_v.items()
+        ])
+    else:
+        df = f_df(df)
 
     return df_facet_scatter_chart(
         df,
         x="x",
         y="y",
         color="density",
-        facet=key,
-        f_df = f_df_density_pair_chart(
-            columns, key, clip_quantile=clip_quantile
-        ),
         share_x=False,
         share_y=False,
         color_continuous_scale="Blues",
-        
+        facet_row=key,
         facet_col=facet_col,
         **kwargs,
     )

@@ -68,20 +68,15 @@ def follow_path(path, acc):
         lambda acc, i: acc[i], initial=acc
     )
 
+def get_location(loc, acc):
+    return follow_path(loc.path, acc[loc.domain])
+
 def f_follow_path(acc):
     def f(obj):
         if hasattr(obj, "domain"):
             return follow_path(obj.path, acc)
         return follow_path(obj, acc)
     return f
-
-def get_location(loc, acc):
-    # if loc.domain == RESULT and isinstance(acc, Model):
-        # return follow_path(
-        #     (loc.path[0], 0, *loc.path[1:]),
-        #     acc[loc.domain]
-        # )
-    return follow_path(loc.path, acc[loc.domain])
 
 def f_get_location(acc):
     def f(loc):
@@ -114,13 +109,13 @@ class Location(typing.NamedTuple):
         return cls(CONSTRAINT, path)
 
     def as_param(self):
-        return Location(PARAM, *self.path)
+        return Location(PARAM, self.path)
 
     def as_result(self):
-        return Location(RESULT, *self.path)
+        return Location(RESULT, self.path)
 
     def as_constraint(self):
-        return Location(CONSTRAINT, *self.path)
+        return Location(CONSTRAINT, self.path)
 
 Loc = Location
 
@@ -147,8 +142,10 @@ def add_stage(model, stage = None):
     )
 
 # 1 + n as we always have input stage pre-defined
-def init_stages(n):
-    return xt.iTuple.range(1 + n)
+def init_stages(model, n):
+    return xt.iTuple.range(1 + n), model._replace(
+        n_stages=n+1,
+    )
     
 # ---------------------------------------------------------------
 
@@ -165,7 +162,7 @@ def add_input(model, obj):
     stage = model.stages[0]
     return update_stage(
         model, 0, stage.append(obj._replace(
-            loc=Location.result(0, stage.len())
+            loc=Location.model(0, stage.len())
         ))
     )
 
@@ -191,7 +188,7 @@ def add_operator(model, i, obj):
     return update_stage(
         model, i, stage.append(
             obj._replace(
-                loc=Location.result(i, stage.len())
+                loc=Location.model(i, stage.len())
             )
             #
         )
@@ -246,17 +243,18 @@ def init_shapes(model, data):
         initial=model._replace(stages=xt.iTuple()),
     )
 
-def acc_init_params(model, params, stage, data):
-    stage, stage_params = stage.map(
-        operator.methodcaller("init_params", model, data)
-    ).zip().map(xt.iTuple) # zip returns tuple not iTuple
-    return model._replace(
-        stages=model.stages.append(stage),
-    ), params.append(stage_params)
-
 def init_params(model, data):
+
+    def f_acc(model, params, stage, data):
+        stage, stage_params = stage.map(
+            operator.methodcaller("init_params", model, data)
+        ).zip().map(xt.iTuple)
+        return model._replace(
+            stages=model.stages.append(stage),
+        ), params.append(stage_params)
+
     model, params = model.stages.fold(
-        lambda model_params, stage: acc_init_params(
+        lambda model_params, stage: f_acc(
             *model_params, stage, data
         ),
         initial=(
@@ -390,10 +388,14 @@ class Model(typing.NamedTuple):
     stages: xt.iTuple = xt.iTuple.one(Stage())
     constraints: xt.iTuple = xt.iTuple()
 
+    n_stages: int = None
+
     add_input = add_input
     add_stage = add_stage
     add_operator = add_operator
     add_constraint = add_constraint
+
+    init_stages = init_stages
 
     init_shapes = init_shapes
     init_params = init_params
