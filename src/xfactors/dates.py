@@ -17,7 +17,7 @@ def iter_dates(d, n = None, it = 1):
                 yield d
     def f():
         return (
-            xtuples.iTuple.range(n)
+            xt.iTuple.range(n)
             .map(lambda i: d + datetime.timedelta(days=i * it))
         )
     return f()

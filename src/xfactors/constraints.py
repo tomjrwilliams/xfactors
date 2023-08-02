@@ -114,7 +114,7 @@ class Constraint_ElasticNet(typing.NamedTuple):
 
 @xf.constraint_bindings()
 @xt.nTuple.decorate
-class Constraint_LinearCov(typing.NamedTuple):
+class Constraint_KernelVsCov(typing.NamedTuple):
     
     sites: xt.iTuple
 
@@ -164,6 +164,22 @@ class Constraint_Orthogonal(typing.NamedTuple):
 
 @xf.constraint_bindings()
 @xt.nTuple.decorate
+class Constraint_LinearCovar(typing.NamedTuple):
+    
+    sites: xt.iTuple
+
+    loc: xf.Location = None
+    shape: xt.iTuple = None
+
+    def apply(self, state):
+        site_l, site_r = self.sites
+        X = xf.get_location(site_l, state)
+        XXt = jax.numpy.matmul(X, X.T)
+        cov = xf.get_location(site_r, state)
+        return loss_mse(XXt, cov)
+
+@xf.constraint_bindings()
+@xt.nTuple.decorate
 class Constraint_EigenVLike(typing.NamedTuple):
     
     sites: xt.iTuple
@@ -178,10 +194,13 @@ class Constraint_EigenVLike(typing.NamedTuple):
     def apply(self, state):
         assert len(self.sites) == 2
         w_site, f_site = self.sites
+        
         w = xf.get_location(w_site, state)
         f = xf.get_location(f_site, state)
+
         cov = jax.numpy.cov(f.T)
         eigvals = jax.numpy.diag(cov)
+
         if self.n_check is not None:
             assert eigvals.shape[0] == self.n_check, (
                 self, eigvals.shape,

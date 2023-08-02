@@ -27,6 +27,12 @@ from . import dates
 
 # ---------------------------------------------------------------
 
+def return_false(self):
+    return False
+
+def return_true(self):
+    return True
+
 NULL_SHAPE = "NULL_SHAPE"
 NO_PARAMS = "NO_PARAMS"
 
@@ -35,6 +41,7 @@ def init_shape_null(self, model, data):
 
 def init_params_null(obj, model, state):
     return obj, ()
+
 
 def add_bindings(cls, methods, kfs):
     for k, f in kfs.items():
@@ -46,6 +53,10 @@ def add_bindings(cls, methods, kfs):
             methods[k] = f
     for k, f in methods.items():
         setattr(cls, k, f)
+    if not hasattr(cls, "static"):
+        setattr(cls, "static", property(return_false))
+    if not hasattr(cls, "random"):
+        setattr(cls, "random", property(return_false))
     if not hasattr(cls, "init_shape"):
         setattr(cls, "init_shape", init_shape_null)
     if not hasattr(cls, "init_params"):
@@ -143,9 +154,9 @@ def add_stage(model, stage = None):
 
 # 1 + n as we always have input stage pre-defined
 def init_stages(model, n):
-    return xt.iTuple.range(1 + n), model._replace(
+    return model._replace(
         n_stages=n+1,
-    )
+    ), xt.iTuple.range(1 + n),
     
 # ---------------------------------------------------------------
 
@@ -263,74 +274,75 @@ def init_params(model, data):
             #
         )
     )
-    return model, params
+    return model._replace(params=params)
 
 # ---------------------------------------------------------------
 
-# TODO: might be value in multi step inputs?
-
-# ie. for those calcs that only have to be run once?
-
-# or, no, have a caching flag that says they're static, pure function of inputs
-
-# keep the inputs as a separate first layer, that only depends on the values of the data
-# can then have a flag for static operators that only depend on the value of the inputs
-
-# and then the rest are dynamic, eg. value of params (which change during optimisation)
-
-# init_results = just inputs (ie. parsed data)
-# no model results yet
-def init_objective(model, init_params, data):
+def init_objective(model, data):
+    init_params = model.params
     init_results = xt.iTuple().append(
         model.stages[0].map(
             operator.methodcaller("apply", (init_params, data,))
         )
     )
-    def f(params, results):
-        results = model.stages[1:].fold(
+    n_static = model.stages[1:].len_range().last_where(
+        lambda i: model.stages[1 + i].all(lambda o: o.static),
+    )
+    n_static = 0 if n_static is None else n_static + 1
+    # TODO: raise warning if in stage, some static but not all 
+    # or static found in stage after last all static stage
+    init_results = model.stages[1: 1 + n_static].fold(
+        lambda res, stage: res.append(stage.map(
+            operator.methodcaller("apply", (init_params, res,))
+        )),
+        initial=init_results,
+    )
+    def f(params):
+        results = model.stages[1 + n_static:].fold(
             lambda res, stage: res.append(stage.map(
                 operator.methodcaller("apply", (params, res,))
             )),
-            initial=xt.iTuple(results),
+            initial=xt.iTuple(init_results),
         )
         return jax.numpy.stack(
             model.constraints.map(
                 operator.methodcaller("apply", (params, results,))
             ).pipe(list)
         ).sum()
-    return init_results, f
-
-def init_apply(model):
-    def f(params, data, sites = None):
-        # init_results = just inputs (ie. parsed data)
-        # no model results yet
-        init_results = xt.iTuple().append(
-            model.stages[0].map(
-                operator.methodcaller("apply", (params, data,))
-            )
-        )
-        results = model.stages[1:].fold(
-            lambda res, stage: res.append(stage.map(
-                operator.methodcaller("apply", (params, res,))
-            )),
-            initial=init_results,
-        )
-        if sites is None:
-            return results
-        return {
-            k: get_location(s, results)
-            for k, s in sites.items()
-        }
     return f
+
+def apply_model(model, data, params = None, sites = None):
+    if params is None:
+        params = model.params
+    # init_results = just inputs (ie. parsed data)
+    # no model results yet
+    init_results = xt.iTuple().append(
+        model.stages[0].map(
+            operator.methodcaller("apply", (params, data,))
+        )
+    )
+    results = model.stages[1:].fold(
+        lambda res, stage: res.append(stage.map(
+            operator.methodcaller("apply", (params, res,))
+        )),
+        initial=init_results,
+    )
+    if sites is None:
+        return results
+    return {
+        k: get_location(s, results)
+        for k, s in sites.items()
+    }
 
 # ---------------------------------------------------------------
 
 def build_model(model, data):
-    model = model.init_shapes(data)
-    model, params = model.init_params(data)
-    results, objective = model.init_objective(params, data)
-    apply = model.init_apply()
-    return model, params, results, objective, apply
+    model = (
+        model.init_shapes(data)
+        .init_params(data)
+    )
+    objective = model.init_objective(data)
+    return model, objective
 
 def to_tuple_rec(v):
     if isinstance(v, (xt.iTuple, Stage)):
@@ -339,36 +351,33 @@ def to_tuple_rec(v):
 
 def optimise_model(
     model, 
-    params, 
-    results, 
     objective, 
     lr = 0.01,
     iters=1000,
     verbose=True,
 ):
     if not model.constraints.len():
-        return model, params
+        return model
     
     opt = optax.adam(lr)
     solver = jaxopt.OptaxSolver(
         opt=opt, fun=objective, maxiter=iters
     )
 
-    params = params.pipe(to_tuple_rec)
-    results = results.pipe(to_tuple_rec)
+    params = model.params.pipe(to_tuple_rec)
 
-    state = solver.init_state(params, results)
+    state = solver.init_state(params)
 
     for i in range(iters):
         params, state = solver.update(
             params,
             state,
-            results,
         )
-        if i % int(iters / 10) == 0 or i == iters - 1:
-            if verbose: print(i, state.error)
 
         # TODO: early termination if error stops changing
+
+        if i % int(iters / 10) == 0 or i == iters - 1:
+            if verbose: print(i, state.error)
 
     # TODO: for all operators (inputs / constraints) that
     # sepcify they need a key
@@ -377,7 +386,8 @@ def optimise_model(
     # that can be indexed into (expand the function sig to then be:
     # (state, keys)
 
-    return model, params
+    model = model._replace(params=params)
+    return model
 
 # ---------------------------------------------------------------
 
@@ -401,10 +411,11 @@ class Model(typing.NamedTuple):
     init_params = init_params
 
     init_objective = init_objective
-    init_apply = init_apply
 
     build = build_model
     optimise = optimise_model
+
+    apply = apply_model
 
 
 # ---------------------------------------------------------------

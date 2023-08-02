@@ -120,6 +120,7 @@ class PCA_Decoder(typing.NamedTuple):
     def apply(self, state):
         assert len(self.sites) == 2
         l_site, r_site = self.sites
+        weights = l_site
         return jax.numpy.matmul(
             xf.get_location(r_site, state), 
             xf.get_location(l_site, state).T

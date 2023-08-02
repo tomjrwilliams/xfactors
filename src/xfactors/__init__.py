@@ -31,4 +31,5 @@ from . import rand
 from . import reg
 from . import rendering
 from . import samples
+from . import stats
 from .xfactors import *

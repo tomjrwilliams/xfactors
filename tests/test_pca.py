@@ -5,36 +5,32 @@ import numpy
 import pandas
 
 import xtuples as xt
-
-from src.xfactors import rand
-from src.xfactors import dates
-from src.xfactors import xfactors as xf
+import src.xfactors as xf
 
 from tests import utils
 
 def test_pca():
 
-    ds = dates.starting(datetime.date(2020, 1, 1), 100)
+    ds = xf.dates.starting(datetime.date(2020, 1, 1), 100)
 
-    vs_norm = rand.normal((100, 3,))
-    betas = rand.normal((3, 5,))
+    vs_norm = xf.rand.gaussian((100, 3,))
+    betas = xf.rand.gaussian((3, 5,))
     vs = numpy.matmul(vs_norm, betas)
 
     data = (
         pandas.DataFrame({
-            f: dates.dated_series({d: v for d, v in zip(ds, fvs)})
+            f: xf.dates.dated_series({d: v for d, v in zip(ds, fvs)})
             for f, fvs in enumerate(numpy.array(vs).T)
         }),
     )
-
-    STAGES = xf.init_stages(1)
+    
+    model, STAGES = xf.Model().init_stages(1)
     INPUT, PCA = STAGES
 
-    model, params, results, objective, apply = (
-        xf.Model()
-        .add_input(xf.Input_DataFrame_Wide())
+    model, objective = (
+        model.add_input(xf.inputs.Input_DataFrame_Wide())
         .add_stage()
-        .add_operator(PCA, xf.PCA(
+        .add_operator(PCA, xf.pca.PCA(
             n=3,
             sites=xt.iTuple.one(
                 xf.Loc.result(INPUT, 0),
@@ -44,10 +40,9 @@ def test_pca():
         .build(data)
     )
 
-    model, params = model.optimise(
-        params, results, objective, verbose=False
-    )
-    results = apply(params, data)
+    model = model.optimise(objective)
+    results = model.apply(data)
+    params = model.params
     
     eigen_val = results[PCA][0][0]
     eigen_vec = results[PCA][0][1]

@@ -28,6 +28,10 @@ from . import xfactors as xf
 
 # ---------------------------------------------------------------
 
+# TODO: if eg. learning factor path over specific dates
+# then here is where we encode that restriction
+# specific stock universe, etc.
+
 @xf.input_bindings()
 @xt.nTuple.decorate
 class Input_DataFrame_Wide(typing.NamedTuple):
