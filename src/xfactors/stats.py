@@ -48,10 +48,7 @@ class Cov(typing.NamedTuple):
         )
 
     def apply(self, state):
-        data = jax.numpy.concatenate(
-            self.sites.map(xf.f_get_location(state)),
-            axis=1,
-        )
+        data = xf.concatenate_sites(self.sites, state, axis = 1)
         res = jax.numpy.cov(
             jax.numpy.transpose(data)
         )

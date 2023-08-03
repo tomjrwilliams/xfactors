@@ -208,6 +208,32 @@ class Constraint_KernelVsCov(typing.NamedTuple):
 
 @xf.constraint_bindings()
 @xt.nTuple.decorate
+class Constraint_MaxSpread(typing.NamedTuple):
+    
+    sites: xt.iTuple
+
+    loc: xf.Location = None
+    shape: xt.iTuple = None
+
+    T: bool = False
+
+    def apply(self, state):
+        data = xf.concatenate_sites(self.sites, state)
+        if self.T:
+            data = data.T
+        data = xf.expand_dims(data, 0, data.shape[0])
+        dataT = jax.numpy.transpose(
+            data, (1, 0, 2,)
+        )
+        delta = jax.numpy.abs(
+            jax.numpy.subtract(data, dataT)
+        ).sum(axis=-1)
+        return -1 * delta.mean()
+
+# ---------------------------------------------------------------
+
+@xf.constraint_bindings()
+@xt.nTuple.decorate
 class Constraint_MSE(typing.NamedTuple):
     
     sites: xt.iTuple

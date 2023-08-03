@@ -62,10 +62,13 @@ def test_lgp():
     )
     cov = numpy.divide(
         cov, 
-        numpy.resize(
-            numpy.expand_dims(cov.sum(axis=1), axis=1),
-            cov.shape,
-        )
+        xf.expand_dims_like(
+            cov.sum(axis=1), axis=1, like=cov
+        ),
+        # numpy.resize(
+        #     numpy.expand_dims(cov.sum(axis=1), axis=1),
+        #     cov.shape,
+        # )
     )
 
     vs = xf.rand.v_mv_gaussian(

@@ -197,9 +197,13 @@ class GP_RBF(typing.NamedTuple):
 
         assert data.shape[1] == n_variables
 
-        features_matrix = jax.numpy.resize(jax.numpy.expand_dims(
-            features, axis=0
-        ), (features.shape[0], *features.shape,))
+        features_matrix = xf.expand_dims(
+            features, axis = 0, size = features.shape[0]
+        )
+
+        # features_matrix = jax.numpy.resize(jax.numpy.expand_dims(
+        #     features, axis=0
+        # ), (features.shape[0], *features.shape,))
 
         features_l = jax.numpy.reshape(
             features_matrix,

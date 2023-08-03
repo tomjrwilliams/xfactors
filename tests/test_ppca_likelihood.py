@@ -15,13 +15,6 @@ def test_ppca():
     N = 3
 
     ds = xf.dates.starting(datetime.date(2020, 1, 1), 100)
-    
-    # scale = numpy.exp(xf.rand.gaussian((N,)))
-    # scale = numpy.resize(
-    #     numpy.expand_dims(scale, 0),
-    #     (100, N,)
-    # )
-    # vs_norm = numpy.multiply(xf.rand.gaussian((100, N,)), scale)
 
     vs_norm = xf.rand.gaussian((100, N,))
 

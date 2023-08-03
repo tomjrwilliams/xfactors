@@ -32,10 +32,11 @@ from . import xfactors as xf
 
 def calc_loadings(eigvals, eigvecs):
     return jax.numpy.multiply(
-        jax.numpy.resize(
-            jax.numpy.expand_dims(eigvals, 0),
-            eigvecs.shape,
-        ),
+        # jax.numpy.resize(
+        #     jax.numpy.expand_dims(eigvals, 0),
+        #     eigvecs.shape,
+        # ),
+        xf.expand_dims_like(eigvals, axis=0, like=eigvecs),
         eigvecs,
     )
 
@@ -61,10 +62,7 @@ class PCA(typing.NamedTuple):
         )
 
     def apply(self, state):
-        data = jax.numpy.concatenate(
-            self.sites.map(xf.f_get_location(state)),
-            axis=1,
-        )
+        data = xf.concatenate_sites(self.sites, state, axis = 1)
         eigvals, weights = jax.numpy.linalg.eig(jax.numpy.cov(
             jax.numpy.transpose(data)
         ))
@@ -230,7 +228,6 @@ class PPCA_NegLikelihood(typing.NamedTuple):
 @xf.operator_bindings()
 @xt.nTuple.decorate
 class PPCA_EM(typing.NamedTuple):
-    # tb = tipping biship
     
     site_sigma: xf.Location
     sites_weights: xt.iTuple
@@ -246,6 +243,11 @@ class PPCA_EM(typing.NamedTuple):
 
     random: float = 0
 
+    # NOTE: we just need covariance here
+
+    # so we can pass this from a kernel function
+    # if we want
+
     def apply(self, state, small = 10 ** -4):
         # https://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.pdf
 
@@ -255,13 +257,14 @@ class PPCA_EM(typing.NamedTuple):
         weights = xf.concatenate_sites(self.sites_weights, state)
         cov = xf.get_location(self.site_cov, state) # of obs
 
-        if self.random:
-            key = xf.get_location(
-                self.loc.as_random(), state
-            )
-            weights = weights + ((
-                jax.random.normal(key, shape=weights.shape)
-            ) * self.random)
+        # use noisy_sgd instead of random
+        # if self.random:
+        #     key = xf.get_location(
+        #         self.loc.as_random(), state
+        #     )
+        #     weights = weights + ((
+        #         jax.random.normal(key, shape=weights.shape)
+        #     ) * self.random)
 
         # feature * feature
         S = cov

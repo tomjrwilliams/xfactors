@@ -2,8 +2,6 @@
 
 import jax.numpy
 
-def unsqueeze(X, axis = -1):
-    return jax.numpy.expand_dims(X, axis)
 
 # ---------------------------------------------------------------
 
@@ -71,21 +69,6 @@ def random_orthogonal(shape, n):
     ).squeeze().squeeze()
     yield from random_sample(n, f)
 
-# ---------------------------------------------------------------
-
-def norm_gaussian(v, n_sample_dims = None):
-    if n_sample_dims is None:
-        n_sample_dims = len(v.shape)
-    dims = tuple(range(len(v.shape)))[-n_sample_dims:]
-    mag = jax.numpy.sqrt(jax.numpy.sum(jax.numpy.square(v), dims))
-    for _ in range(n_sample_dims):
-        mag = jax.numpy.expand_dims(mag, -1)
-    mag = jax.numpy.resize(mag, v.shape)
-    return jax.numpy.divide(v, mag)
-
-def uniform_spherical(shape, n = 1):
-    for sample in random_normal(shape, n):
-        yield norm_gaussian(sample)
 
 # ---------------------------------------------------------------
 

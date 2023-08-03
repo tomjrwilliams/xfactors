@@ -27,6 +27,35 @@ import xtuples as xt
 from . import rand
 from . import dates
 
+
+# ---------------------------------------------------------------
+
+def expand_dims(v, axis, size):
+    v_expand = jax.numpy.expand_dims(v, axis)
+    if axis == -1:
+        axis = len(v_expand.shape) - 1
+    res = jax.numpy.tile(
+        v_expand,
+        tuple([
+            *[1 for _ in v.shape[:axis]],
+            size,
+            *[1 for _ in v.shape[axis:]],
+        ])
+    )
+    return res
+
+def expand_dims_like(v, axis, like):
+    v_expand = jax.numpy.expand_dims(v, axis)
+    if axis == -1:
+        axis = len(v_expand.shape) - 1
+    return jax.numpy.tile(
+        v_expand,
+        tuple([
+            *[1 for _ in v.shape[:axis]],
+            like.shape[axis],
+            *[1 for _ in v.shape[axis:]],
+        ])
+    )
 # ---------------------------------------------------------------
 
 def return_false(self):
@@ -459,13 +488,13 @@ def init_optimisation(
 def optimise_model(
     model, 
     data,
-    lr = 0.01,
     iters=1000,
     verbose=True,
     jit=True,
     rand_init=0,
     max_error_unchanged=None,
-    em = False,
+    lr = 0.01,
+    opt=None,
 ):
 
     if not model.constraints.len():
@@ -478,15 +507,14 @@ def optimise_model(
         jit=jit,
     )
 
-    if not em:
+    if opt is None:
         opt = optax.adam(lr)
-        solver = jaxopt.OptaxSolver(
-            opt=opt, fun=objective, maxiter=iters, jit=jit
-        )
-    else:
-        solver = jaxopt.GradientDescent(
-            fun=objective, maxiter=iters, jit=jit,
-        )
+    
+    # NOTE: use optax.sgd(1) for em algos
+
+    solver = jaxopt.OptaxSolver(
+        opt=opt, fun=objective, maxiter=iters, jit=jit
+    )
     state = solver.init_state(params) 
 
     error = None

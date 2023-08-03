@@ -4,6 +4,7 @@ import datetime
 import numpy
 import pandas
 import jax
+import optax
 
 import xtuples as xt
 import src.xfactors as xf
@@ -15,14 +16,6 @@ def test_ppca():
     N = 3
 
     ds = xf.dates.starting(datetime.date(2020, 1, 1), 100)
-
-    # scale = numpy.exp(xf.rand.gaussian((N,)))
-    # scale = numpy.resize(
-    #     numpy.expand_dims(scale, 0),
-    #     (100, N,)
-    # )
-    # vs_norm = numpy.multiply(xf.rand.gaussian((100, N,)), scale)
-
     vs_norm = xf.rand.gaussian((100, N,))
 
     betas = xf.rand.gaussian((N, 5,))
@@ -71,7 +64,7 @@ def test_ppca():
             ),
             site_cov=xf.Loc.result(COV, 0),
             train=True,
-            random=0.01,
+            # random=0.01,
         ))
         .add_constraint(xf.constraints.Constraint_Orthonormal(
             sites=xf.xt.iTuple.one(
@@ -86,6 +79,7 @@ def test_ppca():
             sites_optimal=xt.iTuple.one(
                 xf.Loc.result(EM, 0, 0)
             ),
+            # cut_tree=True,
         ))
         .add_constraint(xf.constraints.Constraint_EM(
             sites_param=xt.iTuple.one(
@@ -94,6 +88,7 @@ def test_ppca():
             sites_optimal=xt.iTuple.one(
                 xf.Loc.result(EM, 0, 1)
             ),
+            # cut_tree=True,
         ))
         .init_shapes_params(data)
     )
@@ -102,6 +97,8 @@ def test_ppca():
         data,
         iters = 2500,
         max_error_unchanged = 500,
+        # opt = optax.sgd(.1),
+        opt=optax.noisy_sgd(.1),
     )
     results = model.apply(data)
     params = model.params
