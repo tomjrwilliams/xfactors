@@ -30,6 +30,15 @@ from . import xfactors as xf
 # from jax.config import config 
 # config.update("jax_debug_nans", True) 
 
+def calc_loadings(eigvals, eigvecs):
+    return jax.numpy.multiply(
+        jax.numpy.resize(
+            jax.numpy.expand_dims(eigvals, 0),
+            eigvecs.shape,
+        ),
+        eigvecs,
+    )
+
 # ---------------------------------------------------------------
 
 @xf.operator_bindings()
@@ -71,6 +80,7 @@ class PCA_Encoder(typing.NamedTuple):
 
     loc: xf.Location = None
     shape: xt.iTuple = None
+    train: bool = None
 
     def init_shape(self, model, data):
         objs = self.sites.map(xf.f_get_location(model))
@@ -91,13 +101,8 @@ class PCA_Encoder(typing.NamedTuple):
 
     def apply(self, state):
         weights = xf.get_location(self.site, state)
-        return jax.numpy.matmul(
-            jax.numpy.concatenate(
-                self.sites.map(xf.f_get_location(state)),
-                axis=1,
-            ),
-            weights,
-        )
+        data = xf.concatenate_sites(self.sites, state, axis = 1)
+        return jax.numpy.matmul(data, weights)
 
 
 @xf.operator_bindings()
@@ -116,15 +121,14 @@ class PCA_Decoder(typing.NamedTuple):
 
     loc: xf.Location = None
     shape: xt.iTuple = None
+    train: bool = None
 
     def apply(self, state):
         assert len(self.sites) == 2
         l_site, r_site = self.sites
-        weights = l_site
-        return jax.numpy.matmul(
-            xf.get_location(r_site, state), 
-            xf.get_location(l_site, state).T
-        )
+        weights = xf.get_location(r_site, state)
+        data = xf.get_location(l_site, state)
+        return jax.numpy.matmul(weights, data.T)
 
 @xf.operator_bindings()
 @xt.nTuple.decorate
@@ -149,26 +153,245 @@ class VMap_PCA_Decoder(typing.NamedTuple):
 
 @xf.operator_bindings()
 @xt.nTuple.decorate
-class PPCA_EM_E(typing.NamedTuple):
+class PPCA_NegLikelihood(typing.NamedTuple):
     
-    sites: xt.iTuple
+    site_sigma: xf.Location
+    sites_weights: xt.iTuple
+    # site_encoder: xf.Location
+
+    site_cov: xf.Location
+
+    # ---
 
     loc: xf.Location = None
     shape: xt.iTuple = None
+    train: bool = None
 
-    def apply(self, state):
-        assert False, self
+    # NOTE: direct minimisation with gradient descent
+    # doesn't seem to recover pca weights
+
+    random: float = 0
+
+    def apply(self, state, small = 10 ** -4):
+        # https://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.pdf
+
+        sigma = xf.get_location(self.site_sigma, state)
+        sigma_sq = jax.numpy.square(sigma)
+
+        weights = xf.concatenate_sites(self.sites_weights, state)
+        cov = xf.get_location(self.site_cov, state) # of obs
+    
+        # N = xf.get_location(self.site_encoder, state).shape[0]
+
+        # feature * feature
+        S = cov
+        # d = weights.shape[0] # n_features
+
+        if self.random:
+            key = xf.get_location(
+                self.loc.as_random(), state
+            )
+            weights = weights + ((
+                jax.random.normal(key, shape=weights.shape)
+            ) * self.random)
+    
+        W = weights
+        
+        noise = jax.numpy.eye(weights.shape[0]) * sigma_sq
+        C = jax.numpy.add(
+            jax.numpy.matmul(weights, weights.T),
+            noise
+        )
+        # noise = jax.numpy.eye(weights.shape[1]) * sigma_sq
+        # M = jax.numpy.add(
+        #     jax.numpy.matmul(weights.T, weights),
+        #     noise
+        # )
+        # invM = jax.numpy.linalg.inv(M)
+
+        detC = jax.numpy.linalg.det(C)
+        invC = jax.numpy.linalg.inv(C)
+
+        invC_S = jax.numpy.matmul(invC, S)
+        trace_invC_S = jax.numpy.trace(invC_S)
+
+        # max this (dropped the * N)
+        L = - (
+            # + (d * jax.numpy.log(2 * numpy.pi))
+            + jax.numpy.log(detC) + trace_invC_S
+        ) / 2
+        # so min neg(L)
+
+        return -L
+
+        
+# ---------------------------------------------------------------
 
 @xf.operator_bindings()
 @xt.nTuple.decorate
-class PPCA_EM_M(typing.NamedTuple):
+class PPCA_EM(typing.NamedTuple):
+    # tb = tipping biship
     
-    sites: xt.iTuple
+    site_sigma: xf.Location
+    sites_weights: xt.iTuple
+    # site_encoder: xf.Location
+
+    site_cov: xf.Location
+
+    # ---
 
     loc: xf.Location = None
     shape: xt.iTuple = None
+    train: bool = None
 
-    def apply(self, state):
-        assert False, self
+    random: float = 0
+
+    def apply(self, state, small = 10 ** -4):
+        # https://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.pdf
+
+        sigma = xf.get_location(self.site_sigma, state)
+        sigma_sq = jax.numpy.square(sigma)
+
+        weights = xf.concatenate_sites(self.sites_weights, state)
+        cov = xf.get_location(self.site_cov, state) # of obs
+
+        if self.random:
+            key = xf.get_location(
+                self.loc.as_random(), state
+            )
+            weights = weights + ((
+                jax.random.normal(key, shape=weights.shape)
+            ) * self.random)
+
+        # feature * feature
+        S = cov
+        d = weights.shape[0] # n_features
+
+        W = weights
+
+        mm = jax.numpy.matmul
+
+        noise = jax.numpy.eye(weights.shape[1]) * sigma_sq
+        M = mm(W.T, W) + noise
+
+        invM = jax.numpy.linalg.inv(M)
+
+        # M = factor by factor
+        # C = feature by feature
+
+        SW = mm(S, W)
+
+        W_new = mm(SW, jax.numpy.linalg.inv(
+            noise + mm(mm(invM, W.T), SW)
+        ))
+        
+        sigma_sq_new = (1 / d) * jax.numpy.trace(
+            jax.numpy.subtract(S, mm(
+                SW, mm(invM, W_new.T)
+            ))
+        )
+
+        return W_new, jax.numpy.sqrt(sigma_sq_new + small)
+
+# ---------------------------------------------------------------
+
+@xf.operator_bindings()
+@xt.nTuple.decorate
+class PPCA_Marginal_Observations(typing.NamedTuple):
+    
+    site_sigma: xf.Location
+    sites_weights: xt.iTuple
+    site_encoder: xf.Location
+    site_date: xf.Location
+
+    site_cov: xf.Location
+
+    # ---
+
+    loc: xf.Location = None
+    shape: xt.iTuple = None
+    train: bool = None
+
+    random: float = 0
+
+    def apply(self, state, small = 10 ** -4):
+        # https://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.pdf
+
+        sigma = xf.get_location(self.site_sigma, state)
+        sigma_sq = jax.numpy.square(sigma)
+
+        weights = xf.concatenate_sites(self.sites_weights, state)
+        cov = xf.get_location(self.site_cov, state) # of obs
+
+        data = xf.get_location(self.site_data, state)
+    
+        # N = xf.get_location(self.site_encoder, state).shape[0]
+
+        # feature * feature
+        S = cov
+        # d = weights.shape[0] # n_features
+
+        noise = sigma_sq * jax.numpy.eye(weights.shape[0])
+
+        C = jax.numpy.matmul(weights, weights.T) + noise
+        mu = jax.numpy.zeros(weights.shape[0])
+
+        dist = distrax.MultivariateNormalFullCovariance(mu, C)
+
+        return dist.log_prob(data)
+
+@xf.operator_bindings()
+@xt.nTuple.decorate
+class PPCA_Conditional_Latents(typing.NamedTuple):
+    
+    site_sigma: xf.Location
+    sites_weights: xt.iTuple
+    site_encoder: xf.Location
+    site_date: xf.Location
+
+    site_cov: xf.Location
+
+    # ---
+
+    loc: xf.Location = None
+    shape: xt.iTuple = None
+    train: bool = None
+
+    random: float = 0
+
+    def apply(self, state, small = 10 ** -4):
+        # https://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.pdf
+
+        sigma = xf.get_location(self.site_sigma, state)
+        sigma_sq = jax.numpy.square(sigma)
+
+        weights = xf.concatenate_sites(self.sites_weights, state)
+        cov = xf.get_location(self.site_cov, state) # of obs
+
+        data = xf.get_location(self.site_data, state)
+    
+        # N = xf.get_location(self.site_encoder, state).shape[0]
+
+        # feature * feature
+        S = cov
+        # d = weights.shape[0] # n_features
+        factors = xf.get_location(self.site_encoder, state)
+        
+        mu = jax.numpy.zeros(weights.shape[0]) # obs mu
+
+        noise = jax.numpy.eye(weights.shape[1]) * sigma_sq
+
+        mm = jax.numpy.matmul
+
+        W = weights
+        M = mm(weights.T, weights) + noise
+        M_inv = jax.numpy.linalg.inv(M)
+
+        # will need to expand mu to match shape of data
+        dist = distrax.MultivariateNormalFullCovariance(
+            mm(mm(M_inv, W.T), data - mu),
+            sigma_sq * M_inv
+        )
+        return dist.log_prob(factors)
 
 # ---------------------------------------------------------------

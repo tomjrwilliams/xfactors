@@ -46,7 +46,7 @@ class Input_DataFrame_Wide(typing.NamedTuple):
         )
     
     def apply(self, state):
-        params, data = state
+        _, data, _, _ = state
         df = data[self.loc.path[-1]]
         return jax.numpy.array(df.values)
 
@@ -66,7 +66,7 @@ class Input_DataFrame_Tall(typing.NamedTuple):
         )
     
     def apply(self, state):
-        params, data = state
+        _, data, _, _ = state
         df = data[self.loc.path[-1]]
         return jax.numpy.array(df.values)
 

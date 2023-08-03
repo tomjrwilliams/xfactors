@@ -31,11 +31,9 @@ def test_linreg():
     model, STAGES = xf.Model().init_stages(1)
     INPUT, REGRESS = STAGES
 
-    model, objective = (
-        xf.Model()
+    model = (
+        model.add_input(xf.inputs.Input_DataFrame_Wide())
         .add_input(xf.inputs.Input_DataFrame_Wide())
-        .add_input(xf.inputs.Input_DataFrame_Wide())
-        .add_stage()
         .add_operator(REGRESS, xf.reg.Lin_Reg(
             n=1,
             sites=xt.iTuple.one(
@@ -49,12 +47,12 @@ def test_linreg():
                 xf.Loc.result(REGRESS, 0),
             )
         ))
-        .build(data)
+        .init_shapes_params(data)
     )
 
     betas_pre = model.params[REGRESS][0].T
 
-    model = model.optimise(objective)
+    model = model.optimise(data)
     results = model.apply(data)
     params = model.params
 

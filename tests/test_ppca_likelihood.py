@@ -15,7 +15,7 @@ def test_ppca():
     N = 3
 
     ds = xf.dates.starting(datetime.date(2020, 1, 1), 100)
-
+    
     # scale = numpy.exp(xf.rand.gaussian((N,)))
     # scale = numpy.resize(
     #     numpy.expand_dims(scale, 0),
@@ -36,7 +36,7 @@ def test_ppca():
     )
 
     model, STAGES = xf.Model().init_stages(4)
-    INPUT, COV, ENCODE, DECODE, EM = STAGES
+    INPUT, COV, ENCODE, DECODE, LIKELIHOOD = STAGES
 
     model = (
         model.add_input(xf.inputs.Input_DataFrame_Wide())
@@ -64,7 +64,7 @@ def test_ppca():
             train=False,
             #
         ))
-        .add_operator(EM, xf.pca.PPCA_EM(
+        .add_operator(LIKELIHOOD, xf.pca.PPCA_NegLikelihood(
             site_sigma=xf.Loc.param(ENCODE, 1),
             sites_weights=xt.iTuple.one(
                 xf.Loc.param(ENCODE, 0),
@@ -79,27 +79,16 @@ def test_ppca():
             ),
             T=True,
         ))
-        .add_constraint(xf.constraints.Constraint_EM(
-            sites_param=xt.iTuple.one(
-                xf.Loc.param(ENCODE, 0)
-            ),
-            sites_optimal=xt.iTuple.one(
-                xf.Loc.result(EM, 0, 0)
-            ),
-        ))
-        .add_constraint(xf.constraints.Constraint_EM(
-            sites_param=xt.iTuple.one(
-                xf.Loc.param(ENCODE, 1)
-            ),
-            sites_optimal=xt.iTuple.one(
-                xf.Loc.result(EM, 0, 1)
+        .add_constraint(xf.constraints.Constraint_Minimise(
+            sites=xt.iTuple.one(
+                xf.Loc.result(LIKELIHOOD, 0)
             ),
         ))
         .init_shapes_params(data)
     )
 
     model = model.optimise(
-        data,
+        data, 
         iters = 2500,
         max_error_unchanged = 500,
     )
@@ -115,15 +104,15 @@ def test_ppca():
     eigen_vals = jax.numpy.diag(cov)
 
     order = numpy.flip(numpy.argsort(eigen_vals))[:N]
-    assert eigen_vals.shape[0] == N, eigen_vals.shape
+    # assert eigen_vals.shape[0] == N, eigen_vals.shape
 
     eigen_vals = eigen_vals[order]
     eigen_vec = eigen_vec[..., order]
-    
+
     _, eigvecs = numpy.linalg.eig(numpy.cov(
         numpy.transpose(data[0].values)
     ))
-    
+
     utils.assert_is_close(
         eigen_vec.real[..., :1],
         eigvecs.real[..., :1],

@@ -30,16 +30,13 @@ def test_ppca():
     model, STAGES = xf.Model().init_stages(3)
     INPUT, COV, ENCODE, DECODE = STAGES
 
-    model, objective = (
-        xf.Model()
-        .add_input(xf.inputs.Input_DataFrame_Wide())
-        .add_stage()
+    model = (
+        model.add_input(xf.inputs.Input_DataFrame_Wide())
         .add_operator(COV, xf.stats.Cov(
             sites=xt.iTuple.one(
                 xf.Loc.result(INPUT, 0),
             ), static=True,
         ))
-        .add_stage()
         .add_operator(ENCODE, xf.pca.PCA_Encoder(
             sites=xt.iTuple.one(
                 xf.Loc.result(INPUT, 0),
@@ -47,7 +44,6 @@ def test_ppca():
             n=N + 1,
             #
         ))
-        .add_stage()
         .add_operator(DECODE, xf.pca.PCA_Decoder(
             sites=xt.iTuple(
                 xf.Loc.param(ENCODE, 0),
@@ -55,15 +51,6 @@ def test_ppca():
             )
             #
         ))
-        # .add_constraint(xf.constraints.Constraint_Orthogonal(
-        #     site=xf.Loc.param(ENCODE, 0),
-        # ))
-        # .add_constraint(xf.constraints.Constraint_LinearCovar(
-        #     sites=xt.iTuple(
-        #         xf.Loc.param(ENCODE, 0),
-        #         xf.Loc.result(COV, 0),
-        #     )
-        # ))
         .add_constraint(xf.constraints.Constraint_MSE(
             sites=xt.iTuple(
                 xf.Loc.result(INPUT, 0),
@@ -77,10 +64,10 @@ def test_ppca():
             ),
             n_check=N + 1,
         ))
-        .build(data)
+        .init_shapes_params(data)
     )
 
-    model = model.optimise(objective)
+    model = model.optimise(data)
     results = model.apply(data)
     params = model.params
 

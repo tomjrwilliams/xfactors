@@ -6,6 +6,7 @@ import collections
 
 import functools
 import itertools
+from re import A
 
 import typing
 import datetime
@@ -18,6 +19,7 @@ import jax.numpy
 import jax.numpy.linalg
 
 import jaxopt
+import jaxopt.perturbations
 import optax
 
 import xtuples as xt
@@ -41,7 +43,6 @@ def init_shape_null(self, model, data):
 
 def init_params_null(obj, model, state):
     return obj, ()
-
 
 def add_bindings(cls, methods, kfs):
     for k, f in kfs.items():
@@ -72,6 +73,7 @@ def check_location(loc):
 PARAM = 0
 RESULT = 1
 CONSTRAINT = 2
+RANDOM = 3
 
 # as we can follow paths through the model
 def follow_path(path, acc):
@@ -80,7 +82,12 @@ def follow_path(path, acc):
     )
 
 def get_location(loc, acc):
-    return follow_path(loc.path, acc[loc.domain])
+    try:
+        return follow_path(loc.path, acc[(
+            RESULT if loc.domain is None else loc.domain
+        )])
+    except:
+        assert False, loc
 
 def f_follow_path(acc):
     def f(obj):
@@ -93,6 +100,16 @@ def f_get_location(acc):
     def f(loc):
         return get_location(loc, acc)
     return f
+
+def concatenate_sites(sites, state, **kws):
+    if len(sites) == 1:
+        return get_location(*sites, state)
+    return jax.numpy.concatenate(
+        sites.map(f_get_location(state)),
+        **kws,
+    )
+
+# ---------------------------------------------------------------
 
 @xt.nTuple.decorate
 class Location(typing.NamedTuple):
@@ -118,6 +135,12 @@ class Location(typing.NamedTuple):
     @classmethod
     def constraint(cls, *path):
         return cls(CONSTRAINT, path)
+
+    def as_random(self):
+        return Location(RANDOM, self.path)
+
+    def as_model(self):
+        return Location(None, self.path)
 
     def as_param(self):
         return Location(PARAM, self.path)
@@ -154,9 +177,9 @@ def add_stage(model, stage = None):
 
 # 1 + n as we always have input stage pre-defined
 def init_stages(model, n):
-    return model._replace(
-        n_stages=n+1,
-    ), xt.iTuple.range(1 + n),
+    return xt.iTuple.range(n).map(lambda i: None).fold(
+        add_stage, initial=model
+    ), xt.iTuple.range(n + 1)
     
 # ---------------------------------------------------------------
 
@@ -278,11 +301,12 @@ def init_params(model, data):
 
 # ---------------------------------------------------------------
 
-def init_objective(model, data):
+def init_objective(model, data, rand_keys, jit = True):
     init_params = model.params
     init_results = xt.iTuple().append(
         model.stages[0].map(
-            operator.methodcaller("apply", (init_params, data,))
+            operator.methodcaller(
+                "apply", (init_params, data, (), rand_keys))
         )
     )
     n_static = model.stages[1:].len_range().last_where(
@@ -293,37 +317,60 @@ def init_objective(model, data):
     # or static found in stage after last all static stage
     init_results = model.stages[1: 1 + n_static].fold(
         lambda res, stage: res.append(stage.map(
-            operator.methodcaller("apply", (init_params, res,))
+            operator.methodcaller(
+                "apply", (init_params, res, (), rand_keys)
+            )
         )),
         initial=init_results,
     )
-    def f(params):
+    def f(params, rand_keys):
         results = model.stages[1 + n_static:].fold(
             lambda res, stage: res.append(stage.map(
-                operator.methodcaller("apply", (params, res,))
+                operator.methodcaller(
+                    "apply", (params, res, (), rand_keys)
+                )
             )),
             initial=xt.iTuple(init_results),
         )
-        return jax.numpy.stack(
+        loss = jax.numpy.stack(
             model.constraints.map(
-                operator.methodcaller("apply", (params, results,))
+                operator.methodcaller(
+                    "apply", (params, results, (), rand_keys)
+                )
             ).pipe(list)
         ).sum()
+        return loss
+    if jit:
+        return jax.jit(f)
     return f
 
-def apply_model(model, data, params = None, sites = None):
+def apply_model(
+    model,
+    data,
+    rand_keys=None,
+    params = None,
+    sites = None
+):
     if params is None:
         params = model.params
+
+    if rand_keys is None:
+        rand_keys, _ = gen_rand_keys(model)
+
     # init_results = just inputs (ie. parsed data)
     # no model results yet
     init_results = xt.iTuple().append(
         model.stages[0].map(
-            operator.methodcaller("apply", (params, data,))
+            operator.methodcaller(
+                "apply", (params, data, (), rand_keys)
+            )
         )
     )
     results = model.stages[1:].fold(
         lambda res, stage: res.append(stage.map(
-            operator.methodcaller("apply", (params, res,))
+            operator.methodcaller(
+                "apply", (params, res, (), rand_keys)
+            )
         )),
         initial=init_results,
     )
@@ -336,48 +383,147 @@ def apply_model(model, data, params = None, sites = None):
 
 # ---------------------------------------------------------------
 
-def build_model(model, data):
+def gen_rand_keys(model):
+    ks = model.stages.map(
+        lambda stage: stage.map(
+            lambda o: (
+                rand.next_key() if o.random else None
+            )
+        )
+    )
+    n_keys = sum(ks.map(lambda sks: sks.filter(
+        lambda v: v is not None
+    ).len()))
+    return ks.pipe(to_tuple_rec), n_keys
+
+# ---------------------------------------------------------------
+
+def init_shapes_params(model, data):
     model = (
         model.init_shapes(data)
         .init_params(data)
     )
-    objective = model.init_objective(data)
-    return model, objective
+    return model
 
 def to_tuple_rec(v):
     if isinstance(v, (xt.iTuple, Stage)):
         return v.map(to_tuple_rec).pipe(tuple)
     return v
 
+def has_nan(v):
+    if isinstance(v, tuple):
+        return any([has_nan(vv) for vv in v])
+    return numpy.isnan(v).any()
+
+def init_optimisation(
+    model,
+    data,
+    jit=True,
+    rand_init=0,
+):
+    
+    test_loss = None
+    params = objective = None
+
+    for _ in range(rand_init + 1):
+        
+        _params = (
+            model.params
+            if params is None
+            else model.init_params(data).params
+        ).pipe(to_tuple_rec)
+
+        rand_keys, _ = gen_rand_keys(model)
+
+        _objective = init_objective(
+            model._replace(params=_params),
+            data,
+            rand_keys=rand_keys,
+            jit = jit,
+        )
+
+        f_grad = jax.value_and_grad(_objective)
+        _test_loss, test_grad = f_grad(
+            _params, rand_keys,
+        )
+
+        assert not has_nan(test_grad), (test_loss, test_grad,)
+
+        if test_loss is None or _test_loss < test_loss:
+            test_loss = _test_loss
+            params = _params
+            objective = _objective
+
+    return params, objective
+
 def optimise_model(
     model, 
-    objective, 
+    data,
     lr = 0.01,
     iters=1000,
     verbose=True,
+    jit=True,
+    rand_init=0,
+    max_error_unchanged=None,
+    em = False,
 ):
+
     if not model.constraints.len():
         return model
     
-    opt = optax.adam(lr)
-    solver = jaxopt.OptaxSolver(
-        opt=opt, fun=objective, maxiter=iters
+    params, objective = init_optimisation(
+        model,
+        data,
+        rand_init=rand_init,
+        jit=jit,
     )
 
-    params = model.params.pipe(to_tuple_rec)
+    if not em:
+        opt = optax.adam(lr)
+        solver = jaxopt.OptaxSolver(
+            opt=opt, fun=objective, maxiter=iters, jit=jit
+        )
+    else:
+        solver = jaxopt.GradientDescent(
+            fun=objective, maxiter=iters, jit=jit,
+        )
+    state = solver.init_state(params) 
 
-    state = solver.init_state(params)
+    error = None
+    params_opt = None
+
+    error_min = None
+    since_min = 0
+
+    rand_keys, n_random = gen_rand_keys(model)
 
     for i in range(iters):
         params, state = solver.update(
             params,
             state,
+            rand_keys,
         )
-
-        # TODO: early termination if error stops changing
+        error = state.error
 
         if i % int(iters / 10) == 0 or i == iters - 1:
-            if verbose: print(i, state.error)
+            if verbose: print(i, error)
+        
+        if error_min is None or error < error_min:
+            error_min = error
+            since_min = 0
+            params_opt = params
+        else:
+            since_min += 1
+
+        if (
+            max_error_unchanged is not None 
+            and since_min >= max_error_unchanged
+        ):
+            params = params_opt
+            break
+
+        if n_random > 0:
+            rand_keys, _ = gen_rand_keys(model)
 
     # TODO: for all operators (inputs / constraints) that
     # sepcify they need a key
@@ -409,10 +555,10 @@ class Model(typing.NamedTuple):
 
     init_shapes = init_shapes
     init_params = init_params
+    init_shapes_params = init_shapes_params
 
     init_objective = init_objective
 
-    build = build_model
     optimise = optimise_model
 
     apply = apply_model

@@ -27,34 +27,32 @@ from . import xfactors as xf
 
 # ---------------------------------------------------------------
 
+# from jax.config import config 
+# config.update("jax_debug_nans", True) 
+
+# ---------------------------------------------------------------
+
 @xf.operator_bindings()
 @xt.nTuple.decorate
-class Cov(typing.NamedTuple):
-
+class KMeans(typing.NamedTuple):
+    
+    n: int
     sites: xt.iTuple
 
-    # ---
-
-    random: bool = False
-    static: bool = False
     loc: xf.Location = None
     shape: xt.iTuple = None
 
-    def init_shape(self, model, data):
-        objs = self.sites.map(xf.f_get_location(model))
-        n = objs.map(lambda o: o.shape[1]).pipe(sum)
-        return self._replace(
-            shape = (n, n,),
-        )
 
     def apply(self, state):
+        # https://theory.stanford.edu/~sergei/papers/kMeansPP-soda.pdf
+        # https://theory.stanford.edu/~sergei/papers/kMeans-socg.pdf
         data = jax.numpy.concatenate(
             self.sites.map(xf.f_get_location(state)),
             axis=1,
         )
-        res = jax.numpy.cov(
+        eigvals, weights = jax.numpy.linalg.eig(jax.numpy.cov(
             jax.numpy.transpose(data)
-        )
-        return res
+        ))
+        return eigvals, weights
 
 # ---------------------------------------------------------------

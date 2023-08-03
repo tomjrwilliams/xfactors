@@ -27,9 +27,8 @@ def test_pca():
     model, STAGES = xf.Model().init_stages(1)
     INPUT, PCA = STAGES
 
-    model, objective = (
+    model = (
         model.add_input(xf.inputs.Input_DataFrame_Wide())
-        .add_stage()
         .add_operator(PCA, xf.pca.PCA(
             n=3,
             sites=xt.iTuple.one(
@@ -37,10 +36,10 @@ def test_pca():
             ),
             #
         ))
-        .build(data)
+        .init_shapes_params(data)
     )
 
-    model = model.optimise(objective)
+    model = model.optimise(data)
     results = model.apply(data)
     params = model.params
     

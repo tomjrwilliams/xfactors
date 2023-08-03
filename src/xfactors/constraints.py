@@ -48,17 +48,89 @@ def loss_descending(x):
     xr = acc[..., 1:]
     return -1 * jax.numpy.subtract(xl, xr).mean()
 
-def loss_cov_diag(cov, diag):
+def loss_diag(X, diag):
     diag = jax.numpy.multiply(
-        jax.numpy.eye(cov.shape[0]), diag
+        jax.numpy.eye(X.shape[0]), diag
     )
-    return loss_mse(cov, diag)
+    return loss_mse(X, diag)
 
-def loss_orthogonal(X, scale = 1.):
+def loss_orthonormal(X, scale = 1.):
     eye = jax.numpy.eye(X.shape[0])
     XXt = jax.numpy.matmul(X, X.T) / scale
-    # return jax.numpy.square(jax.numpy.subtract(XXt, eye)).mean()
     return loss_mse(XXt, eye)
+
+def loss_orthogonal(X, scale = 1.):
+    XXt = jax.numpy.matmul(X, X.T) / scale
+    return loss_diag(
+        XXt, jax.numpy.diag(XXt)
+    )
+
+# ---------------------------------------------------------------
+
+@xf.constraint_bindings()
+@xt.nTuple.decorate
+class Constraint_Maximise(typing.NamedTuple):
+    
+    sites: xt.iTuple
+
+    loc: xf.Location = None
+    shape: xt.iTuple = None
+
+    def apply(self, state):
+        vals = xf.concatenate_sites(self.sites, state)
+        return -1 * vals.sum()
+
+@xf.constraint_bindings()
+@xt.nTuple.decorate
+class Constraint_Minimise(typing.NamedTuple):
+    
+    sites: xt.iTuple
+
+    loc: xf.Location = None
+    shape: xt.iTuple = None
+
+    def apply(self, state):
+        vals = xf.concatenate_sites(self.sites, state)
+        return vals.sum()
+
+@xf.constraint_bindings()
+@xt.nTuple.decorate
+class Constraint_MinimiseSquare(typing.NamedTuple):
+    
+    sites: xt.iTuple
+
+    loc: xf.Location = None
+    shape: xt.iTuple = None
+
+    def apply(self, state):
+        vals = xf.concatenate_sites(self.sites, state)
+        return jax.numpy.square(vals).sum()
+
+# ---------------------------------------------------------------
+
+@xf.constraint_bindings()
+@xt.nTuple.decorate
+class Constraint_EM(typing.NamedTuple):
+    
+    sites_param: xt.iTuple
+    sites_optimal: xt.iTuple # optimal at this step from em algo
+
+    loc: xf.Location = None
+    shape: xt.iTuple = None
+
+    cut_tree: bool = False
+
+    def apply(self, state):
+        param = xf.concatenate_sites(self.sites_param, state)
+        optimal = xf.concatenate_sites(self.sites_optimal, state)
+        return loss_mse(
+            param,
+            ( 
+                jax.lax.stop_gradient(optimal)
+                if self.cut_tree
+                else optimal
+            )
+        )
 
 # ---------------------------------------------------------------
 
@@ -131,6 +203,7 @@ class Constraint_KernelVsCov(typing.NamedTuple):
         # mse(cov_weights, cov_kernel)
         assert False, self
 
+
 # ---------------------------------------------------------------
 
 @xf.constraint_bindings()
@@ -151,15 +224,36 @@ class Constraint_MSE(typing.NamedTuple):
 
 @xf.constraint_bindings()
 @xt.nTuple.decorate
-class Constraint_Orthogonal(typing.NamedTuple):
+class Constraint_Orthonormal(typing.NamedTuple):
     
-    site: xt.iTuple
+    sites: xt.iTuple
 
     loc: xf.Location = None
     shape: xt.iTuple = None
 
+    T: bool = False
+
     def apply(self, state):
-        X = xf.get_location(self.site, state)
+        X = xf.concatenate_sites(self.sites, state)
+        if self.T:
+            X = X.T
+        return loss_orthonormal(X)
+
+@xf.constraint_bindings()
+@xt.nTuple.decorate
+class Constraint_Orthogonal(typing.NamedTuple):
+    
+    sites: xt.iTuple
+
+    loc: xf.Location = None
+    shape: xt.iTuple = None
+
+    T: bool = False
+
+    def apply(self, state):
+        X = xf.concatenate_sites(self.sites, state)
+        if self.T:
+            X = X.T
         return loss_orthogonal(X)
 
 @xf.constraint_bindings()
@@ -194,7 +288,7 @@ class Constraint_EigenVLike(typing.NamedTuple):
     def apply(self, state):
         assert len(self.sites) == 2
         w_site, f_site = self.sites
-        
+
         w = xf.get_location(w_site, state)
         f = xf.get_location(f_site, state)
 
@@ -209,7 +303,7 @@ class Constraint_EigenVLike(typing.NamedTuple):
             + loss_descending(eigvals)
             + loss_orthogonal(w.T)
             + loss_mean_zero(0)(f)
-            + loss_cov_diag(cov, eigvals)
+            + loss_diag(cov, eigvals)
         )
         if self.eigval_max:
             return res + (

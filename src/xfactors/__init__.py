@@ -11,6 +11,7 @@ if XTUPLES not in sys.path:
 
 from . import ab
 from . import caching
+from . import clustering
 from . import constraints
 from . import dates
 from . import densities
@@ -24,7 +25,9 @@ from . import imports
 from . import inputs
 from . import kf
 from . import latents
+from . import mixtures
 from . import operators
+from . import params
 from . import pca
 from . import quarto
 from . import rand

@@ -17,7 +17,7 @@ def next_key(seed = 69):
 def next_keys(n, seed = 69):
     if seed not in KEYS:
         KEYS[seed] = jax.random.PRNGKey(seed)
-    KEYS[seed], *subkeys = jax.random.split(KEYS[seed], num=n)
+    KEYS[seed], *subkeys = jax.random.split(KEYS[seed], num=n + 1)
     return jax.numpy.vstack(subkeys)
 
 # ---------------------------------------------------------------
@@ -42,23 +42,47 @@ def v_gaussian(n, shape=None, mu=None, var=None, seed = 69):
     return f(keys)
 
 def mv_gaussian(shape=None, mu=None, cov=None, seed = 69):
+    if shape is None:
+        assert mu is not None or cov is not None
     # if mu and cov one, need shape
     # else can infer shape from mu / cov
     # if shape given, assert matches mu / cov
-    return jax.random.normal(
+    return jax.random.multivariate_normal(
         next_key(seed=seed), 
-        shape = tuple(shape),
+        mu,
+        cov,
+        # shape = tuple(shape),
         #
+        method='svd',
     )
 
-def v_mv_gaussian(shape, n, seed = 69):
+def v_mv_gaussian(n, shape = None, mu=None, cov=None, seed = 69):
     keys = next_keys(n, seed=seed)
     f = jax.vmap(functools.partial(
-        jax.random.normal, 
-        shape=tuple(shape),
+        jax.random.multivariate_normal, 
+        # shape=tuple(shape),
+        mean=mu,
+        cov=cov,
+        method='svd',
         #
     ))
     return f(keys)
+
+# # ---------------------------------------------------------------
+
+def norm_gaussian(v, n_sample_dims = None):
+    if n_sample_dims is None:
+        n_sample_dims = len(v.shape)
+    dims = tuple(range(len(v.shape)))[-n_sample_dims:]
+    mag = jax.numpy.sqrt(jax.numpy.sum(jax.numpy.square(v), dims))
+    for _ in range(n_sample_dims):
+        mag = jax.numpy.expand_dims(mag, -1)
+    mag = jax.numpy.resize(mag, v.shape)
+    return jax.numpy.divide(v, mag)
+
+def uniform_spherical(shape, n = 1):
+    v = gaussian(shape)
+    return norm_gaussian(v)
 
 # ---------------------------------------------------------------
 
@@ -98,10 +122,11 @@ def v_mv_gaussian_gwalk(n, shape=None, mu=None, var=None, seed=69):
 
 # ---------------------------------------------------------------
 
-def orthogonal(shape, seed = 69):
+def orthogonal(n, shape=None, seed = 69):
     return jax.random.orthogonal(
         next_key(seed=seed), 
-        shape = tuple(shape),
+        n,
+        # shape = tuple(shape),
         #
     )
 
@@ -157,20 +182,5 @@ def vorthogonal(shape, n, seed = 69):
 #     ).squeeze().squeeze()
 #     yield from random_sample(n, f)
 
-# # ---------------------------------------------------------------
-
-# def norm_gaussian(v, n_sample_dims = None):
-#     if n_sample_dims is None:
-#         n_sample_dims = len(v.shape)
-#     dims = tuple(range(len(v.shape)))[-n_sample_dims:]
-#     mag = jax.numpy.sqrt(jax.numpy.sum(jax.numpy.square(v), dims))
-#     for _ in range(n_sample_dims):
-#         mag = jax.numpy.expand_dims(mag, -1)
-#     mag = jax.numpy.resize(mag, v.shape)
-#     return jax.numpy.divide(v, mag)
-
-# def uniform_spherical(shape, n = 1):
-#     for sample in random_normal(shape, n):
-#         yield norm_gaussian(sample)
 
 # # ---------------------------------------------------------------
