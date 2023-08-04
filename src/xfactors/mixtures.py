@@ -77,7 +77,7 @@ class BGMM_Spherical_EM(typing.NamedTuple):
         # https://scikit-learn.org/0.15/modules/dp-derivation.html
 
         data = xf.concatenate_sites(self.sites_data, state)
-        mu = xf.concatenate_sites(self.sites_mu, state)
+        # mu = xf.concatenate_sites(self.sites_mu, state)
         # var = xf.concatenate_sites(self.sites_mu, state)
 
         X = data
@@ -97,7 +97,7 @@ class BGMM_Spherical_EM(typing.NamedTuple):
         alpha = jax.numpy.exp(
             xf.get_location(self.site_alpha, state)
         )
-        # alpha = 1.
+        # alpha = 2.
 
         ba = jax.numpy.divide(b, a)
         ba_expand = xf.expand_dims(ba, 0, data.shape[0])
@@ -105,7 +105,7 @@ class BGMM_Spherical_EM(typing.NamedTuple):
         prob_cluster_sum = probs.sum(axis=0)
 
         gamma_1 = 1 + prob_cluster_sum
-        gamma_2 = alpha + jax.numpy.flip(
+        gamma_2 = jax.numpy.flip(
             jax.numpy.concatenate([
                 jax.numpy.zeros(1),
                 jax.numpy.cumsum(
@@ -114,7 +114,8 @@ class BGMM_Spherical_EM(typing.NamedTuple):
             ])[:-1]
             # sum over probs over all data points
             # where index > cluster index
-        )
+        ) + a
+        # + alpha
 
         ba_probs = jax.numpy.multiply(probs, ba_expand)
 
@@ -134,11 +135,12 @@ class BGMM_Spherical_EM(typing.NamedTuple):
         )
 
         # n cols?
-        # D = mu_num.shape[1]
-        D = self.k
+        # dims of normal distribution, from which we draw
+        # the covar?
+        D = mu_num.shape[1]
 
         # mu new?
-        mu_exp = xf.expand_dims(mu, 0, data.shape[0])
+        mu_exp = xf.expand_dims(mu_new, 0, data.shape[0])
         # n_data, n_clusters, n_cols
 
         mu_diff_sq = jax.numpy.square(jax.numpy.subtract(
@@ -157,34 +159,51 @@ class BGMM_Spherical_EM(typing.NamedTuple):
         E_logPX = (
             - ((D / 2) * jax.numpy.log(2 * numpy.pi))
             + expand(
-                (D / 2) * (digamma(a) - jax.numpy.log(b))
+                (D / 2) * (digamma(a_new) - jax.numpy.log(b_new))
             )
             - jax.numpy.multiply(
-                expand(a / (2 * b)),
-                mu_diff_sq + D,
+                expand(
+                    a_new / (2 * b_new)
+                ),
+                mu_diff_sq + D
             )
             - jax.numpy.log(2 * numpy.pi * numpy.e)
         )
         # size = n_data, n_clusters
 
+        E_logPX_prob = jax.numpy.multiply(
+            E_logPX, probs
+        )
+        # .sum(axis=1)
+
         probs_new = jax.numpy.exp(
-            + expand(digamma(gamma_1)) # constant?
-            - expand(digamma(gamma_1 + gamma_2)) # constant?
+            + expand(digamma(gamma_1)) # vector
+            - expand(digamma(gamma_1 + gamma_2)) # vector
             + E_logPX
             + expand(jax.numpy.concatenate([
                 jax.numpy.zeros(1),
                 jax.numpy.cumsum(
                     digamma(gamma_2) - digamma(gamma_1 + gamma_2)
                 )
-            ])[:-1])
+            ])[:-1]) # vector
         )
         # n_data, n_clusters
+
+        probs_norm = jax.numpy.divide(
+            probs_new,
+            xf.expand_dims(
+                probs_new.sum(axis=1), 1, probs_new.shape[1]
+            )
+        )
+        # probs_norm = jax.nn.softmax(probs_new, axis = 1)
 
         return (
             mu_new,
             jax.numpy.log(a_new),
             jax.numpy.log(b_new),
             probs_new,
+            probs_norm,
+            # E_logPX_prob,
         )
 
         # TODO: try gradient descent brute force maximising

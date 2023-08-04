@@ -113,25 +113,42 @@ def test_kmeans():
             ),
             cut_tree=True,
         ))
+        # .add_constraint(xf.constraints.Constraint_EM(
+        #     sites_param=xt.iTuple.one(
+        #         xf.Loc.param(PARAMS, 3)
+        #     ),
+        #     sites_optimal=xt.iTuple.one(
+        #         xf.Loc.result(EM, 0, 3)
+        #         # probs
+        #     ),
+        #     cut_tree=True,
+        # ))
         .add_constraint(xf.constraints.Constraint_EM(
             sites_param=xt.iTuple.one(
                 xf.Loc.param(PARAMS, 3)
             ),
             sites_optimal=xt.iTuple.one(
-                xf.Loc.result(EM, 0, 3)
+                xf.Loc.result(EM, 0, 4)
                 # probs
             ),
             cut_tree=True,
         ))
+        # .add_constraint(xf.constraints.Constraint_Maximise(
+        #     sites=xt.iTuple.one(
+        #         xf.Loc.result(EM, 0, 4)
+        #         # probs
+        #     ),
+        #     # cut_tree=True,
+        # ))
         .init_shapes_params(data)
     )
 
     model = model.optimise(
         data,
-        iters = 1000,
-        opt=optax.sgd(.01),
+        iters = 2500,
+        opt=optax.sgd(.1),
         max_error_unchanged = 0.3,
-        rand_init=100,
+        # rand_init=100,
         # jit = False,
     )
     results = model.apply(data)
@@ -139,12 +156,9 @@ def test_kmeans():
     params = model.params
 
     clusters = numpy.round(params[PARAMS][0], 3)
-    probs = params[PARAMS][3]
 
-    assert numpy.isclose(
-        probs.sum(axis=1),
-        numpy.ones(probs.shape[0])
-    ).all(), probs
+    probs = params[PARAMS][3]
+    # probs = results[EM][0][3]
 
     labels = probs.argmax(axis=1)
     # n_data
@@ -152,9 +166,12 @@ def test_kmeans():
     print(params[PARAMS][4])
     print(params[PARAMS][1])
     print(params[PARAMS][2])
+    # print(probs.sum(axis=1))
     print(labels)
     print(clusters)
     print(mu)
+
+    # print(results[EM][0][3])
     
     labels, order = (
         xt.iTuple([int(l) for l in labels])

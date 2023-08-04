@@ -78,7 +78,7 @@ class Constraint_Maximise(typing.NamedTuple):
 
     def apply(self, state):
         vals = xf.concatenate_sites(self.sites, state)
-        return -1 * vals.sum()
+        return -1 * vals.mean()
 
 @xf.constraint_bindings()
 @xt.nTuple.decorate
@@ -91,7 +91,7 @@ class Constraint_Minimise(typing.NamedTuple):
 
     def apply(self, state):
         vals = xf.concatenate_sites(self.sites, state)
-        return vals.sum()
+        return vals.mean()
 
 @xf.constraint_bindings()
 @xt.nTuple.decorate
@@ -104,7 +104,7 @@ class Constraint_MinimiseSquare(typing.NamedTuple):
 
     def apply(self, state):
         vals = xf.concatenate_sites(self.sites, state)
-        return jax.numpy.square(vals).sum()
+        return jax.numpy.square(vals).mean()
 
 # ---------------------------------------------------------------
 
