@@ -65,7 +65,7 @@ class BGMM_EM(typing.NamedTuple):
     sites_cov: xt.iTuple
     sites_probs: xt.iTuple
 
-    random: bool = 0.01
+    random: bool = 0.1
 
     loc: xf.Location = None
     shape: xt.iTuple = None
@@ -81,10 +81,10 @@ class BGMM_EM(typing.NamedTuple):
         # probs = probs + small
         # probs = probs / probs.sum()
 
-        # cov = jax.numpy.matmul(
-        #     jax.numpy.transpose(cov, (0, 2, 1)),
-        #     cov,
-        # )
+        cov = jax.numpy.matmul(
+            jax.numpy.transpose(cov, (0, 2, 1)),
+            cov,
+        )
         # cov = jax.numpy.stack([
         #     jax.numpy.eye(mu.shape[1])
         #     for _ in range(mu.shape[0])
@@ -97,15 +97,15 @@ class BGMM_EM(typing.NamedTuple):
             noise = ((
                 jax.random.normal(key, shape=cov.shape[:-1])
             ) * self.random)
-            diag_noise = jax.numpy.matmul(
-                xf.expand_dims(noise, 1, 1), 
+            diag_noise = jax.numpy.multiply(
                 xf.expand_dims(
                     jax.numpy.eye(cov.shape[-1]),
-                    0, noise.shape[0]
-                )
+                    0, 
+                    noise.shape[0]
+                ),
+                xf.expand_dims(noise, 1, 1), 
             )
-            assert False, diag_noise
-            cov = cov + diag_noise
+            cov = cov + jax.numpy.abs(diag_noise)
 
         X = data
 
@@ -154,6 +154,7 @@ class BGMM_EM(typing.NamedTuple):
             xf.expand_dims(norm, 0, data.shape[0])
         )
 
+        # w_scale = w
         w_scale = jax.numpy.multiply(
             w, xf.expand_dims(probs, 0, w.shape[0])
         )
@@ -164,51 +165,57 @@ class BGMM_EM(typing.NamedTuple):
                w_scale.sum(axis=1), 1, w.shape[1]
             )
         )
-        # class_probs = (1/m) * w.sum(axis=0)
+        # [0 .. 1] proportional score of belonging to each class
+
+        log_likelihood = jax.numpy.log(w_scale.sum(axis=1)).mean()
 
         data_probs = w
-        cluster_prob = w.sum(axis=0) / w.shape[0]
+        cluster_weights = w.sum(axis=0)
+        cluster_prob = cluster_weights / w.shape[0]
 
-        w = jax.numpy.divide(
-            w,
-            xf.expand_dims(w.sum(axis=0), 0, w.shape[0])
-        )
-        # w = responsibility
+        # return  - (1 / w.shape[1])
+        return log_likelihood, cluster_prob
 
-        w_data = xf.expand_dims(w, -1, mu.shape[1])
-        # n_data, n_cluster, n_col
-
-        data_ = jax.numpy.transpose(data_, (1, 0, 2))
-
-        mu_new = jax.numpy.multiply(w_data, data_).sum(axis=0)
-        # jax.numpy.divide(
-        #     ,
-        #     # xf.expand_dims(
-        #     #     denom, 1, mu.shape[1]
-        #     # )
+        # w = jax.numpy.divide(
+        #     w,
+        #     xf.expand_dims(w.sum(axis=0), 0, w.shape[0])
         # )
+        # # w = now responsibility
 
-        w_data = jax.numpy.transpose(w_data, (1, 0, 2))
-        w_data = xf.expand_dims(w_data, -1, mu.shape[1])
+        # w_data = xf.expand_dims(w, -1, mu.shape[1])
+        # # n_data, n_cluster, n_col
 
-        cov_num = jax.numpy.multiply(
-            w_data,
-            jax.numpy.matmul(
-                mu_diff_T, mu_diff, 
-            ),
-        ).sum(axis=1)
+        # data_ = jax.numpy.transpose(data_, (1, 0, 2))
+
+        # mu_new = jax.numpy.multiply(w_data, data_).sum(axis=0)
+        # # jax.numpy.divide(
+        # #     ,
+        # #     # xf.expand_dims(
+        # #     #     denom, 1, mu.shape[1]
+        # #     # )
+        # # )
+
+        # w_data = jax.numpy.transpose(w_data, (1, 0, 2))
+        # w_data = xf.expand_dims(w_data, -1, mu.shape[1])
+
+        # cov_num = jax.numpy.multiply(
+        #     w_data,
+        #     jax.numpy.matmul(
+        #         mu_diff_T, mu_diff, 
+        #     ),
+        # ).sum(axis=1)
         
-        # cov_new = jax.numpy.divide(
-        #     cov_num,
-        #     # xf.expand_dims(
-        #     #     xf.expand_dims(
-        #     #         denom, -1, cov.shape[-1]
-        #     #     ),
-        #     #     -1, cov.shape[-1]
-        #     # )
-        # )
-        cov_new = cov_num
+        # # cov_new = jax.numpy.divide(
+        # #     cov_num,
+        # #     # xf.expand_dims(
+        # #     #     xf.expand_dims(
+        # #     #         denom, -1, cov.shape[-1]
+        # #     #     ),
+        # #     #     -1, cov.shape[-1]
+        # #     # )
+        # # )
+        # cov_new = cov_num
 
-        return mu_new, cov_new, data_probs, cluster_prob
+        # return mu_new, cov_new, data_probs, cluster_prob, log_likelihood
 
 # ---------------------------------------------------------------

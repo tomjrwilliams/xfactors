@@ -473,11 +473,11 @@ def init_optimisation(
             else model.init_params(data).params
         ).pipe(to_tuple_rec)
 
-        try:
-            _test_loss, test_grad = f_grad(
-                _params, rand_keys,
-            )
+        _test_loss, test_grad = f_grad(
+            _params, rand_keys,
+        )
 
+        try:
             assert not has_nan(test_grad), (test_loss, test_grad,)
             if test_loss is None or _test_loss < test_loss:
                 test_loss = _test_loss

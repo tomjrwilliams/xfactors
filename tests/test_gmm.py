@@ -52,10 +52,13 @@ def test_kmeans():
         .add_operator(PARAMS, xf.params.Gaussian(
             shape=(N_CLUSTERS, N_COLS,),
         ))
-        .add_operator(PARAMS, xf.params.RandomCovariance(
-            n=N_CLUSTERS,
-            d=N_COLS,
+        .add_operator(PARAMS, xf.params.Gaussian(
+            shape=(N_CLUSTERS, N_COLS, N_COLS,),
         ))
+        # .add_operator(PARAMS, xf.params.RandomCovariance(
+        #     n=N_CLUSTERS,
+        #     d=N_COLS,
+        # ))
         .add_operator(PARAMS, xf.params.GaussianSoftmax(
             shape=(data[0].shape[0], N_CLUSTERS,),
         ))
@@ -77,46 +80,66 @@ def test_kmeans():
                 xf.Loc.param(PARAMS, 3)
             ),
         ))
-        .add_constraint(xf.constraints.Constraint_VDiagonal(
+        # .add_constraint(xf.constraints.Constraint_MinimiseSquare(
+        #     sites=xt.iTuple.one(
+        #         xf.Loc.result(EM, 0)
+        #     ),
+        # ))
+        .add_constraint(xf.constraints.Constraint_VOrthogonal(
             sites=xf.xt.iTuple.one(
                 xf.Loc.param(PARAMS, 1)
             ),
         ))
-        .add_constraint(xf.constraints.Constraint_EM(
-            sites_param=xt.iTuple.one(
-                xf.Loc.param(PARAMS, 0)
-            ),
-            sites_optimal=xt.iTuple.one(
-                xf.Loc.result(EM, 0, 0)
-                #mu
-            ),
-            cut_tree=True,
-        ))
-        .add_constraint(xf.constraints.Constraint_EM(
-            sites_param=xt.iTuple.one(
+        .add_constraint(xf.constraints.Constraint_MinimiseMMSpread(
+            sites=xt.iTuple.one(
                 xf.Loc.param(PARAMS, 1)
             ),
-            sites_optimal=xt.iTuple.one(
-                xf.Loc.result(EM, 0, 1)
-                #a
-            ),
-            cut_tree=True,
         ))
-        .add_constraint(xf.constraints.Constraint_EM(
-            sites_param=xt.iTuple.one(
-                xf.Loc.param(PARAMS, 2)
-            ),
-            sites_optimal=xt.iTuple.one(
-                xf.Loc.result(EM, 0, 3)
-                # b
-            ),
-            cut_tree=True,
-        ))
-        # .add_constraint(xf.constraints.Constraint_Maximise(
+        # .add_constraint(xf.constraints.Constraint_MinimiseVariance(
         #     sites=xt.iTuple.one(
-        #         xf.Loc.result(EM, 0, 4)
+        #         xf.Loc.result(EM, 0, 1)
         #     ),
         # ))
+        # .add_constraint(xf.constraints.Constraint_Orthogonal(
+        #     sites=xf.xt.iTuple.one(
+        #         xf.Loc.param(PARAMS, 0)
+        #     ),
+        # ))
+        # .add_constraint(xf.constraints.Constraint_EM(
+        #     sites_param=xt.iTuple.one(
+        #         xf.Loc.param(PARAMS, 0)
+        #     ),
+        #     sites_optimal=xt.iTuple.one(
+        #         xf.Loc.result(EM, 0, 0)
+        #         #mu
+        #     ),
+        #     cut_tree=True,
+        # ))
+        # .add_constraint(xf.constraints.Constraint_EM(
+        #     sites_param=xt.iTuple.one(
+        #         xf.Loc.param(PARAMS, 1)
+        #     ),
+        #     sites_optimal=xt.iTuple.one(
+        #         xf.Loc.result(EM, 0, 1)
+        #         #a
+        #     ),
+        #     cut_tree=True,
+        # ))
+        # .add_constraint(xf.constraints.Constraint_EM(
+        #     sites_param=xt.iTuple.one(
+        #         xf.Loc.param(PARAMS, 2)
+        #     ),
+        #     sites_optimal=xt.iTuple.one(
+        #         xf.Loc.result(EM, 0, 3)
+        #         # b
+        #     ),
+        #     cut_tree=True,
+        # ))
+        .add_constraint(xf.constraints.Constraint_Maximise(
+            sites=xt.iTuple.one(
+                xf.Loc.result(EM, 0, 0)
+            ),
+        ))
         .init_shapes_params(data)
     )
 
@@ -128,8 +151,8 @@ def test_kmeans():
         iters = 1000,
         opt=optax.noisy_sgd(.1),
         max_error_unchanged = 0.3,
-        rand_init=100,
-        jit = False,
+        rand_init=1000,
+        # jit = False,
     )
     results = model.apply(data)
 
@@ -138,6 +161,11 @@ def test_kmeans():
     clusters = params[0]
     cov_ = params[1]
     probs = params[2]
+    
+    cov_ = numpy.matmul(
+        numpy.transpose(cov_, (0, 2, 1)),
+        cov_,
+    )
 
     labels = probs.argmax(axis=1)
     # n_data

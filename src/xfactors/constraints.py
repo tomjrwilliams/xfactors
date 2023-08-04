@@ -209,6 +209,72 @@ class Constraint_KernelVsCov(typing.NamedTuple):
 
 @xf.constraint_bindings()
 @xt.nTuple.decorate
+class Constraint_MinimiseMMSpread(typing.NamedTuple):
+    
+    sites: xt.iTuple
+
+    loc: xf.Location = None
+    shape: xt.iTuple = None
+
+    T: bool = False
+
+    def apply(self, state):
+        data = xf.concatenate_sites(self.sites, state)
+        if self.T:
+            data = data.T
+        cov = jax.numpy.matmul(
+            jax.numpy.transpose(data, (0, 2, 1)),
+            data,
+        )
+        mu = jax.numpy.mean(cov, axis = 0)
+        delta = jax.numpy.square(jax.numpy.subtract(
+            cov,
+            xf.expand_dims(mu, 0, cov.shape[0])
+        )).mean()
+        return delta
+
+
+@xf.constraint_bindings()
+@xt.nTuple.decorate
+class Constraint_MinimiseVariance(typing.NamedTuple):
+    
+    sites: xt.iTuple
+
+    loc: xf.Location = None
+    shape: xt.iTuple = None
+
+    T: bool = False
+
+    def apply(self, state):
+        data = xf.concatenate_sites(self.sites, state)
+        if self.T:
+            data = data.T
+        var = jax.numpy.var(data.flatten())
+        return var
+
+@xf.constraint_bindings()
+@xt.nTuple.decorate
+class Constraint_MinimiseZSpread(typing.NamedTuple):
+    
+    sites: xt.iTuple
+
+    loc: xf.Location = None
+    shape: xt.iTuple = None
+
+    T: bool = False
+
+    def apply(self, state):
+        data = xf.concatenate_sites(self.sites, state)
+        if self.T:
+            data = data.T
+        var = jax.numpy.var(data.flatten())
+        sigma = jax.numpy.sqrt(var)
+        mu = jax.numpy.mean(data)
+        delta = (data - mu) / sigma
+        return jax.numpy.square(delta).mean()
+
+@xf.constraint_bindings()
+@xt.nTuple.decorate
 class Constraint_MaxSpread(typing.NamedTuple):
     
     sites: xt.iTuple
@@ -299,6 +365,23 @@ class Constraint_VOrthogonal(typing.NamedTuple):
         if self.T:
             X = X.T
         return jax.vmap(loss_orthogonal)(X).mean()
+
+@xf.constraint_bindings()
+@xt.nTuple.decorate
+class Constraint_VOrthonormal(typing.NamedTuple):
+    
+    sites: xt.iTuple
+
+    loc: xf.Location = None
+    shape: xt.iTuple = None
+
+    T: bool = False
+
+    def apply(self, state):
+        X = xf.concatenate_sites(self.sites, state)
+        if self.T:
+            X = X.T
+        return jax.vmap(loss_orthonormal)(X).mean()
 
 @xf.constraint_bindings()
 @xt.nTuple.decorate
