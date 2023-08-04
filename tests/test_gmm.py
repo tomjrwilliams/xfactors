@@ -19,7 +19,7 @@ from sklearn.cluster import KMeans
 
 def test_kmeans():
 
-    N_COLS = 3
+    N_COLS = 5
     N_CLUSTERS = 3
     N_VARIABLES = 30
 
@@ -82,7 +82,32 @@ def test_kmeans():
         ))
         # .add_constraint(xf.constraints.Constraint_MinimiseSquare(
         #     sites=xt.iTuple.one(
+        #         xf.Loc.result(EM, 0, 3)
+        #     ),
+        # ))
+        # .add_constraint(xf.constraints.Constraint_Orthogonal(
+        #     sites=xt.iTuple.one(
+        #         xf.Loc.result(EM, 0, 0)
+        #     ),
+        # ))
+        .add_constraint(xf.constraints.Constraint_Maximise(
+            sites=xt.iTuple.one(
+                xf.Loc.result(EM, 0, 3)
+            ),
+        ))
+        .add_constraint(xf.constraints.Constraint_Maximise(
+            sites=xt.iTuple.one(
+                xf.Loc.result(EM, 0, 4)
+            ),
+        ))
+        # .add_constraint(xf.constraints.Constraint_MinimiseSquare(
+        #     sites=xt.iTuple.one(
         #         xf.Loc.result(EM, 0)
+        #     ),
+        # ))
+        # .add_constraint(xf.constraints.Constraint_Orthogonal(
+        #     sites=xf.xt.iTuple.one(
+        #         xf.Loc.param(PARAMS, 0)
         #     ),
         # ))
         .add_constraint(xf.constraints.Constraint_VOrthogonal(
@@ -90,16 +115,16 @@ def test_kmeans():
                 xf.Loc.param(PARAMS, 1)
             ),
         ))
-        .add_constraint(xf.constraints.Constraint_MinimiseMMSpread(
+        # .add_constraint(xf.constraints.Constraint_MinimiseMMSpread(
+        #     sites=xt.iTuple.one(
+        #         xf.Loc.param(PARAMS, 1)
+        #     ),
+        # ))
+        .add_constraint(xf.constraints.Constraint_L1_MM_Diag(
             sites=xt.iTuple.one(
                 xf.Loc.param(PARAMS, 1)
             ),
         ))
-        # .add_constraint(xf.constraints.Constraint_MinimiseVariance(
-        #     sites=xt.iTuple.one(
-        #         xf.Loc.result(EM, 0, 1)
-        #     ),
-        # ))
         # .add_constraint(xf.constraints.Constraint_Orthogonal(
         #     sites=xf.xt.iTuple.one(
         #         xf.Loc.param(PARAMS, 0)
@@ -115,7 +140,7 @@ def test_kmeans():
         #     ),
         #     cut_tree=True,
         # ))
-        # .add_constraint(xf.constraints.Constraint_EM(
+        # .add_constraint(xf.constraints.Constraint_EM_MatMul(
         #     sites_param=xt.iTuple.one(
         #         xf.Loc.param(PARAMS, 1)
         #     ),
@@ -135,11 +160,6 @@ def test_kmeans():
         #     ),
         #     cut_tree=True,
         # ))
-        .add_constraint(xf.constraints.Constraint_Maximise(
-            sites=xt.iTuple.one(
-                xf.Loc.result(EM, 0, 0)
-            ),
-        ))
         .init_shapes_params(data)
     )
 
@@ -160,12 +180,13 @@ def test_kmeans():
 
     clusters = params[0]
     cov_ = params[1]
-    probs = params[2]
+    # probs = params[2]
+    probs = results[EM][0][2]
     
-    cov_ = numpy.matmul(
+    cov_ = numpy.round(numpy.matmul(
         numpy.transpose(cov_, (0, 2, 1)),
         cov_,
-    )
+    ), 3)
 
     labels = probs.argmax(axis=1)
     # n_data

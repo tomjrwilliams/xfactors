@@ -133,6 +133,33 @@ class Constraint_EM(typing.NamedTuple):
             )
         )
 
+@xf.constraint_bindings()
+@xt.nTuple.decorate
+class Constraint_EM_MatMul(typing.NamedTuple):
+    
+    sites_param: xt.iTuple
+    sites_optimal: xt.iTuple # optimal at this step from em algo
+
+    loc: xf.Location = None
+    shape: xt.iTuple = None
+
+    cut_tree: bool = False
+
+    def apply(self, state):
+        raw = xf.concatenate_sites(self.sites_param, state)
+        optimal = xf.concatenate_sites(self.sites_optimal, state)
+        param = jax.numpy.matmul(
+            jax.numpy.transpose(raw, (0, 2, 1)),
+            raw,
+        )
+        return loss_mse(
+            param,
+            ( 
+                jax.lax.stop_gradient(optimal)
+                if self.cut_tree
+                else optimal
+            )
+        )
 # ---------------------------------------------------------------
 
 @xf.constraint_bindings()
@@ -157,7 +184,28 @@ class Constraint_L1(typing.NamedTuple):
     shape: xt.iTuple = None
 
     def apply(self, state):
-        assert False, self
+        param = xf.concatenate_sites(self.sites, state)
+        return jax.numpy.abs(param).mean()
+
+def l1_diag_loss(v):
+    return jax.numpy.abs(jax.numpy.diag(v)).mean()
+
+@xf.constraint_bindings()
+@xt.nTuple.decorate
+class Constraint_L1_MM_Diag(typing.NamedTuple):
+    
+    sites: xt.iTuple
+
+    loc: xf.Location = None
+    shape: xt.iTuple = None
+
+    def apply(self, state):
+        raw = xf.concatenate_sites(self.sites, state)
+        param = jax.numpy.matmul(
+            jax.numpy.transpose(raw, (0, 2, 1)),
+            raw,
+        )
+        return jax.vmap(l1_diag_loss)(param).mean()
 
 @xf.constraint_bindings()
 @xt.nTuple.decorate
@@ -169,7 +217,8 @@ class Constraint_L2(typing.NamedTuple):
     shape: xt.iTuple = None
 
     def apply(self, state):
-        assert False, self
+        param = xf.concatenate_sites(self.sites, state)
+        return jax.numpy.square(param).mean()
 
 @xf.constraint_bindings()
 @xt.nTuple.decorate
@@ -364,7 +413,7 @@ class Constraint_VOrthogonal(typing.NamedTuple):
         X = xf.concatenate_sites(self.sites, state)
         if self.T:
             X = X.T
-        return jax.vmap(loss_orthogonal)(X).mean()
+        return jax.vmap(loss_orthogonal)(X).sum()
 
 @xf.constraint_bindings()
 @xt.nTuple.decorate
@@ -381,7 +430,7 @@ class Constraint_VOrthonormal(typing.NamedTuple):
         X = xf.concatenate_sites(self.sites, state)
         if self.T:
             X = X.T
-        return jax.vmap(loss_orthonormal)(X).mean()
+        return jax.vmap(loss_orthonormal)(X).sum()
 
 @xf.constraint_bindings()
 @xt.nTuple.decorate
@@ -398,7 +447,7 @@ class Constraint_VDiagonal(typing.NamedTuple):
         X = xf.concatenate_sites(self.sites, state)
         if self.T:
             X = X.T
-        return jax.vmap(loss_diag)(X).mean()
+        return jax.vmap(loss_diag)(X).sum()
 
 @xf.constraint_bindings()
 @xt.nTuple.decorate
