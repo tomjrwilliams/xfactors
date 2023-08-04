@@ -464,7 +464,8 @@ def init_optimisation(
     )
     f_grad = jax.value_and_grad(objective)
 
-    for _ in range(rand_init + 1):
+    tries = 0
+    for iter in range(rand_init + 1):
         
         _params = (
             model.params
@@ -472,15 +473,20 @@ def init_optimisation(
             else model.init_params(data).params
         ).pipe(to_tuple_rec)
 
-        _test_loss, test_grad = f_grad(
-            _params, rand_keys,
-        )
+        try:
+            _test_loss, test_grad = f_grad(
+                _params, rand_keys,
+            )
 
-        assert not has_nan(test_grad), (test_loss, test_grad,)
+            assert not has_nan(test_grad), (test_loss, test_grad,)
+            if test_loss is None or _test_loss < test_loss:
+                test_loss = _test_loss
+                params = _params
 
-        if test_loss is None or _test_loss < test_loss:
-            test_loss = _test_loss
-            params = _params
+            tries += 1
+        except:
+            if iter == rand_init:
+                assert tries > 0
 
     return params, objective
 

@@ -19,7 +19,7 @@ from sklearn.cluster import KMeans
 
 def test_kmeans():
 
-    N_COLS = 5
+    N_COLS = 3
     N_CLUSTERS = 3
     N_VARIABLES = 30
 
@@ -52,36 +52,35 @@ def test_kmeans():
         .add_operator(PARAMS, xf.params.Gaussian(
             shape=(N_CLUSTERS, N_COLS,),
         ))
-        .add_operator(PARAMS, xf.params.Gaussian(
-            shape=(N_CLUSTERS,),
-        ))
-        .add_operator(PARAMS, xf.params.Gaussian(
-            shape=(N_CLUSTERS,),
+        .add_operator(PARAMS, xf.params.RandomCovariance(
+            n=N_CLUSTERS,
+            d=N_COLS,
         ))
         .add_operator(PARAMS, xf.params.GaussianSoftmax(
             shape=(data[0].shape[0], N_CLUSTERS,),
         ))
-        .add_operator(PARAMS, xf.params.Gaussian(
-            shape=(1,)
+        .add_operator(PARAMS, xf.params.GaussianSoftmax(
+            shape=(N_CLUSTERS,),
         ))
-        .add_operator(EM, xf.mixtures.BGMM_Spherical_EM(
-            k=3,
+        .add_operator(EM, xf.mixtures.BGMM_EM(
+            k=N_CLUSTERS,
             sites_data=xt.iTuple.one(
                 xf.Loc.result(INPUT, 0)
             ),
             sites_mu=xt.iTuple.one(
                 xf.Loc.param(PARAMS, 0)
             ),
-            sites_a=xt.iTuple.one(
+            sites_cov=xt.iTuple.one(
                 xf.Loc.param(PARAMS, 1)
-            ),
-            sites_b=xt.iTuple.one(
-                xf.Loc.param(PARAMS, 2)
             ),
             sites_probs=xt.iTuple.one(
                 xf.Loc.param(PARAMS, 3)
             ),
-            site_alpha=xf.Loc.param(PARAMS, 4),
+        ))
+        .add_constraint(xf.constraints.Constraint_VDiagonal(
+            sites=xf.xt.iTuple.one(
+                xf.Loc.param(PARAMS, 1)
+            ),
         ))
         .add_constraint(xf.constraints.Constraint_EM(
             sites_param=xt.iTuple.one(
@@ -108,70 +107,48 @@ def test_kmeans():
                 xf.Loc.param(PARAMS, 2)
             ),
             sites_optimal=xt.iTuple.one(
-                xf.Loc.result(EM, 0, 2)
+                xf.Loc.result(EM, 0, 3)
                 # b
-            ),
-            cut_tree=True,
-        ))
-        # .add_constraint(xf.constraints.Constraint_EM(
-        #     sites_param=xt.iTuple.one(
-        #         xf.Loc.param(PARAMS, 3)
-        #     ),
-        #     sites_optimal=xt.iTuple.one(
-        #         xf.Loc.result(EM, 0, 3)
-        #         # probs
-        #     ),
-        #     cut_tree=True,
-        # ))
-        .add_constraint(xf.constraints.Constraint_EM(
-            sites_param=xt.iTuple.one(
-                xf.Loc.param(PARAMS, 3)
-            ),
-            sites_optimal=xt.iTuple.one(
-                xf.Loc.result(EM, 0, 4)
-                # probs
             ),
             cut_tree=True,
         ))
         # .add_constraint(xf.constraints.Constraint_Maximise(
         #     sites=xt.iTuple.one(
         #         xf.Loc.result(EM, 0, 4)
-        #         # probs
         #     ),
-        #     # cut_tree=True,
         # ))
         .init_shapes_params(data)
     )
 
+    # from jax.config import config 
+    # config.update("jax_debug_nans", True) 
+
     model = model.optimise(
         data,
-        iters = 2500,
-        opt=optax.sgd(.1),
+        iters = 1000,
+        opt=optax.noisy_sgd(.1),
         max_error_unchanged = 0.3,
-        # rand_init=100,
-        # jit = False,
+        rand_init=100,
+        jit = False,
     )
     results = model.apply(data)
 
-    params = model.params
+    params = model.params[PARAMS]
 
-    clusters = numpy.round(params[PARAMS][0], 3)
-
-    probs = params[PARAMS][3]
-    # probs = results[EM][0][3]
+    clusters = params[0]
+    cov_ = params[1]
+    probs = params[2]
 
     labels = probs.argmax(axis=1)
     # n_data
-    
-    print(params[PARAMS][4])
-    print(params[PARAMS][1])
-    print(params[PARAMS][2])
-    # print(probs.sum(axis=1))
+
+    print(cov_)
     print(labels)
     print(clusters)
     print(mu)
-
+    
     # print(results[EM][0][3])
+    # print(results[EM][0][0])
     
     labels, order = (
         xt.iTuple([int(l) for l in labels])

@@ -48,7 +48,8 @@ def loss_descending(x):
     xr = acc[..., 1:]
     return -1 * jax.numpy.subtract(xl, xr).mean()
 
-def loss_diag(X, diag):
+def loss_diag(X):
+    diag = jax.numpy.diag(X)
     diag = jax.numpy.multiply(
         jax.numpy.eye(X.shape[0]), diag
     )
@@ -62,7 +63,7 @@ def loss_orthonormal(X, scale = 1.):
 def loss_orthogonal(X, scale = 1.):
     XXt = jax.numpy.matmul(X, X.T) / scale
     return loss_diag(
-        XXt, jax.numpy.diag(XXt)
+        XXt, 
     )
 
 # ---------------------------------------------------------------
@@ -281,6 +282,40 @@ class Constraint_Orthogonal(typing.NamedTuple):
         if self.T:
             X = X.T
         return loss_orthogonal(X)
+
+@xf.constraint_bindings()
+@xt.nTuple.decorate
+class Constraint_VOrthogonal(typing.NamedTuple):
+    
+    sites: xt.iTuple
+
+    loc: xf.Location = None
+    shape: xt.iTuple = None
+
+    T: bool = False
+
+    def apply(self, state):
+        X = xf.concatenate_sites(self.sites, state)
+        if self.T:
+            X = X.T
+        return jax.vmap(loss_orthogonal)(X).mean()
+
+@xf.constraint_bindings()
+@xt.nTuple.decorate
+class Constraint_VDiagonal(typing.NamedTuple):
+    
+    sites: xt.iTuple
+
+    loc: xf.Location = None
+    shape: xt.iTuple = None
+
+    T: bool = False
+
+    def apply(self, state):
+        X = xf.concatenate_sites(self.sites, state)
+        if self.T:
+            X = X.T
+        return jax.vmap(loss_diag)(X).mean()
 
 @xf.constraint_bindings()
 @xt.nTuple.decorate

@@ -31,8 +31,6 @@ digamma = jax.scipy.special.digamma
 
 # ---------------------------------------------------------------
 
-# from jax.config import config 
-# config.update("jax_debug_nans", True) 
 
 # ---------------------------------------------------------------
 
@@ -58,155 +56,159 @@ class GMM(typing.NamedTuple):
 
 @xf.operator_bindings()
 @xt.nTuple.decorate
-class BGMM_Spherical_EM(typing.NamedTuple):
+class BGMM_EM(typing.NamedTuple):
     
     k: int
     sites_data: xt.iTuple
 
     sites_mu: xt.iTuple
-    sites_a: xt.iTuple
-    sites_b: xt.iTuple
+    sites_cov: xt.iTuple
     sites_probs: xt.iTuple
-    site_alpha: xf.Location
+
+    random: bool = 0.01
 
     loc: xf.Location = None
     shape: xt.iTuple = None
 
-    def apply(self, state):
-        # https://www.cs.princeton.edu/courses/archive/fall11/cos597C/reading/BleiJordan2005.pdf
-        # https://scikit-learn.org/0.15/modules/dp-derivation.html
+    def apply(self, state, small = 10 ** -4):
+        # https://en.wikipedia.org/wiki/EM_algorithm_and_GMM_model
 
         data = xf.concatenate_sites(self.sites_data, state)
-        # mu = xf.concatenate_sites(self.sites_mu, state)
-        # var = xf.concatenate_sites(self.sites_mu, state)
+        mu = xf.concatenate_sites(self.sites_mu, state)
+        cov = xf.concatenate_sites(self.sites_cov, state)
+        probs = xf.concatenate_sites(self.sites_probs, state)
+
+        # probs = probs + small
+        # probs = probs / probs.sum()
+
+        # cov = jax.numpy.matmul(
+        #     jax.numpy.transpose(cov, (0, 2, 1)),
+        #     cov,
+        # )
+        # cov = jax.numpy.stack([
+        #     jax.numpy.eye(mu.shape[1])
+        #     for _ in range(mu.shape[0])
+        # ])
+        
+        if self.random:
+            key = xf.get_location(
+                self.loc.as_random(), state
+            )
+            noise = ((
+                jax.random.normal(key, shape=cov.shape[:-1])
+            ) * self.random)
+            diag_noise = jax.numpy.matmul(
+                xf.expand_dims(noise, 1, 1), 
+                xf.expand_dims(
+                    jax.numpy.eye(cov.shape[-1]),
+                    0, noise.shape[0]
+                )
+            )
+            assert False, diag_noise
+            cov = cov + diag_noise
 
         X = data
-        
-        # gamma probs
-        a = jax.numpy.exp(
-            xf.concatenate_sites(self.sites_a, state)
-        )
-        b = jax.numpy.exp(
-            xf.concatenate_sites(self.sites_b, state)
-        )
-        # n_clusters
 
-        probs = xf.concatenate_sites(self.sites_probs, state)
-        # of size n_points n_clusters
-
-        alpha = jax.numpy.exp(
-            xf.get_location(self.site_alpha, state)
-        )
-        # alpha = 2.
-
-        ba = jax.numpy.divide(b, a)
-        ba_expand = xf.expand_dims(ba, 0, data.shape[0])
-
-        prob_cluster_sum = probs.sum(axis=0)
-
-        gamma_1 = 1 + prob_cluster_sum
-        gamma_2 = jax.numpy.flip(
-            jax.numpy.concatenate([
-                jax.numpy.zeros(1),
-                jax.numpy.cumsum(
-                    jax.numpy.flip(prob_cluster_sum)
-                )
-            ])[:-1]
-            # sum over probs over all data points
-            # where index > cluster index
-        ) + a
-        # + alpha
-
-        ba_probs = jax.numpy.multiply(probs, ba_expand)
-
-        # n_data, n_clusters
-        ba_probs_exp = xf.expand_dims(ba_probs, -1, data.shape[1])
-        data_exp = xf.expand_dims(data, 1, a.shape[0])
-        # n_data, n_clusters, n_cols
-
-        mu_num = jax.numpy.multiply(ba_probs_exp, data_exp).sum(axis=0)
-        # n_clusters, n_cols
-
-        mu_den = 1 + ba_probs.sum(axis=0)
-        # n_clusters
-
-        mu_new = jax.numpy.divide(
-            mu_num, xf.expand_dims(mu_den, -1, mu_num.shape[1])
+        mu_ = xf.expand_dims(mu, 1, data.shape[0])
+        data_ = xf.expand_dims(data, 0, mu.shape[0])
+        cov_ = xf.expand_dims(
+            jax.numpy.linalg.inv(cov), 1, data.shape[0]
         )
 
-        # n cols?
-        # dims of normal distribution, from which we draw
-        # the covar?
-        D = mu_num.shape[1]
+        mu_diff = xf.expand_dims(
+            jax.numpy.subtract(data_, mu_),
+            2, 
+            1
+        )
+        mu_diff_T = jax.numpy.transpose(
+            mu_diff,
+            (0, 1, 3, 2),
+        )
 
-        # mu new?
-        mu_exp = xf.expand_dims(mu_new, 0, data.shape[0])
-        # n_data, n_clusters, n_cols
+        det = jax.numpy.linalg.det(
+            cov,
+            #  axis1=1, axis2=2
+        )
 
-        mu_diff_sq = jax.numpy.square(jax.numpy.subtract(
-            data_exp, mu_exp
-        )).sum(axis = -1)
-        # sum out cols
-        # so n_data, n_clusters
-
-        a_new = 1 + ((D / 2) * probs.sum(axis = 0))
-        b_new = 1 + jax.numpy.multiply(
-            probs, mu_diff_sq + D,
-        ).sum(axis=0) / 2
-
-        expand = lambda v: xf.expand_dims(v, 0, data.shape[0])
-
-        E_logPX = (
-            - ((D / 2) * jax.numpy.log(2 * numpy.pi))
-            + expand(
-                (D / 2) * (digamma(a_new) - jax.numpy.log(b_new))
+        norm = 1 / (
+            jax.numpy.sqrt(det) * (
+                (2 * numpy.pi) ** (data.shape[1] / 2)
             )
-            - jax.numpy.multiply(
-                expand(
-                    a_new / (2 * b_new)
-                ),
-                mu_diff_sq + D
-            )
-            - jax.numpy.log(2 * numpy.pi * numpy.e)
         )
-        # size = n_data, n_clusters
 
-        E_logPX_prob = jax.numpy.multiply(
-            E_logPX, probs
-        )
-        # .sum(axis=1)
-
-        probs_new = jax.numpy.exp(
-            + expand(digamma(gamma_1)) # vector
-            - expand(digamma(gamma_1 + gamma_2)) # vector
-            + E_logPX
-            + expand(jax.numpy.concatenate([
-                jax.numpy.zeros(1),
-                jax.numpy.cumsum(
-                    digamma(gamma_2) - digamma(gamma_1 + gamma_2)
+        w_unnorm = jax.numpy.exp(
+            -(1/2) * (
+                jax.numpy.matmul(
+                    jax.numpy.matmul(
+                        mu_diff,
+                        cov_
+                    ),
+                    mu_diff_T,
                 )
-            ])[:-1]) # vector
-        )
-        # n_data, n_clusters
+            )
+        ).squeeze().squeeze().T
+        # n_data, n_clusters (?)
 
-        probs_norm = jax.numpy.divide(
-            probs_new,
+        w = jax.numpy.multiply(
+            w_unnorm,
+            xf.expand_dims(norm, 0, data.shape[0])
+        )
+
+        w_scale = jax.numpy.multiply(
+            w, xf.expand_dims(probs, 0, w.shape[0])
+        )
+
+        w = jax.numpy.divide(
+            w_scale,
             xf.expand_dims(
-                probs_new.sum(axis=1), 1, probs_new.shape[1]
+               w_scale.sum(axis=1), 1, w.shape[1]
             )
         )
-        # probs_norm = jax.nn.softmax(probs_new, axis = 1)
+        # class_probs = (1/m) * w.sum(axis=0)
 
-        return (
-            mu_new,
-            jax.numpy.log(a_new),
-            jax.numpy.log(b_new),
-            probs_new,
-            probs_norm,
-            # E_logPX_prob,
+        data_probs = w
+        cluster_prob = w.sum(axis=0) / w.shape[0]
+
+        w = jax.numpy.divide(
+            w,
+            xf.expand_dims(w.sum(axis=0), 0, w.shape[0])
         )
+        # w = responsibility
 
-        # TODO: try gradient descent brute force maximising
-        # e_logPX
+        w_data = xf.expand_dims(w, -1, mu.shape[1])
+        # n_data, n_cluster, n_col
+
+        data_ = jax.numpy.transpose(data_, (1, 0, 2))
+
+        mu_new = jax.numpy.multiply(w_data, data_).sum(axis=0)
+        # jax.numpy.divide(
+        #     ,
+        #     # xf.expand_dims(
+        #     #     denom, 1, mu.shape[1]
+        #     # )
+        # )
+
+        w_data = jax.numpy.transpose(w_data, (1, 0, 2))
+        w_data = xf.expand_dims(w_data, -1, mu.shape[1])
+
+        cov_num = jax.numpy.multiply(
+            w_data,
+            jax.numpy.matmul(
+                mu_diff_T, mu_diff, 
+            ),
+        ).sum(axis=1)
+        
+        # cov_new = jax.numpy.divide(
+        #     cov_num,
+        #     # xf.expand_dims(
+        #     #     xf.expand_dims(
+        #     #         denom, -1, cov.shape[-1]
+        #     #     ),
+        #     #     -1, cov.shape[-1]
+        #     # )
+        # )
+        cov_new = cov_num
+
+        return mu_new, cov_new, data_probs, cluster_prob
 
 # ---------------------------------------------------------------

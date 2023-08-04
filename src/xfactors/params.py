@@ -47,6 +47,31 @@ class Scalar(typing.NamedTuple):
 
 @xf.operator_bindings()
 @xt.nTuple.decorate
+class RandomCovariance(typing.NamedTuple):
+
+    n: int
+    d: int
+
+    loc: xf.Location = None
+    shape: xt.iTuple = None
+
+    def init_params(self, model, params):
+        gaussians = [
+            rand.gaussian(shape=(self.d, self.d))
+            for i in range(self.n)
+        ]
+        return self, jax.numpy.stack([
+            jax.numpy.matmul(g.T, g)
+            for g in gaussians
+        ])
+
+    def apply(self, state):
+        return xf.get_location(self.loc.as_param(), state)
+
+# ---------------------------------------------------------------
+
+@xf.operator_bindings()
+@xt.nTuple.decorate
 class Gaussian(typing.NamedTuple):
 
     shape: tuple
@@ -72,7 +97,7 @@ class GaussianSoftmax(typing.NamedTuple):
     def init_params(self, model, params):
         return self, jax.nn.softmax(
             rand.gaussian(self.shape),
-            axis=1
+            axis=-1
         )
 
     def apply(self, state):
