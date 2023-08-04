@@ -454,6 +454,16 @@ def init_optimisation(
     test_loss = None
     params = objective = None
 
+    rand_keys, _ = gen_rand_keys(model)
+
+    objective = init_objective(
+        model,
+        data,
+        rand_keys=rand_keys,
+        jit = jit,
+    )
+    f_grad = jax.value_and_grad(objective)
+
     for _ in range(rand_init + 1):
         
         _params = (
@@ -462,16 +472,6 @@ def init_optimisation(
             else model.init_params(data).params
         ).pipe(to_tuple_rec)
 
-        rand_keys, _ = gen_rand_keys(model)
-
-        _objective = init_objective(
-            model._replace(params=_params),
-            data,
-            rand_keys=rand_keys,
-            jit = jit,
-        )
-
-        f_grad = jax.value_and_grad(_objective)
         _test_loss, test_grad = f_grad(
             _params, rand_keys,
         )
@@ -481,7 +481,6 @@ def init_optimisation(
         if test_loss is None or _test_loss < test_loss:
             test_loss = _test_loss
             params = _params
-            objective = _objective
 
     return params, objective
 
@@ -496,6 +495,9 @@ def optimise_model(
     lr = 0.01,
     opt=None,
 ):
+
+    if max_error_unchanged is not None and max_error_unchanged < 1:
+        max_error_unchanged *= iters
 
     if not model.constraints.len():
         return model

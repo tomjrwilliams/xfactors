@@ -60,4 +60,39 @@ class Gaussian(typing.NamedTuple):
     def apply(self, state):
         return xf.get_location(self.loc.as_param(), state)
 
+@xf.operator_bindings()
+@xt.nTuple.decorate
+class GaussianSoftmax(typing.NamedTuple):
+
+    shape: tuple
+
+    loc: xf.Location = None
+    shape: xt.iTuple = None
+
+    def init_params(self, model, params):
+        return self, jax.nn.softmax(
+            rand.gaussian(self.shape),
+            axis=1
+        )
+
+    def apply(self, state):
+        return xf.get_location(self.loc.as_param(), state)
+
+# ---------------------------------------------------------------
+
+@xf.operator_bindings()
+@xt.nTuple.decorate
+class Beta(typing.NamedTuple):
+
+    shape: tuple
+
+    loc: xf.Location = None
+    shape: xt.iTuple = None
+
+    def init_params(self, model, params):
+        return self, rand.beta(self.shape)
+
+    def apply(self, state):
+        return xf.get_location(self.loc.as_param(), state)
+
 # ---------------------------------------------------------------

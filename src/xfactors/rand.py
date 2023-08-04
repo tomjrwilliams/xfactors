@@ -22,6 +22,18 @@ def next_keys(n, seed = 69):
 
 # ---------------------------------------------------------------
 
+def beta(shape=None, seed = 69):
+    # if mu and cov one, need shape
+    # else can infer shape from mu / cov
+    # if shape given, assert matches mu / cov
+    return jax.random.beta(
+        next_key(seed=seed), 
+        shape = tuple(shape),
+        #
+    )
+
+# ---------------------------------------------------------------
+
 def gaussian(shape=None, mu=None, var=None, seed = 69):
     # if mu and cov one, need shape
     # else can infer shape from mu / cov

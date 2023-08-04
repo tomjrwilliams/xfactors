@@ -17,7 +17,7 @@ import optax
 
 from sklearn.cluster import KMeans
 
-def test_lgp():
+def test_kmeans():
 
     N_COLS = 5
     N_CLUSTERS = 3
@@ -55,7 +55,7 @@ def test_lgp():
         .add_operator(PARAMS, xf.params.Gaussian(
             shape=(N_CLUSTERS, N_COLS,),
         ))
-        .add_operator(LABEL, xf.clustering.KMeans_Labels(
+        .add_operator(LABEL, xf.kmeans.KMeans_Labels(
             k=3,
             sites_mu=xt.iTuple.one(
                 xf.Loc.param(PARAMS, 0)
@@ -69,7 +69,7 @@ def test_lgp():
             # sites_mu
             # sites_cov
         ))
-        .add_operator(EM, xf.clustering.KMeans_EM_Naive(
+        .add_operator(EM, xf.kmeans.KMeans_EM_Naive(
             k=3,
             sites_data=xt.iTuple.one(
                 xf.Loc.result(INPUT, 0)
@@ -78,21 +78,6 @@ def test_lgp():
                 xf.Loc.result(LABEL, 0),
             ),
         ))
-        # .add_operator(EM, xf.clustering.KMeans_EM_MeanDiff(
-        #     k=3,
-        #     sites_mu=xt.iTuple.one(
-        #         xf.Loc.param(PARAMS, 0)
-        #     ),
-        #     sites_var=xt.iTuple.one(
-        #         xf.Loc.param(PARAMS, 1)
-        #     ),
-        #     sites_data=xt.iTuple.one(
-        #         xf.Loc.result(INPUT, 0)
-        #     ),
-        #     sites_labels=xt.iTuple.one(
-        #         xf.Loc.result(LABEL, 0),
-        #     ),
-        # ))
         .add_constraint(xf.constraints.Constraint_EM(
             sites_param=xt.iTuple.one(
                 xf.Loc.param(PARAMS, 0)
@@ -111,16 +96,6 @@ def test_lgp():
             ),
             cut_tree=True,
         ))
-        # .add_constraint(xf.constraints.Constraint_Minimise(
-        #     sites=xt.iTuple.one(
-        #         xf.Loc.result(EM, 1)
-        #     ),
-        # ))
-        # .add_constraint(xf.constraints.Constraint_MaxSpread(
-        #     sites=xt.iTuple.one(
-        #         xf.Loc.param(PARAMS, 0)
-        #     ),
-        # ))
         .init_shapes_params(data)
     )
 
@@ -139,13 +114,13 @@ def test_lgp():
     
     labels, order = (
         xt.iTuple([int(l) for l in results[LABEL][0]])
-        .pipe(xf.clustering.reindex_labels)
+        .pipe(xf.kmeans.reindex_labels)
     )
     clusters = [clusters[i] for i in order]
 
     k_means = KMeans(n_clusters=3, random_state=69).fit(vs)
     sk_labels, sk_order = xt.iTuple(k_means.labels_).pipe(
-        xf.clustering.reindex_labels
+        xf.kmeans.reindex_labels
     )
 
     clusters = numpy.round(clusters, 3)
