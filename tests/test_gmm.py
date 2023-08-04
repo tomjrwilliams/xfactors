@@ -128,8 +128,8 @@ def test_kmeans():
 
     model = model.optimise(
         data,
-        iters = 2500,
-        # opt=optax.sgd(.01),
+        iters = 1000,
+        opt=optax.sgd(.01),
         max_error_unchanged = 0.3,
         rand_init=100,
         # jit = False,
@@ -140,6 +140,11 @@ def test_kmeans():
 
     clusters = numpy.round(params[PARAMS][0], 3)
     probs = params[PARAMS][3]
+
+    assert numpy.isclose(
+        probs.sum(axis=1),
+        numpy.ones(probs.shape[0])
+    ).all(), probs
 
     labels = probs.argmax(axis=1)
     # n_data

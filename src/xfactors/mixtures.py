@@ -77,7 +77,7 @@ class BGMM_Spherical_EM(typing.NamedTuple):
         # https://scikit-learn.org/0.15/modules/dp-derivation.html
 
         data = xf.concatenate_sites(self.sites_data, state)
-        # mu = xf.concatenate_sites(self.sites_mu, state)
+        mu = xf.concatenate_sites(self.sites_mu, state)
         # var = xf.concatenate_sites(self.sites_mu, state)
 
         X = data
@@ -134,10 +134,11 @@ class BGMM_Spherical_EM(typing.NamedTuple):
         )
 
         # n cols?
-        D = mu_num.shape[1]
+        # D = mu_num.shape[1]
+        D = self.k
 
         # mu new?
-        mu_exp = xf.expand_dims(mu_new, 0, data.shape[0])
+        mu_exp = xf.expand_dims(mu, 0, data.shape[0])
         # n_data, n_clusters, n_cols
 
         mu_diff_sq = jax.numpy.square(jax.numpy.subtract(
@@ -156,10 +157,10 @@ class BGMM_Spherical_EM(typing.NamedTuple):
         E_logPX = (
             - ((D / 2) * jax.numpy.log(2 * numpy.pi))
             + expand(
-                (D / 2) * (digamma(a_new) - jax.numpy.log(b_new))
+                (D / 2) * (digamma(a) - jax.numpy.log(b))
             )
             - jax.numpy.multiply(
-                expand(a_new / (2 * b_new)),
+                expand(a / (2 * b)),
                 mu_diff_sq + D,
             )
             - jax.numpy.log(2 * numpy.pi * numpy.e)
