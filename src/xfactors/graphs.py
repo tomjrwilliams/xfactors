@@ -113,6 +113,20 @@ df_scatter_chart = functools.partial(
     #
 )
 
+df_scatter_3d_chart = functools.partial(
+    df_chart,
+    f_plot = plotly.express.scatter_3d,
+    # render_mode="svg",
+    #
+)
+
+df_line_3d_chart = functools.partial(
+    df_chart,
+    f_plot = plotly.express.line_3d,
+    # render_mode="svg",
+    #
+)
+
 def f_df_density_chart(gk, y, clip_quantile=.01):
     def f(df):
         gvs = df[gk].unique()
@@ -225,6 +239,20 @@ df_facet_scatter_chart = functools.partial(
     #
 )
 
+df_facet_scatter_3d_chart = functools.partial(
+    df_facet_chart,
+    f_plot = plotly.express.scatter_3d,
+    render_mode="svg",
+    #
+)
+
+df_facet_line_3d_chart = functools.partial(
+    df_facet_chart,
+    f_plot = plotly.express.line_3d,
+    render_mode="svg",
+    #
+)
+
 def df_density_facet_chart(df, g, y, clip_quantile=.01, **kwargs):
     return df_facet_line_chart(
         df,
@@ -307,4 +335,106 @@ def df_density_pair_chart(
         facet_col=facet_col,
         **kwargs,
     )
+
+def vector_rays(nd, ns, gs, xs, ys, zs = None, i = 0, g = 0):
+    assert nd.shape[-1] == 2 if zs is None else 3
+    if len(nd.shape) == 1:
+        nd = [nd]
+    for ray in nd:
+        xs.extend([0, ray[0]])
+        ys.extend([0, ray[1]])
+        if zs is not None:
+            zs.extend([0, ray[2]])
+        ns.extend([i, i])
+        gs.extend([g, g])
+        i += 1
+    return i, len(nd)
+
+import jax
+
+
+def vector_ray_plot(
+    vs,
+    color = "n",
+    _3d = False,
+    **kws,
+):
+    
+    ns = []
+    gs = []
+    xs = []
+    ys = []
+    rs = []
+    cs = []
+    zs = (None if not _3d else [])
+
+    i = 0
+    r = 0
+    c = 0
+    g = 0
+
+    if isinstance(vs, (numpy.ndarray, jax.numpy.ndarray)):
+        if len(vs.shape) == 2:
+            vs = [vs]
+        for g, _vs in enumerate(vs):
+            i, m = vector_rays(_vs, ns, gs,xs, ys, zs = zs, i = i, g=g)
+            for _ in range(m):
+                rs.extend([r, r])
+                cs.extend([c, c])
+
+    elif isinstance(vs, (list, xt.iTuple, tuple)):
+        if isinstance(vs[0], (numpy.ndarray, jax.numpy.ndarray)):
+            vs = [vs]
+        for r, rvs in enumerate(vs):
+            for c, cvs in enumerate(rvs):
+                if len(cvs.shape) == 2:
+                    cvs = [cvs]
+                for g, _cvs in enumerate(cvs):
+                    i, m = vector_rays(_cvs, ns,gs, xs, ys, zs=zs, i = i, g=g)
+                    for _ in range(m):
+                        rs.extend([r, r])
+                        cs.extend([c, c])
+                    i = 0
+
+    df = pandas.DataFrame(
+        {
+            **{
+                "n": ns,
+                "x": xs,
+                "y": ys,
+                "r": rs,
+                "c": cs,
+                "g": gs,
+            },
+            **({} if not _3d else {"z": zs})
+        }
+    )
+
+    f_chart = (
+        df_line_chart
+        if len(set(rs)) == 1 and not _3d
+        else df_facet_line_chart
+        if not _3d
+        else df_line_3d_chart
+        if len(set(rs)) == 1
+        else df_facet_line_3d_chart
+    )
+
+    return f_chart(
+        df,
+        x="x",
+        y="y",
+        color=color,
+        **({} if _3d else dict(
+            facet_row = (
+                "r" if len(set(rs)) > 1 else None
+            ),
+            facet_col = (
+                "c" if len(set(cs)) > 1 else None
+            ),
+        )),
+        **({} if not _3d else dict(z="z")),
+        **kws,
+    )
+
 # ---------------------------------------------------------------

@@ -2,6 +2,8 @@
 import functools
 import jax
 
+from . import utils
+
 # ---------------------------------------------------------------
 
 # context generator for key scope
@@ -82,19 +84,17 @@ def v_mv_gaussian(n, shape = None, mu=None, cov=None, seed = 69):
 
 # # ---------------------------------------------------------------
 
-def norm_gaussian(v, n_sample_dims = None):
-    if n_sample_dims is None:
-        n_sample_dims = len(v.shape)
-    dims = tuple(range(len(v.shape)))[-n_sample_dims:]
-    mag = jax.numpy.sqrt(jax.numpy.sum(jax.numpy.square(v), dims))
-    for _ in range(n_sample_dims):
-        mag = jax.numpy.expand_dims(mag, -1)
-    mag = jax.numpy.resize(mag, v.shape)
-    return jax.numpy.divide(v, mag)
+def f_norm_l2(v, n_sample_dims = None):
+    v_sq = jax.numpy.square(v)
+    scale = utils.expand_dims_like(
+        jax.numpy.sqrt(v_sq.sum(axis = -1)), -1, v
+    )
+    return jax.numpy.divide(v, scale)
 
-def uniform_spherical(shape, n = 1):
+def norm_gaussian(shape, n = 1):
     v = gaussian(shape)
-    return norm_gaussian(v)
+    res = f_norm_l2(v)
+    return res
 
 # ---------------------------------------------------------------
 
@@ -138,15 +138,15 @@ def orthogonal(n, shape=None, seed = 69):
     return jax.random.orthogonal(
         next_key(seed=seed), 
         n,
-        # shape = tuple(shape),
+        **({} if not shape else dict(shape=shape))
         #
     )
 
-def vorthogonal(shape, n, seed = 69):
+def vorthogonal(n, shape=None, seed = 69):
     keys = next_keys(n, seed=seed)
     f = jax.vmap(functools.partial(
         jax.random.orthogonal, 
-        shape=tuple(shape),
+        **({} if not shape else dict(shape=shape))
         #
     ))
     return f(keys)

@@ -26,36 +26,11 @@ import xtuples as xt
 
 from . import rand
 from . import dates
+from . import utils
 
+expand_dims = utils.expand_dims
+expand_dims_like = utils.expand_dims_like
 
-# ---------------------------------------------------------------
-
-def expand_dims(v, axis, size):
-    v_expand = jax.numpy.expand_dims(v, axis)
-    if axis == -1:
-        axis = len(v_expand.shape) - 1
-    res = jax.numpy.tile(
-        v_expand,
-        tuple([
-            *[1 for _ in v.shape[:axis]],
-            size,
-            *[1 for _ in v.shape[axis:]],
-        ])
-    )
-    return res
-
-def expand_dims_like(v, axis, like):
-    v_expand = jax.numpy.expand_dims(v, axis)
-    if axis == -1:
-        axis = len(v_expand.shape) - 1
-    return jax.numpy.tile(
-        v_expand,
-        tuple([
-            *[1 for _ in v.shape[:axis]],
-            like.shape[axis],
-            *[1 for _ in v.shape[axis:]],
-        ])
-    )
 # ---------------------------------------------------------------
 
 def return_false(self):
