@@ -47,7 +47,7 @@ def gaussian_kde_1d_df(xs, key = "key", **kde_kwargs):
         "density": densities,
     })
 
-def gaussian_kde_2d(x, y, clip_quantile = None, n = 30):
+def gaussian_kde_2d(x, y, clip_quantile = None, n = 30, ravel = True):
 
     x = clip(x, clip_quantile=clip_quantile)
     y = clip(y, clip_quantile=clip_quantile)
@@ -69,8 +69,9 @@ def gaussian_kde_2d(x, y, clip_quantile = None, n = 30):
     # assert False, dict(Z=Z.shape, positions=positions.shape)
 
     # z is density over the grid ((xmin, xmax) (ymin, ymax))
-
-    return X.ravel(), Y.ravel(), Z.ravel()
+    if ravel:
+        return X.ravel(), Y.ravel(), Z.ravel()
+    return X, Y, Z
 
 def gaussian_kde_2d_df(xys, key = "key", **kde_kwargs):
     ks = []

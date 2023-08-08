@@ -42,8 +42,8 @@ class Input_DataFrame_Wide(typing.NamedTuple):
     fixed_columns: bool = False
     fixed_index: bool = False
 
-    _columns: xt.iTuple = None
-    _index: xt.iTuple = None
+    columns: xt.iTuple = None
+    index: xt.iTuple = None
 
     def init_shape(self, model, data):
         # path[0] = stage, so path[1] = index of data element
@@ -51,10 +51,10 @@ class Input_DataFrame_Wide(typing.NamedTuple):
         return self._replace(
             shape=df.values.shape,
             **({} if not self.fixed_columns else dict(
-                _columns=xt.iTuple(df.columns)
+                columns=xt.iTuple(df.columns)
             )),
             **({} if not self.fixed_index else dict(
-                _index=xt.iTuple(df.index)
+                index=xt.iTuple(df.index)
             )),
         )
     
@@ -63,14 +63,14 @@ class Input_DataFrame_Wide(typing.NamedTuple):
         df = data[self.loc.path[-1]]
         if self.fixed_columns:
             columns = xt.iTuple(df.columns)
-            assert columns == self._columns, dict(
-                fixed=self._columns,
+            assert columns == self.columns, dict(
+                fixed=self.columns,
                 given=columns
             )
         if self.fixed_index:
             index = xt.iTuple(df.index)
-            assert index == self._index, dict(
-                fixed=self._index,
+            assert index == self.index, dict(
+                fixed=self.index,
                 given=index
             )
         return jax.numpy.array(df.values)

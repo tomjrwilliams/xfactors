@@ -127,7 +127,7 @@ df_line_3d_chart = functools.partial(
     #
 )
 
-def f_df_density_chart(gk, y, clip_quantile=.01):
+def f_df_density_df(gk, y, clip_quantile=.01):
     def f(df):
         gvs = df[gk].unique()
         vs = {
@@ -148,7 +148,7 @@ def df_density_chart(df, g, y, clip_quantile=.01, **kwargs):
         x="position",
         y="density",
         color=g,
-        f_df = f_df_density_chart(
+        f_df = f_df_density_df(
             g, y, clip_quantile=clip_quantile
         ),
         **kwargs
@@ -259,13 +259,13 @@ def df_density_facet_chart(df, g, y, clip_quantile=.01, **kwargs):
         x="position",
         y="density",
         facet=g,
-        f_df = f_df_density_chart(
+        f_df = f_df_density_df(
             g, y, clip_quantile=clip_quantile
         ),
         **kwargs
     )
 
-def f_df_density_pair_chart(columns, gk, clip_quantile=.01):
+def f_df_density_pair_df(columns, gk, clip_quantile=.01):
     def f(df):
         pairs = [
             pair for pair in itertools.combinations(columns, 2)
@@ -296,6 +296,7 @@ def df_density_pair_chart(
     columns = None,
     excluding=xt.iTuple(),
     facet_col=None,
+    separate=False,
     **kwargs
 ):
     if facet_col is not None:
@@ -306,7 +307,7 @@ def df_density_pair_chart(
             col for col in df.columns if col not in excluding
         ]
 
-    f_df = f_df_density_pair_chart(
+    f_df = f_df_density_pair_df(
         columns, key, clip_quantile=clip_quantile
     )
 
@@ -322,19 +323,31 @@ def df_density_pair_chart(
         ])
     else:
         df = f_df(df)
-
-    return df_facet_scatter_chart(
-        df,
+    chart_kws = dict(
         x="x",
         y="y",
         color="density",
-        share_x=False,
-        share_y=False,
         color_continuous_scale="Blues",
-        facet_row=key,
-        facet_col=facet_col,
+        height=400,
+        width=600,
         **kwargs,
     )
+    if not separate:
+        return df_facet_scatter_chart(
+            df,
+            share_x=False,
+            share_y=False,
+            facet_row=key,
+            facet_col=facet_col,
+            **chart_kws,
+        )
+    return [
+        df_scatter_chart(
+            df[df[key] == v],
+            **chart_kws,
+        )
+        for v in df[key].unique()
+    ]
 
 def vector_rays(nd, ns, gs, xs, ys, zs = None, i = 0, g = 0):
     assert nd.shape[-1] == 2 if zs is None else 3
