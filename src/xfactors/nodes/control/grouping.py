@@ -27,31 +27,28 @@ from . import xfactors as xf
 
 # ---------------------------------------------------------------
 
+# below is eg. for latent gp model
+# so we first group by (say) sector
+# then for each, vmap gp
+# then flatten back down & apply constraints (mse, ...)
+
+# ---------------------------------------------------------------
+
 @xf.operator_bindings()
 @xt.nTuple.decorate
-class Cov(typing.NamedTuple):
+class Group_By(typing.NamedTuple):
+    
+    sites_values: xt.iTuple
+    sites_keys: xt.iTuple
 
-    sites: xt.iTuple
-
-    # ---
-
-    random: bool = False
-    static: bool = False
     loc: xf.Location = None
     shape: xt.iTuple = None
 
-    def init_shape(self, model, data):
-        objs = self.sites.map(xf.f_get_location(model))
-        n = objs.map(lambda o: o.shape[1]).pipe(sum)
-        return self._replace(
-            shape = (n, n,),
-        )
+    # return tuple of values vmapped over indices
+    # given by the values in the map(get_location(site_keys))
 
     def apply(self, state):
-        data = xf.concatenate_sites(self.sites, state, axis = 1)
-        res = jax.numpy.cov(
-            jax.numpy.transpose(data)
-        )
-        return res
+        assert False, self
+
 
 # ---------------------------------------------------------------

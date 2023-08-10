@@ -574,5 +574,13 @@ class Model(typing.NamedTuple):
 
     apply = apply_model
 
+    # TODO: rename operators as nodes
+    # in stages
+
+    # and have a render method
+    # that renders the graph, with labelled boxs on stages
+
+    # can use __name__ for node labelling
+
 
 # ---------------------------------------------------------------

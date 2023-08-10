@@ -25,26 +25,13 @@ from . import rand
 from . import dates
 from . import xfactors as xf
 
-# ---------------------------------------------------------------
-
-# from jax.config import config 
-# config.update("jax_debug_nans", True) 
-
-def calc_loadings(eigvals, eigvecs):
-    return jax.numpy.multiply(
-        # jax.numpy.resize(
-        #     jax.numpy.expand_dims(eigvals, 0),
-        #     eigvecs.shape,
-        # ),
-        xf.expand_dims_like(eigvals, axis=0, like=eigvecs),
-        eigvecs,
-    )
+from . import pca
 
 # ---------------------------------------------------------------
 
 @xf.operator_bindings()
 @xt.nTuple.decorate
-class PCA(typing.NamedTuple):
+class PCA_Rolling(typing.NamedTuple):
     
     n: int
     sites: xt.iTuple
@@ -68,9 +55,11 @@ class PCA(typing.NamedTuple):
         ))
         return eigvals, weights
 
+# ---------------------------------------------------------------
+
 @xf.operator_bindings()
 @xt.nTuple.decorate
-class PCA_Encoder(typing.NamedTuple):
+class PCA_Rolling_Encoder(typing.NamedTuple):
     
     n: int
     sites: xt.iTuple
@@ -105,7 +94,7 @@ class PCA_Encoder(typing.NamedTuple):
 
 @xf.operator_bindings()
 @xt.nTuple.decorate
-class PCA_Decoder(typing.NamedTuple):
+class PCA_Rolling_Decoder(typing.NamedTuple):
     
     sites: xt.iTuple
 
@@ -116,6 +105,9 @@ class PCA_Decoder(typing.NamedTuple):
     # so that can spread across multiple prev stages
     # and then concat both, or if size = 1, then as below
     # can also pass as a nested tuple? probs cleaner to have separate
+
+    # todo. split out the apply method
+    # to a class method on the non rolling class
 
     loc: xf.Location = None
     shape: xt.iTuple = None
@@ -128,30 +120,73 @@ class PCA_Decoder(typing.NamedTuple):
         data = xf.get_location(l_site, state)
         return jax.numpy.matmul(weights, data.T)
 
+# ---------------------------------------------------------------
+
+# eg. latent features = equity sectors
+# n_latents > factors, zero weights on extras (noise factors)
+
+# so each sector (per latent_factor) has weighting
+# on the equivalent index loading factor
+# with 1 in the features (tickers) in that sector, zero elsewhere
+
 @xf.operator_bindings()
 @xt.nTuple.decorate
-class VMap_PCA_Decoder(typing.NamedTuple):
+class PCA_Rolling_LatentWeightedMean_MSE(typing.NamedTuple):
     
-    sites_weight: xt.iTuple
-    sites_data: xt.iTuple
-
-    # the sites are not per vmap entry
-    # but rather concatenated, and then vmapped over
-
-    # so each site should return a tuple to vmap over
-    # tuple because can then be irregular size
-
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    # sites
+    loadings: xt.iTuple
+    weights: xt.iTuple
+    latents: xt.iTuple
 
     def apply(self, state):
-        assert False
+
+        # TODO: not concatenate
+        # irregular shapes are likely so can't be a single data structure
+
+        # ie. the rolling pca has to return a tuple not a single array
+        # makes eg. rolling universe simpler as well if covariance only has the values needed for each period
+        
+        # but the joining still makes sense
+        # so join_sites (tuple join instead of concatenate)
+        # can even be a tuple of tuple to still allow concatenation
+
+        # or we drop the idea of site concatenation?
+        # and have explicit concatenation operators
+        # probably that...
+
+        loadings = xf.concatenate_sites(self.loadings, state)
+        # periods * features * factors 
+        loadings = jax.numpy.transpose(loadings, (0, 2, 1))
+
+        weights = xf.concatenate_sites(self.weights, state)
+        # n_latents * latent_features * factors * features
+
+        latents = xf.concatenate_sites(self.latents, state)
+        # n_latents * latent_features
+
+        weighted_loadings = jax.numpy.multiply(
+            xf.expand_dims(
+                xf.expand_dims(loadings, 0, 1), 0, 1
+            ),
+            xf.expand_dims(weights, 2, 1),
+        ).sum(axis=-1).sum(axis=-1)
+        # n_latents, latent_features, periods, factors, features
+        # n_latents, latent_features, periods
+
+        weighted_loadings = jax.numpy.transpose(
+            weighted_loadings, (2, 0, 1,)
+        )
+
+        return jax.numpy.square(
+            xf.expand_dims(latents, 0, 1),
+            weighted_loadings,
+        ).mean()
 
 # ---------------------------------------------------------------
 
 @xf.operator_bindings()
 @xt.nTuple.decorate
-class PPCA_NegLikelihood(typing.NamedTuple):
+class PPCA_Rolling_NegLikelihood(typing.NamedTuple):
     
     site_sigma: xf.Location
     sites_weights: xt.iTuple
@@ -170,64 +205,17 @@ class PPCA_NegLikelihood(typing.NamedTuple):
 
     random: float = 0
 
+    # todo put the calc into a class method
+    # so can be re-used in rolling
+
     def apply(self, state, small = 10 ** -4):
-        # https://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.pdf
+        return
 
-        sigma = xf.get_location(self.site_sigma, state)
-        sigma_sq = jax.numpy.square(sigma)
-
-        weights = xf.concatenate_sites(self.sites_weights, state)
-        cov = xf.get_location(self.site_cov, state) # of obs
-    
-        # N = xf.get_location(self.site_encoder, state).shape[0]
-
-        # feature * feature
-        S = cov
-        # d = weights.shape[0] # n_features
-
-        if self.random:
-            key = xf.get_location(
-                self.loc.as_random(), state
-            )
-            weights = weights + ((
-                jax.random.normal(key, shape=weights.shape)
-            ) * self.random)
-    
-        W = weights
-        
-        noise = jax.numpy.eye(weights.shape[0]) * sigma_sq
-        C = jax.numpy.add(
-            jax.numpy.matmul(weights, weights.T),
-            noise
-        )
-        # noise = jax.numpy.eye(weights.shape[1]) * sigma_sq
-        # M = jax.numpy.add(
-        #     jax.numpy.matmul(weights.T, weights),
-        #     noise
-        # )
-        # invM = jax.numpy.linalg.inv(M)
-
-        detC = jax.numpy.linalg.det(C)
-        invC = jax.numpy.linalg.inv(C)
-
-        invC_S = jax.numpy.matmul(invC, S)
-        trace_invC_S = jax.numpy.trace(invC_S)
-
-        # max this (dropped the * N)
-        L = - (
-            # + (d * jax.numpy.log(2 * numpy.pi))
-            + jax.numpy.log(detC) + trace_invC_S
-        ) / 2
-        # so min neg(L)
-
-        return -L
-
-        
 # ---------------------------------------------------------------
 
 @xf.operator_bindings()
 @xt.nTuple.decorate
-class PPCA_EM(typing.NamedTuple):
+class PPCA_Rolling_EM(typing.NamedTuple):
     
     site_sigma: xf.Location
     sites_weights: xt.iTuple
@@ -300,7 +288,7 @@ class PPCA_EM(typing.NamedTuple):
 
 @xf.operator_bindings()
 @xt.nTuple.decorate
-class PPCA_Marginal_Observations(typing.NamedTuple):
+class PPCA_Rolling_Marginal_Observations(typing.NamedTuple):
     
     site_sigma: xf.Location
     sites_weights: xt.iTuple
@@ -345,7 +333,7 @@ class PPCA_Marginal_Observations(typing.NamedTuple):
 
 @xf.operator_bindings()
 @xt.nTuple.decorate
-class PPCA_Conditional_Latents(typing.NamedTuple):
+class PPCA_Rolling_Conditional_Latents(typing.NamedTuple):
     
     site_sigma: xf.Location
     sites_weights: xt.iTuple
