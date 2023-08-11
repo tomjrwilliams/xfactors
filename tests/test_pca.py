@@ -31,7 +31,7 @@ def test_pca() -> bool:
         model.add_input(xf.nodes.inputs.dfs.Input_DataFrame_Wide())
         .add_node(PCA, xf.nodes.pca.vanilla.PCA(
             n=3,
-            sites=xt.iTuple.one(
+            data=xt.iTuple.one(
                 xf.Loc.result(INPUT, 0),
             ),
             #

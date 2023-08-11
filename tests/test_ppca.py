@@ -33,32 +33,32 @@ def test_ppca() -> bool:
     model = (
         model.add_input(xf.nodes.inputs.dfs.Input_DataFrame_Wide())
         .add_node(COV, xf.nodes.cov.vanilla.Cov(
-            sites=xt.iTuple.one(
+            data=xt.iTuple.one(
                 xf.Loc.result(INPUT, 0),
             ), static=True,
         ))
         .add_node(ENCODE, xf.nodes.pca.vanilla.PCA_Encoder(
-            sites=xt.iTuple.one(
+            data=xt.iTuple.one(
                 xf.Loc.result(INPUT, 0),
             ),
             n=N + 1,
             #
         ))
         .add_node(DECODE, xf.nodes.pca.vanilla.PCA_Decoder(
-            sites=xt.iTuple(
+            data=xt.iTuple(
                 xf.Loc.param(ENCODE, 0),
                 xf.Loc.result(ENCODE, 0),
             )
             #
         ))
         .add_constraint(xf.nodes.constraints.loss.Constraint_MSE(
-            sites=xt.iTuple(
+            data=xt.iTuple(
                 xf.Loc.result(INPUT, 0),
                 xf.Loc.result(DECODE, 0),
             )
         ))
         .add_constraint(xf.nodes.constraints.linalg.Constraint_EigenVLike(
-            sites=xf.xt.iTuple(
+            data=xf.xt.iTuple(
                 xf.Loc.param(ENCODE, 0),
                 xf.Loc.result(ENCODE, 0),
             ),

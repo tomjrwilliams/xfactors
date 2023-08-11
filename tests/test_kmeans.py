@@ -79,19 +79,19 @@ def test_kmeans() -> bool:
             ),
         ))
         .add_constraint(xf.nodes.constraints.em.Constraint_EM(
-            sites_param=xt.iTuple.one(
+            param=xt.iTuple.one(
                 xf.Loc.param(PARAMS, 0)
             ),
-            sites_optimal=xt.iTuple.one(
+            optimal=xt.iTuple.one(
                 xf.Loc.result(EM, 0, 0)
             ),
             cut_tree=True,
         ))
         .add_constraint(xf.nodes.constraints.em.Constraint_EM(
-            sites_param=xt.iTuple.one(
+            param=xt.iTuple.one(
                 xf.Loc.param(PARAMS, 1)
             ),
-            sites_optimal=xt.iTuple.one(
+            optimal=xt.iTuple.one(
                 xf.Loc.result(EM, 0, 1)
             ),
             cut_tree=True,

@@ -34,12 +34,12 @@ def test_ppca() -> bool:
     model = (
         model.add_input(xf.nodes.inputs.dfs.Input_DataFrame_Wide())
         .add_node(COV, xf.nodes.cov.vanilla.Cov(
-            sites=xt.iTuple.one(
+            data=xt.iTuple.one(
                 xf.Loc.result(INPUT, 0),
             ), static=True,
         ))
         .add_node(ENCODE, xf.nodes.pca.vanilla.PCA_Encoder(
-            sites=xt.iTuple.one(
+            data=xt.iTuple.one(
                 xf.Loc.result(INPUT, 0),
             ),
             n=N,
@@ -50,7 +50,7 @@ def test_ppca() -> bool:
             v=jax.numpy.ones(1),
         ))
         .add_node(DECODE, xf.nodes.pca.vanilla.PCA_Decoder(
-            sites=xt.iTuple(
+            data=xt.iTuple(
                 xf.Loc.param(ENCODE, 0),
                 xf.Loc.result(ENCODE, 0),
             ),
@@ -58,34 +58,34 @@ def test_ppca() -> bool:
             #
         ))
         .add_node(EM, xf.nodes.pca.vanilla.PPCA_EM(
-            site_sigma=xf.Loc.param(ENCODE, 1),
-            sites_weights=xt.iTuple.one(
+            sigma=xf.Loc.param(ENCODE, 1),
+            weights=xt.iTuple.one(
                 xf.Loc.param(ENCODE, 0),
             ),
-            site_cov=xf.Loc.result(COV, 0),
+            cov=xf.Loc.result(COV, 0),
             train=True,
             # random=0.01,
         ))
         .add_constraint(xf.nodes.constraints.linalg.Constraint_Orthonormal(
-            sites=xf.xt.iTuple.one(
+            data=xf.xt.iTuple.one(
                 xf.Loc.param(ENCODE, 0),
             ),
             T=True,
         ))
         .add_constraint(xf.nodes.constraints.em.Constraint_EM(
-            sites_param=xt.iTuple.one(
+            param=xt.iTuple.one(
                 xf.Loc.param(ENCODE, 0)
             ),
-            sites_optimal=xt.iTuple.one(
+            optimal=xt.iTuple.one(
                 xf.Loc.result(EM, 0, 0)
             ),
             # cut_tree=True,
         ))
         .add_constraint(xf.nodes.constraints.em.Constraint_EM(
-            sites_param=xt.iTuple.one(
+            param=xt.iTuple.one(
                 xf.Loc.param(ENCODE, 1)
             ),
-            sites_optimal=xt.iTuple.one(
+            optimal=xt.iTuple.one(
                 xf.Loc.result(EM, 0, 1)
             ),
             # cut_tree=True,

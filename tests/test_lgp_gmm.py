@@ -91,14 +91,14 @@ def test_lgp() -> bool:
     model = (
         model.add_input(xf.nodes.inputs.dfs.Input_DataFrame_Wide())
         .add_node(COV, xf.nodes.cov.vanilla.Cov(
-            sites=xt.iTuple.one(
+            data=xt.iTuple.one(
                 xf.Loc.result(INPUT, 0),
             ), static=True,
         ))
         .add_node(LATENT, xf.latents.Latent(
             n=2,
             axis=1,
-            sites=xt.iTuple.one(
+            data=xt.iTuple.one(
                 xf.Loc.result(INPUT, 0)
             )
         ))
@@ -112,13 +112,13 @@ def test_lgp() -> bool:
             )
         ))
         .add_constraint(xf.nodes.constraints.loss.Constraint_MSE(
-            sites=xt.iTuple(
+            data=xt.iTuple(
                 xf.Loc.result(COV, 0),
                 xf.Loc.result(GP, 0),
             )
         ))
         # .add_constraint(xf.nodes.constraints.loss.Constraint_MSE(
-        #     sites=xt.iTuple(
+        #     data=xt.iTuple(
         #         xf.Loc.result(INPUT, 0),
         #         xf.Loc.result(GP, 0, 1),
         #     )

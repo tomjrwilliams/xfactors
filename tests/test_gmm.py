@@ -81,80 +81,80 @@ def test_kmeans() -> bool:
             ),
         ))
         # .add_constraint(xf.nodes.constraints.loss.Constraint_MinimiseSquare(
-        #     sites=xt.iTuple.one(
+        #     data=xt.iTuple.one(
         #         xf.Loc.result(EM, 0, 3)
         #     ),
         # ))
         # .add_constraint(xf.nodes.constraints.Constraint_Orthogonal(
-        #     sites=xt.iTuple.one(
+        #     data=xt.iTuple.one(
         #         xf.Loc.result(EM, 0, 0)
         #     ),
         # ))
         .add_constraint(xf.nodes.constraints.loss.Constraint_Maximise(
-            sites=xt.iTuple.one(
+            data=xt.iTuple.one(
                 xf.Loc.result(EM, 0, 3)
             ),
         ))
         .add_constraint(xf.nodes.constraints.loss.Constraint_Maximise(
-            sites=xt.iTuple.one(
+            data=xt.iTuple.one(
                 xf.Loc.result(EM, 0, 4)
             ),
         ))
         # .add_constraint(xf.nodes.constraints.loss.Constraint_MinimiseSquare(
-        #     sites=xt.iTuple.one(
+        #     data=xt.iTuple.one(
         #         xf.Loc.result(EM, 0)
         #     ),
         # ))
         # .add_constraint(xf.nodes.constraints.Constraint_Orthogonal(
-        #     sites=xf.xt.iTuple.one(
+        #     data=xf.xt.iTuple.one(
         #         xf.Loc.param(PARAMS, 0)
         #     ),
         # ))
         .add_constraint(xf.nodes.constraints.linalg.Constraint_VOrthogonal(
-            sites=xf.xt.iTuple.one(
+            data=xf.xt.iTuple.one(
                 xf.Loc.param(PARAMS, 1)
             ),
         ))
         # .add_constraint(xf.nodes.constraints.loss.Constraint_MinimiseMMSpread(
-        #     sites=xt.iTuple.one(
+        #     data=xt.iTuple.one(
         #         xf.Loc.param(PARAMS, 1)
         #     ),
         # ))
         .add_constraint(xf.nodes.constraints.linalg.Constraint_L1_MM_Diag(
-            sites=xt.iTuple.one(
+            data=xt.iTuple.one(
                 xf.Loc.param(PARAMS, 1)
             ),
         ))
         # .add_constraint(xf.nodes.constraints.Constraint_Orthogonal(
-        #     sites=xf.xt.iTuple.one(
+        #     data=xf.xt.iTuple.one(
         #         xf.Loc.param(PARAMS, 0)
         #     ),
         # ))
         # .add_constraint(xf.nodes.constraints.em.Constraint_EM(
-        #     sites_param=xt.iTuple.one(
+        #     param=xt.iTuple.one(
         #         xf.Loc.param(PARAMS, 0)
         #     ),
-        #     sites_optimal=xt.iTuple.one(
+        #     optimal=xt.iTuple.one(
         #         xf.Loc.result(EM, 0, 0)
         #         #mu
         #     ),
         #     cut_tree=True,
         # ))
         # .add_constraint(xf.nodes.constraints.em.Constraint_EM_MatMul(
-        #     sites_param=xt.iTuple.one(
+        #     param=xt.iTuple.one(
         #         xf.Loc.param(PARAMS, 1)
         #     ),
-        #     sites_optimal=xt.iTuple.one(
+        #     optimal=xt.iTuple.one(
         #         xf.Loc.result(EM, 0, 1)
         #         #a
         #     ),
         #     cut_tree=True,
         # ))
         # .add_constraint(xf.nodes.constraints.em.Constraint_EM(
-        #     sites_param=xt.iTuple.one(
+        #     param=xt.iTuple.one(
         #         xf.Loc.param(PARAMS, 2)
         #     ),
-        #     sites_optimal=xt.iTuple.one(
+        #     optimal=xt.iTuple.one(
         #         xf.Loc.result(EM, 0, 3)
         #         # b
         #     ),
@@ -201,13 +201,13 @@ def test_kmeans() -> bool:
     
     labels, order = (
         xt.iTuple([int(l) for l in labels])
-        .pipe(xf.kmeans.reindex_labels)
+        .pipe(xf.nodes.clustering.kmeans.reindex_labels)
     )
     clusters = [clusters[i] for i in order]
 
     k_means = KMeans(n_clusters=3, random_state=69).fit(vs)
     sk_labels, sk_order = xt.iTuple(k_means.labels_).pipe(
-        xf.kmeans.reindex_labels
+        xf.nodes.clustering.kmeans.reindex_labels
     )
 
     clusters = numpy.round(clusters, 3)
