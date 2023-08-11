@@ -1,8 +1,9 @@
 
+from __future__ import annotations
+
 import operator
 import collections
 # import collections.abc
-
 import functools
 import itertools
 
@@ -35,18 +36,11 @@ class PCA_Rolling(typing.NamedTuple):
     n: int
     sites: xt.iTuple
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PCA_Rolling, tuple, tuple]: ...
     
-
-    def init_shape(self, site, model, data):
-        objs = self.sites.map(xf.f_get_location(model))
-        return self._replace(
-            shape = (
-                objs.map(lambda o: o.shape[1]).pipe(sum),
-                self.n,
-            )
-        )
-
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         data = xf.concatenate_sites(self.sites, state, axis = 1)
         eigvals, weights = jax.numpy.linalg.eig(jax.numpy.cov(
             jax.numpy.transpose(data)
@@ -63,27 +57,11 @@ class PCA_Rolling_Encoder(typing.NamedTuple):
     sites: xt.iTuple
     site: xf.OptionalLocation = None
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PCA_Rolling_Encoder, tuple, tuple]: ...
     
-    
-
-    def init_shape(self, site, model, data):
-        objs = self.sites.map(xf.f_get_location(model))
-        return self._replace(
-            shape = (
-                objs.map(lambda o: o.shape[1]).pipe(sum),
-                self.n,
-            )
-        )
-
-    def init_params(self, site, model, data):
-        if self.site is None:
-            return self._replace(
-                site=self.loc.as_param()
-            ), utils.rand.gaussian(self.shape)
-        # TODO: check below, assumes weights generated elsewhere
-        return self, utils.rand.gaussian(self.shape)
-
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         weights = xf.get_location(self.site, state)
         data = xf.concatenate_sites(self.sites, state, axis = 1)
         return jax.numpy.matmul(data, weights)
@@ -95,21 +73,11 @@ class PCA_Rolling_Decoder(typing.NamedTuple):
     
     sites: xt.iTuple
 
-    # sites_weight: xt.iTuple
-    # sites_data: xt.iTuple
-
-    # TODO: generalise to sites_weight and sites_data
-    # so that can spread across multiple prev stages
-    # and then concat both, or if size = 1, then as below
-    # can also pass as a nested tuple? probs cleaner to have separate
-
-    # todo. split out the apply method
-    # to a class method on the non rolling class
-
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PCA_Rolling_Decoder, tuple, tuple]: ...
     
-    
-
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         assert len(self.sites) == 2
         l_site, r_site = self.sites
         weights = xf.get_location(r_site, state)
@@ -134,7 +102,11 @@ class PCA_Rolling_LatentWeightedMean_MSE(typing.NamedTuple):
     weights: xt.iTuple
     latents: xt.iTuple
 
-    def apply(self, state):
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PCA_Rolling_LatentWeightedMean_MSE, tuple, tuple]: ...
+
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
 
         # TODO: not concatenate
         # irregular shapes are likely so can't be a single data structure
@@ -192,9 +164,6 @@ class PPCA_Rolling_NegLikelihood(typing.NamedTuple):
 
     # ---
 
-    
-    
-
     # NOTE: direct minimisation with gradient descent
     # doesn't seem to recover pca weights
 
@@ -202,6 +171,10 @@ class PPCA_Rolling_NegLikelihood(typing.NamedTuple):
 
     # todo put the calc into a class method
     # so can be re-used in rolling
+
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PPCA_Rolling_NegLikelihood, tuple, tuple]: ...
 
     def apply(self, state, small = 10 ** -4):
         return
@@ -220,9 +193,6 @@ class PPCA_Rolling_EM(typing.NamedTuple):
 
     # ---
 
-    
-    
-
     random: float = 0
 
     # NOTE: we just need covariance here
@@ -230,6 +200,10 @@ class PPCA_Rolling_EM(typing.NamedTuple):
     # so we can pass this from a kernel function
     # if we want
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PPCA_Rolling_EM, tuple, tuple]: ...
+    
     def apply(self, state, small = 10 ** -4):
         # https://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.pdf
 
@@ -293,11 +267,12 @@ class PPCA_Rolling_Marginal_Observations(typing.NamedTuple):
 
     # ---
 
-    
-    
-
     random: float = 0
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PPCA_Rolling_Marginal_Observations, tuple, tuple]: ...
+    
     def apply(self, state, small = 10 ** -4):
         # https://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.pdf
 
@@ -336,12 +311,13 @@ class PPCA_Rolling_Conditional_Latents(typing.NamedTuple):
     site_cov: xf.Location
 
     # ---
-
-    
-    
-
+   
     random: float = 0
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PPCA_Rolling_Conditional_Latents, tuple, tuple]: ...
+    
     def apply(self, state, small = 10 ** -4):
         # https://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.pdf
 

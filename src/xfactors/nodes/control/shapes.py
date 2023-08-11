@@ -1,8 +1,9 @@
 
+from __future__ import annotations
+
 import operator
 import collections
 # import collections.abc
-
 import functools
 import itertools
 
@@ -40,9 +41,11 @@ class Stack(typing.NamedTuple):
     
     sites_values: xt.iTuple
 
-    
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PCA, tuple, tuple]: ...    
 
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         assert False, self
 
 # flatten such a tuple from the above back down
@@ -54,9 +57,11 @@ class UnStack(typing.NamedTuple):
     
     sites_values: xt.iTuple
 
-    
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PCA, tuple, tuple]: ...
 
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         assert False, self
 
 # flatten such a tuple from the above back down
@@ -70,9 +75,11 @@ class Flatten(typing.NamedTuple):
     
     sites_values: xt.iTuple
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PCA, tuple, tuple]: ...
     
-
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         assert False, self
 
 
@@ -81,9 +88,11 @@ class UnFlatten(typing.NamedTuple):
     
     sites_values: xt.iTuple
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PCA, tuple, tuple]: ...
     
-
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         assert False, self
 
 # flatten such a tuple from the above back down
@@ -98,9 +107,11 @@ class Concatenate(typing.NamedTuple):
     
     sites_values: xt.iTuple
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PCA, tuple, tuple]: ...
     
-
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         assert False, self
 
 
@@ -111,9 +122,11 @@ class UnConcatenate(typing.NamedTuple):
     
     sites_values: xt.iTuple
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PCA, tuple, tuple]: ...
     
-
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         assert False, self
 
 # flatten such a tuple from the above back down

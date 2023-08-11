@@ -17,7 +17,7 @@ from sklearn.cluster import KMeans
 
 def test_lgp() -> bool:
 
-    ds = xf.dates.starting(datetime.date(2020, 1, 1), 100)
+    ds = xf.utils.dates.starting(datetime.date(2020, 1, 1), 100)
 
     N_COLS = 5
     N_CLUSTERS = 3
@@ -44,8 +44,8 @@ def test_lgp() -> bool:
         initial={},
     )
 
-    # mu = xf.rand.orthogonal(N_FACTORS)[..., :N_CLUSTERS]
-    mu = xf.rand.gaussian((N_FACTORS, N_CLUSTERS,))
+    # mu = xf.utils.rand.orthogonal(N_FACTORS)[..., :N_CLUSTERS]
+    mu = xf.utils.rand.gaussian((N_FACTORS, N_CLUSTERS,))
     
     betas = numpy.add(
         numpy.array([
@@ -55,7 +55,7 @@ def test_lgp() -> bool:
             ]
             for f in FACTORS
         ]),
-        xf.rand.gaussian((N_FACTORS, N_VARIABLES,)) / 10
+        xf.utils.rand.gaussian((N_FACTORS, N_VARIABLES,)) / 10
     ).T
     cov = numpy.matmul(
         numpy.matmul(betas, numpy.eye(N_FACTORS)), betas.T
@@ -71,7 +71,7 @@ def test_lgp() -> bool:
         # )
     )
 
-    vs = xf.rand.v_mv_gaussian(
+    vs = xf.utils.rand.v_mv_gaussian(
         100,
         mu=numpy.zeros((N_VARIABLES,)), 
         cov=cov
@@ -80,7 +80,7 @@ def test_lgp() -> bool:
 
     data = (
         pandas.DataFrame({
-            f: xf.dates.dated_series({d: v for d, v in zip(ds, fvs)})
+            f: xf.utils.dates.dated_series({d: v for d, v in zip(ds, fvs)})
             for f, fvs in enumerate(numpy.array(vs).T)
         }),
     )
@@ -89,20 +89,20 @@ def test_lgp() -> bool:
     INPUT, COV, LATENT, GP = STAGES
 
     model = (
-        model.add_input(xf.inputs.Input_DataFrame_Wide())
-        .add_operator(COV, xf.stats.Cov(
+        model.add_input(xf.nodes.inputs.dfs.Input_DataFrame_Wide())
+        .add_node(COV, xf.nodes.cov.vanilla.Cov(
             sites=xt.iTuple.one(
                 xf.Loc.result(INPUT, 0),
             ), static=True,
         ))
-        .add_operator(LATENT, xf.latents.Latent(
+        .add_node(LATENT, xf.latents.Latent(
             n=2,
             axis=1,
             sites=xt.iTuple.one(
                 xf.Loc.result(INPUT, 0)
             )
         ))
-        .add_operator(GP, xf.gp.GP_RBF(
+        .add_node(GP, xf.gp.GP_RBF(
             # sigma=1.,
             sites_features=xt.iTuple.one(
                 xf.Loc.result(LATENT, 0),
@@ -111,19 +111,19 @@ def test_lgp() -> bool:
                 xf.Loc.result(INPUT, 0),
             )
         ))
-        .add_constraint(xf.constraints.Constraint_MSE(
+        .add_constraint(xf.nodes.constraints.loss.Constraint_MSE(
             sites=xt.iTuple(
                 xf.Loc.result(COV, 0),
                 xf.Loc.result(GP, 0),
             )
         ))
-        # .add_constraint(xf.constraints.Constraint_MSE(
+        # .add_constraint(xf.nodes.constraints.loss.Constraint_MSE(
         #     sites=xt.iTuple(
         #         xf.Loc.result(INPUT, 0),
         #         xf.Loc.result(GP, 0, 1),
         #     )
         # ))
-        .init_shapes_params(data)
+        .init(data)
     )
 
     model = model.optimise(data, iters = 2500)

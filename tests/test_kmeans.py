@@ -27,10 +27,10 @@ def test_kmeans() -> bool:
         numpy.ones(N_COLS) * -1,
         numpy.zeros(N_COLS),
         numpy.ones(N_COLS) * 1,
-    ]) + (xf.rand.gaussian((N_CLUSTERS, N_COLS,)) / 2)
+    ]) + (xf.utils.rand.gaussian((N_CLUSTERS, N_COLS,)) / 2)
 
     vs = numpy.concatenate([
-        mu[cluster] + (xf.rand.gaussian((N_VARIABLES, N_COLS)) / 2)
+        mu[cluster] + (xf.utils.rand.gaussian((N_VARIABLES, N_COLS)) / 2)
         for cluster in range(N_CLUSTERS)
     ], axis = 0)
 
@@ -48,14 +48,14 @@ def test_kmeans() -> bool:
     INPUT, PARAMS, LABEL, EM = STAGES
 
     model = (
-        model.add_input(xf.inputs.Input_DataFrame_Wide())
-        .add_operator(PARAMS, xf.params.Gaussian(
+        model.add_input(xf.nodes.inputs.dfs.Input_DataFrame_Wide())
+        .add_node(PARAMS, xf.nodes.params.random.Gaussian(
             shape=(N_CLUSTERS, N_COLS,),
         ))
-        .add_operator(PARAMS, xf.params.Gaussian(
+        .add_node(PARAMS, xf.nodes.params.random.Gaussian(
             shape=(N_CLUSTERS, N_COLS,),
         ))
-        .add_operator(LABEL, xf.kmeans.KMeans_Labels(
+        .add_node(LABEL, xf.nodes.clustering.kmeans.KMeans_Labels(
             k=3,
             sites_mu=xt.iTuple.one(
                 xf.Loc.param(PARAMS, 0)
@@ -69,7 +69,7 @@ def test_kmeans() -> bool:
             # sites_mu
             # sites_cov
         ))
-        .add_operator(EM, xf.kmeans.KMeans_EM_Naive(
+        .add_node(EM, xf.nodes.clustering.kmeans.KMeans_EM_Naive(
             k=3,
             sites_data=xt.iTuple.one(
                 xf.Loc.result(INPUT, 0)
@@ -78,7 +78,7 @@ def test_kmeans() -> bool:
                 xf.Loc.result(LABEL, 0),
             ),
         ))
-        .add_constraint(xf.constraints.Constraint_EM(
+        .add_constraint(xf.nodes.constraints.em.Constraint_EM(
             sites_param=xt.iTuple.one(
                 xf.Loc.param(PARAMS, 0)
             ),
@@ -87,7 +87,7 @@ def test_kmeans() -> bool:
             ),
             cut_tree=True,
         ))
-        .add_constraint(xf.constraints.Constraint_EM(
+        .add_constraint(xf.nodes.constraints.em.Constraint_EM(
             sites_param=xt.iTuple.one(
                 xf.Loc.param(PARAMS, 1)
             ),
@@ -96,7 +96,7 @@ def test_kmeans() -> bool:
             ),
             cut_tree=True,
         ))
-        .init_shapes_params(data)
+        .init(data)
     )
 
     model = model.optimise(
@@ -114,13 +114,13 @@ def test_kmeans() -> bool:
     
     labels, order = (
         xt.iTuple([int(l) for l in results[LABEL][0]])
-        .pipe(xf.kmeans.reindex_labels)
+        .pipe(xf.nodes.clustering.kmeans.reindex_labels)
     )
     clusters = [clusters[i] for i in order]
 
     k_means = KMeans(n_clusters=3, random_state=69).fit(vs)
     sk_labels, sk_order = xt.iTuple(k_means.labels_).pipe(
-        xf.kmeans.reindex_labels
+        xf.nodes.clustering.kmeans.reindex_labels
     )
 
     clusters = numpy.round(clusters, 3)

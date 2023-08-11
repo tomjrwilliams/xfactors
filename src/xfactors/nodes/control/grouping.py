@@ -1,8 +1,9 @@
 
+from __future__ import annotations
+
 import operator
 import collections
 # import collections.abc
-
 import functools
 import itertools
 
@@ -38,12 +39,14 @@ class Group_By(typing.NamedTuple):
     sites_values: xt.iTuple
     sites_keys: xt.iTuple
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[Group_By, tuple, tuple]: ...
     
-
     # return tuple of values vmapped over indices
     # given by the values in the map(get_location(site_keys))
 
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         assert False, self
 
 

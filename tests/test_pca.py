@@ -11,15 +11,15 @@ from tests import utils
 
 def test_pca() -> bool:
 
-    ds = xf.dates.starting(datetime.date(2020, 1, 1), 100)
+    ds = xf.utils.dates.starting(datetime.date(2020, 1, 1), 100)
 
-    vs_norm = xf.rand.gaussian((100, 3,))
-    betas = xf.rand.gaussian((3, 5,))
+    vs_norm = xf.utils.rand.gaussian((100, 3,))
+    betas = xf.utils.rand.gaussian((3, 5,))
     vs = numpy.matmul(vs_norm, betas)
 
     data = (
         pandas.DataFrame({
-            f: xf.dates.dated_series({d: v for d, v in zip(ds, fvs)})
+            f: xf.utils.dates.dated_series({d: v for d, v in zip(ds, fvs)})
             for f, fvs in enumerate(numpy.array(vs).T)
         }),
     )
@@ -28,15 +28,15 @@ def test_pca() -> bool:
     INPUT, PCA = STAGES
 
     model = (
-        model.add_input(xf.inputs.Input_DataFrame_Wide())
-        .add_operator(PCA, xf.pca.PCA(
+        model.add_input(xf.nodes.inputs.dfs.Input_DataFrame_Wide())
+        .add_node(PCA, xf.nodes.pca.vanilla.PCA(
             n=3,
             sites=xt.iTuple.one(
                 xf.Loc.result(INPUT, 0),
             ),
             #
         ))
-        .init_shapes_params(data)
+        .init(data)
     )
 
     model = model.optimise(data)

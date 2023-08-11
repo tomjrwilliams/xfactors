@@ -4,7 +4,6 @@ from __future__ import annotations
 import operator
 import collections
 # import collections.abc
-
 import functools
 import itertools
 
@@ -43,32 +42,19 @@ def calc_loadings(eigvals, eigvecs):
 
 # ---------------------------------------------------------------
 
-def func() -> xf.Model:
-    """
-    >>> func()
-    """
-    model, (INPUT, TEST) = xf.Model().init_stages(1)
-    model.add_node(TEST, PCA(1, xf.Location(0, xt.iTuple())))
-    return model
-
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init_params=xf.no_params)
 class PCA(typing.NamedTuple):
     
     n: int
     data: xf.Location
 
-    def init_params(
+    def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PCA, xt.iTuple]:
-        return self, ()
-
-    def init_shape(
-        self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PCA, tuple]:
+    ) -> tuple[PCA, tuple, tuple]:
         return self, (
             self.data.access(model).shape[1],
             self.n,
-        )
+        ), ()
 
     def apply(self, site: xf.Site, state: tuple) -> tuple:
         data = self.data.access(state)
@@ -84,72 +70,61 @@ class PCA(typing.NamedTuple):
 class PCA_Encoder(typing.NamedTuple):
     
     n: int
-    sites: xt.iTuple
-    site: xf.OptionalLocation = None
 
-    def init_shape(self, site, model, data):
-        objs = self.sites.map(xf.f_get_location(model))
-        return self._replace(
-            shape = (
-                objs.map(lambda o: o.shape[1]).pipe(sum),
-                self.n,
-            )
+    data: xf.Location
+    weights: xf.OptionalLocation = None
+
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PCA_Encoder, tuple, tuple]:
+        shape = (
+            self.data.access(model).shape[1],
+            self.n,
         )
-
-    def init_params(self, site, model, data):
-        if self.site is None:
+        if self.weights is None:
             return self._replace(
-                site=self.loc.as_param()
-            ), utils.rand.gaussian(self.shape)
-        # TODO: check below, assumes weights generated elsewhere
-        return self, utils.rand.gaussian(self.shape)
+                weights=self.site.as_param()
+            ), shape, utils.rand.gaussian(shape)
+        else:
+            # TODO: weight shape check
+            pass
+        return self, shape, utils.rand.gaussian(shape)
 
-    def apply(self, state):
-        weights = xf.get_location(self.site, state)
-        data = xf.concatenate_sites(self.sites, state, axis = 1)
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
+        weights = self.weights.access(state)
+        data = self.data.access(state)
         return jax.numpy.matmul(data, weights)
 
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init_params=xf.no_params)
 class PCA_Decoder(typing.NamedTuple):
-    
-    sites: xt.iTuple
 
-    # sites_weight: xt.iTuple
-    # sites_data: xt.iTuple
+    factors: xf.Location
+    weights: xf.OptionalLocation = None
 
-    # TODO: generalise to sites_weight and sites_data
-    # so that can spread across multiple prev stages
-    # and then concat both, or if size = 1, then as below
-    # can also pass as a nested tuple? probs cleaner to have separate
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PCA_Decoder, tuple, tuple]:
+        # TODO
+        return self, (), ()
 
-    
-    
-
-    def apply(self, state):
-        assert len(self.sites) == 2
-        l_site, r_site = self.sites
-        weights = xf.get_location(r_site, state)
-        data = xf.get_location(l_site, state)
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
+        data = self.factors.access(state)
+        weights = self.weights.access(weights)
         return jax.numpy.matmul(weights, data.T)
 
 # ---------------------------------------------------------------
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class PPCA_NegLikelihood(typing.NamedTuple):
     
-    site_sigma: xf.Location
-    sites_weights: xt.iTuple
-    # site_encoder: xf.Location
-
-    site_cov: xf.Location
+    sigma: xf.Location
+    weights: xf.Location
+    cov: xf.Location
 
     # ---
-
-    
-    
 
     # NOTE: direct minimisation with gradient descent
     # doesn't seem to recover pca weights
@@ -159,14 +134,18 @@ class PPCA_NegLikelihood(typing.NamedTuple):
     # todo put the calc into a class method
     # so can be re-used in rolling
 
-    def apply(self, state, small = 10 ** -4):
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PPCA_NegLikelihood, tuple, tuple]: ...
+
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         # https://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.pdf
 
-        sigma = xf.get_location(self.site_sigma, state)
+        sigma = self.sigma.access(state)
         sigma_sq = jax.numpy.square(sigma)
 
-        weights = xf.concatenate_sites(self.sites_weights, state)
-        cov = xf.get_location(self.site_cov, state) # of obs
+        weights = self.weights.access(state)
+        cov = self.cov.access(state) # of obs
     
         # N = xf.get_location(self.site_encoder, state).shape[0]
 
@@ -174,6 +153,7 @@ class PPCA_NegLikelihood(typing.NamedTuple):
         S = cov
         # d = weights.shape[0] # n_features
 
+        # TODO: implies self site has to be passed...
         if self.random:
             key = xf.get_location(
                 self.loc.as_random(), state
@@ -213,22 +193,15 @@ class PPCA_NegLikelihood(typing.NamedTuple):
         
 # ---------------------------------------------------------------
 
-# ---------------------------------------------------------------
 
-
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class PPCA_Rolling_NegLikelihood(typing.NamedTuple):
     
-    site_sigma: xf.Location
-    sites_weights: xt.iTuple
-    # site_encoder: xf.Location
-
-    site_cov: xf.Location
+    sigma: xf.Location
+    weights: xf.Location
+    cov: xf.Location
 
     # ---
-
-    
-    
 
     # NOTE: direct minimisation with gradient descent
     # doesn't seem to recover pca weights
@@ -238,25 +211,24 @@ class PPCA_Rolling_NegLikelihood(typing.NamedTuple):
     # todo put the calc into a class method
     # so can be re-used in rolling
 
-    def apply(self, state, small = 10 ** -4):
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PPCA_Rolling_NegLikelihood, tuple, tuple]: ...
+
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         return
 
 # ---------------------------------------------------------------
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class PPCA_EM(typing.NamedTuple):
     
-    site_sigma: xf.Location
-    sites_weights: xt.iTuple
-    # site_encoder: xf.Location
-
-    site_cov: xf.Location
+    sigma: xf.Location
+    weights: xf.Location
+    cov: xf.Location
 
     # ---
-
-    
-    
 
     random: float = 0
 
@@ -265,14 +237,18 @@ class PPCA_EM(typing.NamedTuple):
     # so we can pass this from a kernel function
     # if we want
 
-    def apply(self, state, small = 10 ** -4):
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PPCA_EM, tuple, tuple]: ...
+
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         # https://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.pdf
 
-        sigma = xf.get_location(self.site_sigma, state)
+        sigma = self.sigma.access(state)
         sigma_sq = jax.numpy.square(sigma)
 
-        weights = xf.concatenate_sites(self.sites_weights, state)
-        cov = xf.get_location(self.site_cov, state) # of obs
+        weights = self.weights.access(state)
+        cov = self.cov.access(state) # of obs
 
         # use noisy_sgd instead of random
         # if self.random:
@@ -316,33 +292,33 @@ class PPCA_EM(typing.NamedTuple):
 # ---------------------------------------------------------------
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class PPCA_Marginal_Observations(typing.NamedTuple):
     
-    site_sigma: xf.Location
-    sites_weights: xt.iTuple
-    site_encoder: xf.Location
-    site_date: xf.Location
-
-    site_cov: xf.Location
+    sigma: xf.Location
+    weights: xf.Location
+    encoder: xf.Location
+    data: xf.Location
+    cov: xf.Location
 
     # ---
 
-    
-    
-
     random: float = 0
 
-    def apply(self, state, small = 10 ** -4):
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PPCA_Marginal_Observations, tuple, tuple]: ...
+
+    def apply(self, site: xf.Site, state: tuple):
         # https://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.pdf
 
-        sigma = xf.get_location(self.site_sigma, state)
+        sigma = self.sigma.access(state)
         sigma_sq = jax.numpy.square(sigma)
 
-        weights = xf.concatenate_sites(self.sites_weights, state)
-        cov = xf.get_location(self.site_cov, state) # of obs
+        weights = self.weights.access(state)
+        cov = self.cov.access(state) # of obs
 
-        data = xf.get_location(self.site_data, state)
+        data = self.data.access(state)
     
         # N = xf.get_location(self.site_encoder, state).shape[0]
 
@@ -359,34 +335,35 @@ class PPCA_Marginal_Observations(typing.NamedTuple):
 
         return dist.log_prob(data)
 
+small = 10 ** -4
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class PPCA_Conditional_Latents(typing.NamedTuple):
     
-    site_sigma: xf.Location
-    sites_weights: xt.iTuple
-    site_encoder: xf.Location
-    site_date: xf.Location
-
-    site_cov: xf.Location
+    sigma: xf.Location
+    weights: xt.iTuple
+    encoder: xf.Location
+    data: xf.Location
+    cov: xf.Location
 
     # ---
 
-    
-    
-
     random: float = 0
 
-    def apply(self, state, small = 10 ** -4):
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PPCA_Conditional_Latents, tuple, tuple]: ...
+
+    def apply(self, site: xf.Site, state: tuple):
         # https://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.pdf
 
-        sigma = xf.get_location(self.site_sigma, state)
+        sigma = self.sigma.access(state)
         sigma_sq = jax.numpy.square(sigma)
 
-        weights = xf.concatenate_sites(self.sites_weights, state)
-        cov = xf.get_location(self.site_cov, state) # of obs
+        weights = self.weights.access(state)
+        cov = self.cov.access(state) # of obs
 
-        data = xf.get_location(self.site_data, state)
+        data = self.data.access(state)
     
         # N = xf.get_location(self.site_encoder, state).shape[0]
 

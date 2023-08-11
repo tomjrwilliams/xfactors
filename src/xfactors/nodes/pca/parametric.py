@@ -1,8 +1,9 @@
 
+from __future__ import annotations
+
 import operator
 import collections
 # import collections.abc
-
 import functools
 import itertools
 
@@ -36,9 +37,11 @@ class Parametric_Factor(typing.NamedTuple):
 
     # or an operator for the function, which can have its own params site? probably that
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PCA, tuple, tuple]: ...
     
-
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
 
         # given a feature matrix 
         # eg. simple one is a constant column per tenor (of the tenor represented as a float)

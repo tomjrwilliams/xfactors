@@ -1,8 +1,9 @@
 
+from __future__ import annotations
+
 import operator
 import collections
 # import collections.abc
-
 import functools
 import itertools
 
@@ -22,23 +23,7 @@ import optax
 import xtuples as xt
 
 from ... import xfactors as xf
-
-# ---------------------------------------------------------------
-
-
-@xt.nTuple.decorate()
-class Scalar(typing.NamedTuple):
-
-    v: numpy.ndarray
-
-    
-
-    def init_params(self, model, params):
-        return self, jax.numpy.array(self.v)
-
-    def apply(self, state):
-        return xf.get_location(self.loc.as_param(), state)
-
+from ... import utils
 
 # ---------------------------------------------------------------
 
@@ -49,11 +34,11 @@ class RandomCovariance(typing.NamedTuple):
     n: int
     d: int
 
-    
-
-    def init_params(self, model, params):
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[RandomCovariance, tuple, tuple]:
         gaussians = [
-            rand.gaussian(shape=(self.d, self.d))
+            utils.rand.gaussian(shape=(self.d, self.d))
             for i in range(self.n)
         ]
         return self, jax.numpy.stack([
@@ -61,7 +46,7 @@ class RandomCovariance(typing.NamedTuple):
             for g in gaussians
         ])
 
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         return xf.get_location(self.loc.as_param(), state)
 
 # ---------------------------------------------------------------
@@ -72,12 +57,12 @@ class Gaussian(typing.NamedTuple):
 
     shape: tuple
 
-    
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[Gaussian, tuple, tuple]:
+        return self, utils.rand.gaussian(self.shape)
 
-    def init_params(self, model, params):
-        return self, rand.gaussian(self.shape)
-
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         return xf.get_location(self.loc.as_param(), state)
 
 
@@ -86,15 +71,15 @@ class GaussianSoftmax(typing.NamedTuple):
 
     shape: tuple
 
-    
-
-    def init_params(self, model, params):
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[GaussianSoftmax, tuple, tuple]:
         return self, jax.nn.softmax(
-            rand.gaussian(self.shape),
+            utils.rand.gaussian(self.shape),
             axis=-1
         )
 
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         return xf.get_location(self.loc.as_param(), state)
 
 # ---------------------------------------------------------------
@@ -105,12 +90,12 @@ class Beta(typing.NamedTuple):
 
     shape: tuple
 
-    
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[Beta, tuple, tuple]:
+        return self, utils.rand.beta(self.shape)
 
-    def init_params(self, model, params):
-        return self, rand.beta(self.shape)
-
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         return xf.get_location(self.loc.as_param(), state)
 
 # ---------------------------------------------------------------

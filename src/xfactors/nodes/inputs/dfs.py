@@ -1,9 +1,10 @@
+
+from __future__ import annotations
 import enum
 
 import operator
 import collections
 # import collections.abc
-
 import functools
 import itertools
 
@@ -39,20 +40,21 @@ class Input_DataFrame_Wide(typing.NamedTuple):
     columns: xt.iTuple = None
     index: xt.iTuple = None
 
-    def init_shape(self, site, model, data):
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[Input_DataFrame_Wide, tuple, tuple]:
         # path[0] = stage, so path[1] = index of data element
         df = data[self.loc.path[1]]
         return self._replace(
-            shape=df.values.shape,
             **({} if not self.fixed_columns else dict(
                 columns=xt.iTuple(df.columns)
             )),
             **({} if not self.fixed_index else dict(
                 index=xt.iTuple(df.index)
             )),
-        )
+        ), df.values.shape, ()
     
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         _, data, _, _ = state
         df = data[self.loc.path[-1]]
         if self.fixed_columns:
@@ -75,13 +77,13 @@ class Input_DataFrame_Tall(typing.NamedTuple):
 
     # fields to specify if keep index and ticker map
 
-    def init_shape(self, site, model, data):
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[Input_DataFrame_Tall, tuple, tuple]:
         # path[0] = stage, so path[1] = index of data element
-        return self._replace(
-            shape=data[self.loc.path[1]].values.shape
-        )
+        return self, data[self.loc.path[1]].values.shape, ()
     
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         _, data, _, _ = state
         df = data[self.loc.path[-1]]
         return jax.numpy.array(df.values)

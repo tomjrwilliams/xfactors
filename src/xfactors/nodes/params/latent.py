@@ -1,8 +1,9 @@
 
+from __future__ import annotations
+
 import operator
 import collections
 # import collections.abc
-
 import functools
 import itertools
 
@@ -35,8 +36,10 @@ class Weights_Constant(typing.NamedTuple):
     v: float
     shape: tuple
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[Weights_Constant, tuple, tuple]: ...
     
-
     def init_params(self, model, params):
         return self, jax.numpy.ones(self.shape) * self.v
 
@@ -49,8 +52,10 @@ class Weights_Normal(typing.NamedTuple):
 
     shape: tuple
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[Weights_Normal, tuple, tuple]: ...
     
-
     def init_params(self, model, params):
         return self, utils.rand.gaussian(self.shape)
 
@@ -63,8 +68,10 @@ class Weights_Orthogonal(typing.NamedTuple):
 
     shape: tuple
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[Weights_Orthogonal, tuple, tuple]: ...
     
-
     def init_params(self, model, params):
         return self, utils.rand.orthogonal(self.shape)
 
@@ -87,9 +94,9 @@ class Latent(typing.NamedTuple):
 
     # kwargs for specifying the init - orthogonal, gaussian, etc.
 
-    
-
-    def init_params(self, model, params):
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[Latent, tuple, tuple]:
         axis = self.axis
         objs = self.sites.map(xf.f_get_location(model))
         shape_latent = (
@@ -104,7 +111,7 @@ class Latent(typing.NamedTuple):
         latent = utils.rand.gaussian(shape_latent)
         return self, latent
 
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         return xf.get_location(self.loc.as_param(), state)
 
 

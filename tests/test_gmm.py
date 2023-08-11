@@ -27,10 +27,10 @@ def test_kmeans() -> bool:
         numpy.ones(N_COLS) * -1,
         numpy.zeros(N_COLS),
         numpy.ones(N_COLS) * 1,
-    ]) + (xf.rand.gaussian((N_CLUSTERS, N_COLS,)) / 2)
+    ]) + (xf.utils.rand.gaussian((N_CLUSTERS, N_COLS,)) / 2)
 
     vs = numpy.concatenate([
-        mu[cluster] + (xf.rand.gaussian((N_VARIABLES, N_COLS)) / 2)
+        mu[cluster] + (xf.utils.rand.gaussian((N_VARIABLES, N_COLS)) / 2)
         for cluster in range(N_CLUSTERS)
     ], axis = 0)
 
@@ -48,24 +48,24 @@ def test_kmeans() -> bool:
     INPUT, PARAMS, EM = STAGES
 
     model = (
-        model.add_input(xf.inputs.Input_DataFrame_Wide())
-        .add_operator(PARAMS, xf.params.Gaussian(
+        model.add_input(xf.nodes.inputs.dfs.Input_DataFrame_Wide())
+        .add_node(PARAMS, xf.nodes.params.random.Gaussian(
             shape=(N_CLUSTERS, N_COLS,),
         ))
-        .add_operator(PARAMS, xf.params.Gaussian(
+        .add_node(PARAMS, xf.nodes.params.random.Gaussian(
             shape=(N_CLUSTERS, N_COLS, N_COLS,),
         ))
-        # .add_operator(PARAMS, xf.params.RandomCovariance(
+        # .add_node(PARAMS, xf.nodes.params.scalar.RandomCovariance(
         #     n=N_CLUSTERS,
         #     d=N_COLS,
         # ))
-        .add_operator(PARAMS, xf.params.GaussianSoftmax(
+        .add_node(PARAMS, xf.nodes.params.random.GaussianSoftmax(
             shape=(data[0].shape[0], N_CLUSTERS,),
         ))
-        .add_operator(PARAMS, xf.params.GaussianSoftmax(
+        .add_node(PARAMS, xf.nodes.params.random.GaussianSoftmax(
             shape=(N_CLUSTERS,),
         ))
-        .add_operator(EM, xf.mixtures.BGMM_EM(
+        .add_node(EM, xf.nodes.clustering.gmm.BGMM_EM(
             k=N_CLUSTERS,
             sites_data=xt.iTuple.one(
                 xf.Loc.result(INPUT, 0)
@@ -80,57 +80,57 @@ def test_kmeans() -> bool:
                 xf.Loc.param(PARAMS, 3)
             ),
         ))
-        # .add_constraint(xf.constraints.Constraint_MinimiseSquare(
+        # .add_constraint(xf.nodes.constraints.loss.Constraint_MinimiseSquare(
         #     sites=xt.iTuple.one(
         #         xf.Loc.result(EM, 0, 3)
         #     ),
         # ))
-        # .add_constraint(xf.constraints.Constraint_Orthogonal(
+        # .add_constraint(xf.nodes.constraints.Constraint_Orthogonal(
         #     sites=xt.iTuple.one(
         #         xf.Loc.result(EM, 0, 0)
         #     ),
         # ))
-        .add_constraint(xf.constraints.Constraint_Maximise(
+        .add_constraint(xf.nodes.constraints.loss.Constraint_Maximise(
             sites=xt.iTuple.one(
                 xf.Loc.result(EM, 0, 3)
             ),
         ))
-        .add_constraint(xf.constraints.Constraint_Maximise(
+        .add_constraint(xf.nodes.constraints.loss.Constraint_Maximise(
             sites=xt.iTuple.one(
                 xf.Loc.result(EM, 0, 4)
             ),
         ))
-        # .add_constraint(xf.constraints.Constraint_MinimiseSquare(
+        # .add_constraint(xf.nodes.constraints.loss.Constraint_MinimiseSquare(
         #     sites=xt.iTuple.one(
         #         xf.Loc.result(EM, 0)
         #     ),
         # ))
-        # .add_constraint(xf.constraints.Constraint_Orthogonal(
+        # .add_constraint(xf.nodes.constraints.Constraint_Orthogonal(
         #     sites=xf.xt.iTuple.one(
         #         xf.Loc.param(PARAMS, 0)
         #     ),
         # ))
-        .add_constraint(xf.constraints.Constraint_VOrthogonal(
+        .add_constraint(xf.nodes.constraints.linalg.Constraint_VOrthogonal(
             sites=xf.xt.iTuple.one(
                 xf.Loc.param(PARAMS, 1)
             ),
         ))
-        # .add_constraint(xf.constraints.Constraint_MinimiseMMSpread(
+        # .add_constraint(xf.nodes.constraints.loss.Constraint_MinimiseMMSpread(
         #     sites=xt.iTuple.one(
         #         xf.Loc.param(PARAMS, 1)
         #     ),
         # ))
-        .add_constraint(xf.constraints.Constraint_L1_MM_Diag(
+        .add_constraint(xf.nodes.constraints.linalg.Constraint_L1_MM_Diag(
             sites=xt.iTuple.one(
                 xf.Loc.param(PARAMS, 1)
             ),
         ))
-        # .add_constraint(xf.constraints.Constraint_Orthogonal(
+        # .add_constraint(xf.nodes.constraints.Constraint_Orthogonal(
         #     sites=xf.xt.iTuple.one(
         #         xf.Loc.param(PARAMS, 0)
         #     ),
         # ))
-        # .add_constraint(xf.constraints.Constraint_EM(
+        # .add_constraint(xf.nodes.constraints.em.Constraint_EM(
         #     sites_param=xt.iTuple.one(
         #         xf.Loc.param(PARAMS, 0)
         #     ),
@@ -140,7 +140,7 @@ def test_kmeans() -> bool:
         #     ),
         #     cut_tree=True,
         # ))
-        # .add_constraint(xf.constraints.Constraint_EM_MatMul(
+        # .add_constraint(xf.nodes.constraints.em.Constraint_EM_MatMul(
         #     sites_param=xt.iTuple.one(
         #         xf.Loc.param(PARAMS, 1)
         #     ),
@@ -150,7 +150,7 @@ def test_kmeans() -> bool:
         #     ),
         #     cut_tree=True,
         # ))
-        # .add_constraint(xf.constraints.Constraint_EM(
+        # .add_constraint(xf.nodes.constraints.em.Constraint_EM(
         #     sites_param=xt.iTuple.one(
         #         xf.Loc.param(PARAMS, 2)
         #     ),
@@ -160,7 +160,7 @@ def test_kmeans() -> bool:
         #     ),
         #     cut_tree=True,
         # ))
-        .init_shapes_params(data)
+        .init(data)
     )
 
     # from jax.config import config 

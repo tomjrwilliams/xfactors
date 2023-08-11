@@ -1,8 +1,9 @@
 
+from __future__ import annotations
+
 import operator
 import collections
 # import collections.abc
-
 import functools
 import itertools
 
@@ -93,10 +94,12 @@ class KF_State_Predicted(typing.NamedTuple):
     
     sites: xt.iTuple
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[KF_State_Predicted, tuple, tuple]: ...
     
-
     # Fx + Bu
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         assert False, self
 
 
@@ -105,10 +108,12 @@ class KF_Cov_Predicted(typing.NamedTuple):
     
     sites: xt.iTuple
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PCA, tuple, tuple]: ...
     
-
     # FPFt + Q
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         assert False, self
 
 # ---------------------------------------------------------------
@@ -119,10 +124,12 @@ class KF_State_Innovation(typing.NamedTuple):
     
     sites: xt.iTuple
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PCA, tuple, tuple]: ...
     
-
     # z - Hx
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         assert False, self
 
 
@@ -131,10 +138,12 @@ class KF_Cov_Innovation(typing.NamedTuple):
     
     sites: xt.iTuple
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PCA, tuple, tuple]: ...
     
-
     # HPHt + R
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         assert False, self
 
 # ---------------------------------------------------------------
@@ -145,10 +154,12 @@ class KF_Kalman_Gain(typing.NamedTuple):
     
     sites: xt.iTuple
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PCA, tuple, tuple]: ...
     
-
     # PHtS-1
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         assert False, self
 
 # ---------------------------------------------------------------
@@ -159,10 +170,12 @@ class KF_State_Updated(typing.NamedTuple):
     
     sites: xt.iTuple
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PCA, tuple, tuple]: ...
     
-
     # x + Ky
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         assert False, self
 
 
@@ -171,10 +184,12 @@ class KF_Cov_Updated(typing.NamedTuple):
     
     sites: xt.iTuple
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PCA, tuple, tuple]: ...
     
-
     # (I - KH)P
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         assert False, self
 
 
@@ -183,10 +198,12 @@ class KF_Residual(typing.NamedTuple):
     
     sites: xt.iTuple
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PCA, tuple, tuple]: ...
     
-
     # z - Hx
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         assert False, self
 
 # ---------------------------------------------------------------

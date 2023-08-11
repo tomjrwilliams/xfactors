@@ -23,15 +23,22 @@ import optax
 import xtuples as xt
 
 from ... import xfactors as xf
-from .. import pca
 
 # ---------------------------------------------------------------
 
-Lin_Reg = pca.vanilla.PCA_Encoder
 
-# lasso / ridge / elastic net
-# via coordinate descent type algos (?)
+@xt.nTuple.decorate()
+class Scalar(typing.NamedTuple):
 
-# can also implement by combination of mse and relevant norm loss on weights
+    v: numpy.ndarray
+
+    
+
+    def init_params(self, model, params):
+        return self, jax.numpy.array(self.v)
+
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
+        return xf.get_location(self.loc.as_param(), state)
+
 
 # ---------------------------------------------------------------

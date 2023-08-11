@@ -1,8 +1,9 @@
 
+from __future__ import annotations
+
 import operator
 import collections
 # import collections.abc
-
 import functools
 import itertools
 
@@ -35,8 +36,11 @@ class Cov(typing.NamedTuple):
 
     random: bool = False
     static: bool = False
-    
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PCA, tuple, tuple]: ...
+    
     def init_shape(self, site, model, data):
         objs = self.sites.map(xf.f_get_location(model))
         n = objs.map(lambda o: o.shape[1]).pipe(sum)
@@ -44,7 +48,7 @@ class Cov(typing.NamedTuple):
             shape = (n, n,),
         )
 
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         data = xf.concatenate_sites(self.sites, state, axis = 1)
         res = jax.numpy.cov(
             jax.numpy.transpose(data)

@@ -1,10 +1,11 @@
 
 
 
+from __future__ import annotations
+
 import operator
 import collections
 # import collections.abc
-
 import functools
 import itertools
 
@@ -39,9 +40,11 @@ class Structured_PCA_Mask(typing.NamedTuple):
     n: int
     sites: xt.iTuple
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[Structured_PCA_Mask, tuple, tuple]: ...
     
-
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         return
 
 # ---------------------------------------------------------------
@@ -53,9 +56,11 @@ class Structured_PCA_Convex(typing.NamedTuple):
     n: int
     sites: xt.iTuple
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[Structured_PCA_Convex, tuple, tuple]: ...
     
-
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         return
 
 
@@ -66,9 +71,11 @@ class Structured_PCA_Concave(typing.NamedTuple):
     n: int
     sites: xt.iTuple
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[Structured_PCA_Concave, tuple, tuple]: ...
     
-
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         return
 
 
@@ -83,9 +90,11 @@ class Structured_PCA_Sign(typing.NamedTuple):
     n: int
     sites: xt.iTuple
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[Structured_PCA_Sign, tuple, tuple]: ...
     
-
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         return
 
 
@@ -97,9 +106,11 @@ class Structured_PCA_TiedSign(typing.NamedTuple):
     n: int
     sites: xt.iTuple
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[Structured_PCA_TiedSign, tuple, tuple]: ...
     
-
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         return
 
 # ---------------------------------------------------------------

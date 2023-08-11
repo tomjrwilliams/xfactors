@@ -1,8 +1,9 @@
 
+from __future__ import annotations
+
 import operator
 import collections
 # import collections.abc
-
 import functools
 import itertools
 
@@ -50,10 +51,11 @@ class KMeans_Labels(typing.NamedTuple):
 
     sites_data: xt.iTuple
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PCA, tuple, tuple]: ...
     
-
-
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         # https://theory.stanford.edu/~sergei/papers/kMeansPP-soda.pdf
         # https://theory.stanford.edu/~sergei/papers/kMeans-socg.pdf
 
@@ -105,10 +107,11 @@ class KMeans_EM_MeanDiff(typing.NamedTuple):
     sites_data: xt.iTuple
     sites_labels: xt.iTuple
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PCA, tuple, tuple]: ...
     
-
-
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         # https://theory.stanford.edu/~sergei/papers/kMeansPP-soda.pdf
         # https://theory.stanford.edu/~sergei/papers/kMeans-socg.pdf
 
@@ -165,10 +168,11 @@ class KMeans_EM_Naive(typing.NamedTuple):
     sites_data: xt.iTuple
     sites_labels: xt.iTuple
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PCA, tuple, tuple]: ...
     
-
-
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         # https://theory.stanford.edu/~sergei/papers/kMeansPP-soda.pdf
         # https://theory.stanford.edu/~sergei/papers/kMeans-socg.pdf
 

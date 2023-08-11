@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import enum
 
+from __future__ import annotations
+
 import operator
 import collections
 # import collections.abc
-
 import functools
 import itertools
 from re import A
@@ -141,21 +142,12 @@ import abc
 class Node(typing.Protocol):
 
     @abc.abstractmethod
-    def init_shape(
-        self: NodeClass,
-        site: Site,
-        model: Model, 
-        data: tuple
-    ) -> tuple[NodeClass, tuple]:
-        ...
-
-    @abc.abstractmethod
-    def init_params(
+    def init(
         self: NodeClass,
         site: Site,
         model: Model,
         data: tuple,
-    ) -> tuple[NodeClass, tuple]:
+    ) -> tuple[NodeClass, tuple, tuple]:
         ...
 
     @abc.abstractmethod
@@ -168,6 +160,11 @@ class Node(typing.Protocol):
 
 NodeClass: typing.TypeVar("NodeClass", bound=Node)
 
+def init_null(
+    self, site: Site, model: Model, data: tuple
+) -> tuple[Node, tuple, tuple]:
+    return self, (), ()
+
 # ---------------------------------------------------------------
 
 @xt.nTuple.decorate()
@@ -178,18 +175,14 @@ class Site(typing.NamedTuple):
     loc: typing.Optional[Location] = None
     shape: typing.Optional[xt.iTuple] = None
 
-    def init_shape(self, model, data):
-        node, shape = self.node.init_shape(self, model, data)
+    def init(self, model, data):
+        node, shape, params = self.node.init_shape(self, model, data)
         return self._replace(
             node=node,
             shape=shape,
-        )
+        ), params
 
-    def init_params(self, model, data):
-        node, params = self.node.init_params(self, model, data)
-        return self._replace(node=node), params
-
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         return self.node.apply(self, state)
 
 OptionalSite = typing.Optional[Site]
@@ -283,25 +276,11 @@ def add_constraint(model: Model, node: Node) -> Model:
 
 # ---------------------------------------------------------------
 
-def init_shapes(model: Model, data: tuple) -> Model:
-    return model.stages.fold(
-        lambda model, stage: model._replace(
-            stages=model.stages.append(
-                stage.map(
-                    operator.methodcaller(
-                        "init_shape", model, data
-                    )
-                )
-            )
-        ),
-        initial=model._replace(stages=xt.iTuple()),
-    )
-
-def init_params(model: Model, data: tuple) -> Model:
+def init_model(model: Model, data: tuple) -> Model:
 
     def f_acc(model: Model, params, stage, data):
         stage, stage_params = stage.map(
-            operator.methodcaller("init_params", model, data)
+            operator.methodcaller("init", model, data)
         ).zip().map(xt.iTuple)
         return model._replace(
             stages=model.stages.append(stage),
@@ -424,13 +403,6 @@ def gen_rand_keys(model: Model):
     return ks.pipe(to_tuple_rec), n_keys
 
 # ---------------------------------------------------------------
-
-def init_shapes_params(model: Model, data: tuple):
-    model = (
-        model.init_shapes(data)
-        .init_params(data)
-    )
-    return model
 
 def to_tuple_rec(v):
     if isinstance(v, (xt.iTuple, Stage)):
@@ -600,16 +572,8 @@ class Model(typing.NamedTuple):
     def init_stages(self: Model, n: int) -> tuple[Model, xt.iTuple]:
         return init_stages(self, n)
 
-    # ---
-
-    def init_shapes(self: Model, data: tuple) -> Model:
-        return init_shapes(self, data)
-
-    def init_params(self: Model, data: tuple) -> Model:
-        return init_params(self, data)
-
-    def init_shapes_params(self: Model, data: tuple) -> Model:
-        return init_shapes_params(self, data)
+    def init(self: Model, data: tuple) -> Model:
+        return init_model(self, data)
 
     # ---
 

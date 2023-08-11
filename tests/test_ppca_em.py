@@ -15,15 +15,15 @@ def test_ppca() -> bool:
 
     N = 3
 
-    ds = xf.dates.starting(datetime.date(2020, 1, 1), 100)
-    vs_norm = xf.rand.gaussian((100, N,))
+    ds = xf.utils.dates.starting(datetime.date(2020, 1, 1), 100)
+    vs_norm = xf.utils.rand.gaussian((100, N,))
 
-    betas = xf.rand.gaussian((N, 5,))
+    betas = xf.utils.rand.gaussian((N, 5,))
     vs = numpy.matmul(vs_norm, betas)
 
     data = (
         pandas.DataFrame({
-            f: xf.dates.dated_series({d: v for d, v in zip(ds, fvs)})
+            f: xf.utils.dates.dated_series({d: v for d, v in zip(ds, fvs)})
             for f, fvs in enumerate(numpy.array(vs).T)
         }),
     )
@@ -32,13 +32,13 @@ def test_ppca() -> bool:
     INPUT, COV, ENCODE, DECODE, EM = STAGES
 
     model = (
-        model.add_input(xf.inputs.Input_DataFrame_Wide())
-        .add_operator(COV, xf.stats.Cov(
+        model.add_input(xf.nodes.inputs.dfs.Input_DataFrame_Wide())
+        .add_node(COV, xf.nodes.cov.vanilla.Cov(
             sites=xt.iTuple.one(
                 xf.Loc.result(INPUT, 0),
             ), static=True,
         ))
-        .add_operator(ENCODE, xf.pca.PCA_Encoder(
+        .add_node(ENCODE, xf.nodes.pca.vanilla.PCA_Encoder(
             sites=xt.iTuple.one(
                 xf.Loc.result(INPUT, 0),
             ),
@@ -46,10 +46,10 @@ def test_ppca() -> bool:
             train=False,
             #
         ))
-        .add_operator(ENCODE, xf.params.Scalar(
+        .add_node(ENCODE, xf.nodes.params.scalar.Scalar(
             v=jax.numpy.ones(1),
         ))
-        .add_operator(DECODE, xf.pca.PCA_Decoder(
+        .add_node(DECODE, xf.nodes.pca.vanilla.PCA_Decoder(
             sites=xt.iTuple(
                 xf.Loc.param(ENCODE, 0),
                 xf.Loc.result(ENCODE, 0),
@@ -57,7 +57,7 @@ def test_ppca() -> bool:
             train=False,
             #
         ))
-        .add_operator(EM, xf.pca.PPCA_EM(
+        .add_node(EM, xf.nodes.pca.vanilla.PPCA_EM(
             site_sigma=xf.Loc.param(ENCODE, 1),
             sites_weights=xt.iTuple.one(
                 xf.Loc.param(ENCODE, 0),
@@ -66,13 +66,13 @@ def test_ppca() -> bool:
             train=True,
             # random=0.01,
         ))
-        .add_constraint(xf.constraints.Constraint_Orthonormal(
+        .add_constraint(xf.nodes.constraints.linalg.Constraint_Orthonormal(
             sites=xf.xt.iTuple.one(
                 xf.Loc.param(ENCODE, 0),
             ),
             T=True,
         ))
-        .add_constraint(xf.constraints.Constraint_EM(
+        .add_constraint(xf.nodes.constraints.em.Constraint_EM(
             sites_param=xt.iTuple.one(
                 xf.Loc.param(ENCODE, 0)
             ),
@@ -81,7 +81,7 @@ def test_ppca() -> bool:
             ),
             # cut_tree=True,
         ))
-        .add_constraint(xf.constraints.Constraint_EM(
+        .add_constraint(xf.nodes.constraints.em.Constraint_EM(
             sites_param=xt.iTuple.one(
                 xf.Loc.param(ENCODE, 1)
             ),
@@ -90,7 +90,7 @@ def test_ppca() -> bool:
             ),
             # cut_tree=True,
         ))
-        .init_shapes_params(data)
+        .init(data)
     )
 
     model = model.optimise(

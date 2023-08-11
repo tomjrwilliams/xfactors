@@ -1,8 +1,9 @@
 
+from __future__ import annotations
+
 import operator
 import collections
 # import collections.abc
-
 import functools
 import itertools
 
@@ -39,8 +40,11 @@ class GMM(typing.NamedTuple):
     n: int
     sites: xt.iTuple
 
-
-    def apply(self, state):
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PCA, tuple, tuple]: ...
+    
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         # https://en.wikipedia.org/wiki/EM_algorithm_and_GMM_model
         data = xf.concatenate_sites(self.sites, state, axis = 1)
         eigvals, weights = jax.numpy.linalg.eig(jax.numpy.cov(
@@ -50,6 +54,7 @@ class GMM(typing.NamedTuple):
 
 # ---------------------------------------------------------------
 
+small = 10 ** -4
 
 @xt.nTuple.decorate()
 class BGMM_EM(typing.NamedTuple):
@@ -63,9 +68,12 @@ class BGMM_EM(typing.NamedTuple):
 
     random: typing.Optional[float] = 0.1
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PCA, tuple, tuple]: ...
     
+    def apply(self, site: Site, state: tuple) -> tuple:
 
-    def apply(self, state, small = 10 ** -4):
         # https://en.wikipedia.org/wiki/EM_algorithm_and_GMM_model
 
         data = xf.concatenate_sites(self.sites_data, state)

@@ -1,8 +1,9 @@
 
+from __future__ import annotations
+
 import operator
 import collections
 # import collections.abc
-
 import functools
 import itertools
 
@@ -35,12 +36,18 @@ class Guard(typing.NamedTuple):
     # return tuple of values vmapped over indices
     # given by the values in the map(get_location(site_keys))
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[Guard, tuple, tuple]: ...
+    
     def apply(self, site, state):
         flags = state[-1]
         if all([flags[k] == v for k, v in self.flags.items()]):
             return self.node.apply(site, state)
         return ()
         
+# ---------------------------------------------------------------
+
 @xt.nTuple.decorate()
 class Train(typing.NamedTuple):
     
@@ -50,6 +57,10 @@ class Train(typing.NamedTuple):
     # return tuple of values vmapped over indices
     # given by the values in the map(get_location(site_keys))
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[Train, tuple, tuple]: ...
+    
     def apply(self, site, state):
         flags = state[-1]
         flags["train"] = True
@@ -66,6 +77,10 @@ class Apply(typing.NamedTuple):
     # return tuple of values vmapped over indices
     # given by the values in the map(get_location(site_keys))
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[Apply, tuple, tuple]: ...
+    
     def apply(self, site, state):
         flags = state[-1]
         flags["apply"] = True
@@ -82,6 +97,10 @@ class Score(typing.NamedTuple):
     # return tuple of values vmapped over indices
     # given by the values in the map(get_location(site_keys))
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[Score, tuple, tuple]: ...
+    
     def apply(self, site, state):
         flags = state[-1]
         flags["score"] = True

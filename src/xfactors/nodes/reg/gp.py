@@ -1,3 +1,6 @@
+
+from __future__ import annotations
+
 import operator
 import collections
 # import collections.abc
@@ -42,15 +45,15 @@ class GP_RBF(typing.NamedTuple):
     # eg. if using a gp for three factors
     # if mean provided, assert mean.shape == n
 
-    
-
-    def init_params(self, model, params):
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[GP_RBF, tuple, tuple]:
         return self, (
             jax.numpy.ones(1),
             jax.numpy.ones(1),
         )
 
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
 
         l, sigma = xf.get_location(self.loc.as_param(), state)
         
@@ -111,9 +114,11 @@ class GP_Kernel_Sigmoid(typing.NamedTuple):
     # or variance?
     sites: xt.iTuple
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[GP_Kernel_Sigmoid, tuple, tuple]: ...
     
-
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         assert False, self
 
 # ---------------------------------------------------------------
@@ -125,9 +130,11 @@ class GP_Kernel_SquaredExp(typing.NamedTuple):
     length_scale: float
     sites: xt.iTuple
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[GP_Kernel_SquaredExp, tuple, tuple]: ...
     
-
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         assert False, self
         
 
@@ -137,8 +144,10 @@ class GP_Kernel_OU(typing.NamedTuple):
     length_scale: float
     sites: xt.iTuple
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[GP_Kernel_OU, tuple, tuple]: ...
     
-
     @classmethod
     def f(cls, features_l, features_r, sigma, l):
         sigma_sq = jax.numpy.square(sigma)
@@ -148,7 +157,7 @@ class GP_Kernel_OU(typing.NamedTuple):
             -1 * (jax.numpy.square(norms) / l)
         ) * sigma_sq
 
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         assert False, self
      
 # ---------------------------------------------------------------
@@ -160,9 +169,11 @@ class GP_Kernel_RationalQuadratic(typing.NamedTuple):
     length_scale: float
     sites: xt.iTuple
 
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[GP_Kernel_RationalQuadratic, tuple, tuple]: ...
     
-
-    def apply(self, state):
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
         assert False, self
 
 # ---------------------------------------------------------------
