@@ -21,9 +21,7 @@ import optax
 
 import xtuples as xt
 
-from . import rand
-from . import dates
-from . import xfactors as xf
+from ... import xfactors as xf
 
 # ---------------------------------------------------------------
 
@@ -36,14 +34,13 @@ from . import xfactors as xf
 # ---------------------------------------------------------------
 
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Stack(typing.NamedTuple):
     
     sites_values: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def apply(self, state):
         assert False, self
@@ -51,14 +48,13 @@ class Stack(typing.NamedTuple):
 # flatten such a tuple from the above back down
 
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class UnStack(typing.NamedTuple):
     
     sites_values: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def apply(self, state):
         assert False, self
@@ -68,26 +64,24 @@ class UnStack(typing.NamedTuple):
 # ---------------------------------------------------------------
 
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Flatten(typing.NamedTuple):
     
     sites_values: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def apply(self, state):
         assert False, self
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class UnFlatten(typing.NamedTuple):
     
     sites_values: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def apply(self, state):
         assert False, self
@@ -98,28 +92,26 @@ class UnFlatten(typing.NamedTuple):
 # ---------------------------------------------------------------
 
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Concatenate(typing.NamedTuple):
     
     sites_values: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def apply(self, state):
         assert False, self
 
 
 # given shape definitions, can slice back out into tuple
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class UnConcatenate(typing.NamedTuple):
     
     sites_values: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def apply(self, state):
         assert False, self

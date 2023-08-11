@@ -20,15 +20,13 @@ import jaxopt
 import optax
 
 import xtuples as xt
-
-from . import rand
-from . import dates
-from . import xfactors as xf
+from ... import xfactors as xf
+from ... import utils
 
 # ---------------------------------------------------------------
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Weights_Constant(typing.NamedTuple):
     """
     axis: None = scalar, 0 = time series, 1 = ticker
@@ -37,14 +35,13 @@ class Weights_Constant(typing.NamedTuple):
     v: float
     shape: tuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def init_params(self, model, params):
         return self, jax.numpy.ones(self.shape) * self.v
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Weights_Normal(typing.NamedTuple):
     """
     axis: None = scalar, 0 = time series, 1 = ticker
@@ -52,14 +49,13 @@ class Weights_Normal(typing.NamedTuple):
 
     shape: tuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def init_params(self, model, params):
-        return self, rand.gaussian(self.shape)
+        return self, utils.rand.gaussian(self.shape)
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Weights_Orthogonal(typing.NamedTuple):
     """
     axis: None = scalar, 0 = time series, 1 = ticker
@@ -67,11 +63,10 @@ class Weights_Orthogonal(typing.NamedTuple):
 
     shape: tuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def init_params(self, model, params):
-        return self, rand.orthogonal(self.shape)
+        return self, utils.rand.orthogonal(self.shape)
 
 # ---------------------------------------------------------------
 
@@ -79,8 +74,7 @@ def check_latent(obj, model):
     assert obj.axis in [None, 0, 1]
     return xf.check_operator(obj, model)
 
-@xf.operator_bindings(check = check_latent)
-@xt.nTuple.decorate
+@xt.nTuple.decorate()
 class Latent(typing.NamedTuple):
     """
     axis: None = scalar, 0 = time series, 1 = ticker
@@ -93,8 +87,7 @@ class Latent(typing.NamedTuple):
 
     # kwargs for specifying the init - orthogonal, gaussian, etc.
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def init_params(self, model, params):
         axis = self.axis
@@ -108,7 +101,7 @@ class Latent(typing.NamedTuple):
             )
         )
         assert shape_latent is not None, self
-        latent = rand.gaussian(shape_latent)
+        latent = utils.rand.gaussian(shape_latent)
         return self, latent
 
     def apply(self, state):

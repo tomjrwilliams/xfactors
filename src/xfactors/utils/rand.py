@@ -2,7 +2,7 @@
 import functools
 import jax
 
-from . import utils
+from . import shapes
 
 # ---------------------------------------------------------------
 
@@ -86,7 +86,7 @@ def v_mv_gaussian(n, shape = None, mu=None, cov=None, seed = 69):
 
 def f_norm_l2(v, n_sample_dims = None):
     v_sq = jax.numpy.square(v)
-    scale = utils.expand_dims_like(
+    scale = shapes.expand_dims_like(
         jax.numpy.sqrt(v_sq.sum(axis = -1)), -1, v
     )
     return jax.numpy.divide(v, scale)

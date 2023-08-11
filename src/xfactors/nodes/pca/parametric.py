@@ -21,16 +21,14 @@ import optax
 
 import xtuples as xt
 
-from . import rand
-from . import dates
-from . import xfactors as xf
+from ... import xfactors as xf
 
-from . import pca
+from . import vanilla
 
 # ---------------------------------------------------------------
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Parametric_Factor(typing.NamedTuple):
     
     features: xt.iTuple
@@ -38,8 +36,7 @@ class Parametric_Factor(typing.NamedTuple):
 
     # or an operator for the function, which can have its own params site? probably that
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def apply(self, state):
 

@@ -6,7 +6,7 @@ import numpy
 import pandas
 
 import xtuples as xt
-import src.xfactors as xf
+import xfactors as xf
 
 from tests import utils
 
@@ -17,7 +17,7 @@ import optax
 
 from sklearn.cluster import KMeans
 
-def test_kmeans():
+def test_kmeans() -> bool:
 
     N_COLS = 5
     N_CLUSTERS = 3

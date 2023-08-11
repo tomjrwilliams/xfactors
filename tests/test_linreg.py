@@ -5,11 +5,11 @@ import numpy
 import pandas
 
 import xtuples as xt
-import src.xfactors as xf
+import xfactors as xf
 
 from tests import utils
 
-def test_linreg():
+def test_linreg() -> bool:
 
     ds = xf.dates.starting(datetime.date(2020, 1, 1), 100)
 

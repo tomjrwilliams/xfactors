@@ -18,8 +18,10 @@ import functools
 import numpy
 import pandas
 
-from . import dfs
+from .. import utils
 from . import formatting
+
+import xtuples as xt
 
 # ---------------------------------------------------------------
 
@@ -81,7 +83,6 @@ def render_source(f, cls_method = False, until = None):
 
 # ---------------------------------------------------------------
 
-import xtuples
 
 def render_df_color_range(
     df,
@@ -110,11 +111,11 @@ def render_df_color_range(
             symmetrical=symmetrical,
         )
         if v_min is None and v_max is None:
-            v_min, v_max = dfs.df_min_max(df, **min_max_ks)
+            v_min, v_max = utils.dfs.df_min_max(df, **min_max_ks)
         elif v_min is None:
-            v_min, _ = dfs.df_min_max(df, **min_max_ks)
+            v_min, _ = utils.dfs.df_min_max(df, **min_max_ks)
         elif v_max is None:
-            _, v_max = dfs.df_min_max(df, **min_max_ks)
+            _, v_max = utils.dfs.df_min_max(df, **min_max_ks)
         else:
             assert False, dict(v_min=v_min, v_max=v_max)
 
@@ -129,7 +130,7 @@ def render_df_color_range(
         return len(v)
 
     v_len = max(
-        xtuples.iTuple(numpy.round(df.values, dp))
+        xt.iTuple(numpy.round(df.values, dp))
         .flatten()
         .map(str)
         .map(

@@ -21,10 +21,7 @@ import jaxopt
 import optax
 
 import xtuples as xt
-
-from . import rand
-from . import dates
-from . import xfactors as xf
+from ... import xfactors as xf
 
 # ---------------------------------------------------------------
 
@@ -32,12 +29,9 @@ from . import xfactors as xf
 # then here is where we encode that restriction
 # specific stock universe, etc.
 
-@xf.input_bindings()
-@xt.nTuple.decorate
-class Input_DataFrame_Wide(typing.NamedTuple):
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+@xt.nTuple.decorate()
+class Input_DataFrame_Wide(typing.NamedTuple):
 
     fixed_columns: bool = False
     fixed_index: bool = False
@@ -45,7 +39,7 @@ class Input_DataFrame_Wide(typing.NamedTuple):
     columns: xt.iTuple = None
     index: xt.iTuple = None
 
-    def init_shape(self, model, data):
+    def init_shape(self, site, model, data):
         # path[0] = stage, so path[1] = index of data element
         df = data[self.loc.path[1]]
         return self._replace(
@@ -75,16 +69,13 @@ class Input_DataFrame_Wide(typing.NamedTuple):
             )
         return jax.numpy.array(df.values)
 
-@xf.input_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Input_DataFrame_Tall(typing.NamedTuple):
 
     # fields to specify if keep index and ticker map
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
-
-    def init_shape(self, model, data):
+    def init_shape(self, site, model, data):
         # path[0] = stage, so path[1] = index of data element
         return self._replace(
             shape=data[self.loc.path[1]].values.shape

@@ -21,14 +21,12 @@ import optax
 
 import xtuples as xt
 
-from . import rand
-from . import dates
-from . import xfactors as xf
+from ... import xfactors as xf
 
 # ---------------------------------------------------------------
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Cov(typing.NamedTuple):
 
     sites: xt.iTuple
@@ -37,10 +35,9 @@ class Cov(typing.NamedTuple):
 
     random: bool = False
     static: bool = False
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
-    def init_shape(self, model, data):
+    def init_shape(self, site, model, data):
         objs = self.sites.map(xf.f_get_location(model))
         n = objs.map(lambda o: o.shape[1]).pipe(sum)
         return self._replace(

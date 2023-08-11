@@ -5,6 +5,10 @@
 import sys
 
 XTUPLES = "C:/hc/xtuples/src/xtuples"
+XFACTORS = "./src"
 
 if XTUPLES not in sys.path:
     sys.path.append(XTUPLES)
+
+if XFACTORS not in sys.path:
+    sys.path.append(XFACTORS)

@@ -13,8 +13,6 @@ import pandas
 
 import pathlib
 
-import operators
-
 import scipy.stats
 
 import ffn
@@ -23,7 +21,6 @@ import bt
 import xtuples as xt
 # import xtenors
 
-from .. import dates
 from .. import utils
 
 # ---------------------------------------------------------------
@@ -267,7 +264,7 @@ def resample_universe(
         res_loc = (res.index >= l) & (res.index <= r)
         in_period = df_slice.all(axis=0)
 
-        res.loc[res_loc] = utils.expand_dims(
+        res.loc[res_loc] = utils.shapes.expand_dims(
             in_period.values, 0, len(df_slice.index)
         )
 
@@ -320,7 +317,7 @@ def build(
         universe_df = pandas.DataFrame(
             universe_df.values,
             columns=universe_df.columns,
-            index=dates.date_index(universe_df.index.values)
+            index=utils.dates.date_index(universe_df.index.values)
         )
 
         if isinstance(rolling_universe, str):
@@ -342,8 +339,8 @@ def build(
     else:
         universe_df_name = "{}_universe".format(name)
 
-        df_index = dates.date_index(
-            dates.between(
+        df_index = utils.dates.date_index(
+            utils.dates.between(
                 min(universe_df.index),
                 max(universe_df.index),
             )
@@ -371,7 +368,7 @@ def to_prices(df_returns):
     return pandas.DataFrame(
         100 * numpy.cumprod(1 + vs, axis = 0),
         columns=df_returns.columns,
-        index=dates.date_index(df_returns.index),
+        index=utils.dates.date_index(df_returns.index),
     )
 
 def clean_universe(df_universe, df_prices):

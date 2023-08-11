@@ -20,10 +20,7 @@ import jaxopt
 import optax
 
 import xtuples as xt
-
-from . import rand
-from . import dates
-from . import xfactors as xf
+from ... import xfactors as xf
 
 # ---------------------------------------------------------------
 
@@ -68,40 +65,37 @@ def loss_orthogonal(X, scale = 1.):
 
 # ---------------------------------------------------------------
 
-@xf.constraint_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Constraint_Maximise(typing.NamedTuple):
     
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def apply(self, state):
         vals = xf.concatenate_sites(self.sites, state)
         return -1 * vals.mean()
 
-@xf.constraint_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Constraint_Minimise(typing.NamedTuple):
     
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def apply(self, state):
         vals = xf.concatenate_sites(self.sites, state)
         return vals.mean()
 
-@xf.constraint_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Constraint_MinimiseSquare(typing.NamedTuple):
     
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def apply(self, state):
         vals = xf.concatenate_sites(self.sites, state)
@@ -109,15 +103,14 @@ class Constraint_MinimiseSquare(typing.NamedTuple):
 
 # ---------------------------------------------------------------
 
-@xf.constraint_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Constraint_EM(typing.NamedTuple):
     
     sites_param: xt.iTuple
     sites_optimal: xt.iTuple # optimal at this step from em algo
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     cut_tree: bool = False
 
@@ -133,15 +126,14 @@ class Constraint_EM(typing.NamedTuple):
             )
         )
 
-@xf.constraint_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Constraint_EM_MatMul(typing.NamedTuple):
     
     sites_param: xt.iTuple
     sites_optimal: xt.iTuple # optimal at this step from em algo
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     cut_tree: bool = False
 
@@ -162,26 +154,24 @@ class Constraint_EM_MatMul(typing.NamedTuple):
         )
 # ---------------------------------------------------------------
 
-@xf.constraint_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Constraint_L0(typing.NamedTuple):
     
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def apply(self, state):
         assert False, self
 
-@xf.constraint_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Constraint_L1(typing.NamedTuple):
     
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def apply(self, state):
         param = xf.concatenate_sites(self.sites, state)
@@ -190,14 +180,13 @@ class Constraint_L1(typing.NamedTuple):
 def l1_diag_loss(v):
     return jax.numpy.abs(jax.numpy.diag(v)).mean()
 
-@xf.constraint_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Constraint_L1_MM_Diag(typing.NamedTuple):
     
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def apply(self, state):
         raw = xf.concatenate_sites(self.sites, state)
@@ -207,41 +196,38 @@ class Constraint_L1_MM_Diag(typing.NamedTuple):
         )
         return jax.vmap(l1_diag_loss)(param).mean()
 
-@xf.constraint_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Constraint_L2(typing.NamedTuple):
     
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def apply(self, state):
         param = xf.concatenate_sites(self.sites, state)
         return jax.numpy.square(param).mean()
 
-@xf.constraint_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Constraint_ElasticNet(typing.NamedTuple):
     
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def apply(self, state):
         assert False, self
 
 # ---------------------------------------------------------------
 
-@xf.constraint_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Constraint_KernelVsCov(typing.NamedTuple):
     
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def apply(self, state):
         # param weights
@@ -256,14 +242,13 @@ class Constraint_KernelVsCov(typing.NamedTuple):
 
 # ---------------------------------------------------------------
 
-@xf.constraint_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Constraint_MinimiseMMSpread(typing.NamedTuple):
     
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     T: bool = False
 
@@ -283,14 +268,13 @@ class Constraint_MinimiseMMSpread(typing.NamedTuple):
         return delta
 
 
-@xf.constraint_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Constraint_MinimiseVariance(typing.NamedTuple):
     
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     T: bool = False
 
@@ -301,14 +285,13 @@ class Constraint_MinimiseVariance(typing.NamedTuple):
         var = jax.numpy.var(data.flatten())
         return var
 
-@xf.constraint_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Constraint_MinimiseZSpread(typing.NamedTuple):
     
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     T: bool = False
 
@@ -322,14 +305,13 @@ class Constraint_MinimiseZSpread(typing.NamedTuple):
         delta = (data - mu) / sigma
         return jax.numpy.square(delta).mean()
 
-@xf.constraint_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Constraint_MaxSpread(typing.NamedTuple):
     
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     T: bool = False
 
@@ -348,14 +330,13 @@ class Constraint_MaxSpread(typing.NamedTuple):
 
 # ---------------------------------------------------------------
 
-@xf.constraint_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Constraint_MSE(typing.NamedTuple):
     
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def apply(self, state):
         assert self.sites.len() == 2
@@ -364,14 +345,13 @@ class Constraint_MSE(typing.NamedTuple):
         r = xf.get_location(r_site, state)
         return loss_mse(l, r)
 
-@xf.constraint_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Constraint_Orthonormal(typing.NamedTuple):
     
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     T: bool = False
 
@@ -381,14 +361,13 @@ class Constraint_Orthonormal(typing.NamedTuple):
             X = X.T
         return loss_orthonormal(X)
 
-@xf.constraint_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Constraint_Orthogonal(typing.NamedTuple):
     
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     T: bool = False
 
@@ -398,14 +377,13 @@ class Constraint_Orthogonal(typing.NamedTuple):
             X = X.T
         return loss_orthogonal(X)
 
-@xf.constraint_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Constraint_VOrthogonal(typing.NamedTuple):
     
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     T: bool = False
 
@@ -415,14 +393,13 @@ class Constraint_VOrthogonal(typing.NamedTuple):
             X = X.T
         return jax.vmap(loss_orthogonal)(X).sum()
 
-@xf.constraint_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Constraint_VOrthonormal(typing.NamedTuple):
     
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     T: bool = False
 
@@ -432,14 +409,13 @@ class Constraint_VOrthonormal(typing.NamedTuple):
             X = X.T
         return jax.vmap(loss_orthonormal)(X).sum()
 
-@xf.constraint_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Constraint_VDiagonal(typing.NamedTuple):
     
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     T: bool = False
 
@@ -449,14 +425,13 @@ class Constraint_VDiagonal(typing.NamedTuple):
             X = X.T
         return jax.vmap(loss_diag)(X).sum()
 
-@xf.constraint_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Constraint_LinearCovar(typing.NamedTuple):
     
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def apply(self, state):
         site_l, site_r = self.sites
@@ -465,18 +440,17 @@ class Constraint_LinearCovar(typing.NamedTuple):
         cov = xf.get_location(site_r, state)
         return loss_mse(XXt, cov)
 
-@xf.constraint_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Constraint_EigenVLike(typing.NamedTuple):
     
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     eigval_max: bool = True
 
-    n_check: int = None
+    n_check: typing.Optional[int] = None
 
     def apply(self, state):
         assert len(self.sites) == 2

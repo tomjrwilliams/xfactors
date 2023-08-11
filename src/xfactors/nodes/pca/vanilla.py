@@ -1,4 +1,6 @@
 
+from __future__ import annotations
+
 import operator
 import collections
 # import collections.abc
@@ -21,9 +23,8 @@ import optax
 
 import xtuples as xt
 
-from . import rand
-from . import dates
-from . import xfactors as xf
+from ... import utils
+from ... import xfactors as xf
 
 # ---------------------------------------------------------------
 
@@ -42,27 +43,35 @@ def calc_loadings(eigvals, eigvecs):
 
 # ---------------------------------------------------------------
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+def func() -> xf.Model:
+    """
+    >>> func()
+    """
+    model, (INPUT, TEST) = xf.Model().init_stages(1)
+    model.add_node(TEST, PCA(1, xf.Location(0, xt.iTuple())))
+    return model
+
+@xt.nTuple.decorate()
 class PCA(typing.NamedTuple):
     
     n: int
-    sites: xt.iTuple
+    data: xf.Location
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    def init_params(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PCA, xt.iTuple]:
+        return self, ()
 
-    def init_shape(self, model, data):
-        objs = self.sites.map(xf.f_get_location(model))
-        return self._replace(
-            shape = (
-                objs.map(lambda o: o.shape[1]).pipe(sum),
-                self.n,
-            )
+    def init_shape(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PCA, tuple]:
+        return self, (
+            self.data.access(model).shape[1],
+            self.n,
         )
 
-    def apply(self, state):
-        data = xf.concatenate_sites(self.sites, state, axis = 1)
+    def apply(self, site: xf.Site, state: tuple) -> tuple:
+        data = self.data.access(state)
         eigvals, weights = jax.numpy.linalg.eig(jax.numpy.cov(
             jax.numpy.transpose(data)
         ))
@@ -70,19 +79,15 @@ class PCA(typing.NamedTuple):
 
 # ---------------------------------------------------------------
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class PCA_Encoder(typing.NamedTuple):
     
     n: int
     sites: xt.iTuple
-    site: xf.Location = None
+    site: xf.OptionalLocation = None
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
-    train: bool = None
-
-    def init_shape(self, model, data):
+    def init_shape(self, site, model, data):
         objs = self.sites.map(xf.f_get_location(model))
         return self._replace(
             shape = (
@@ -91,13 +96,13 @@ class PCA_Encoder(typing.NamedTuple):
             )
         )
 
-    def init_params(self, model, state):
+    def init_params(self, site, model, data):
         if self.site is None:
             return self._replace(
                 site=self.loc.as_param()
-            ), rand.gaussian(self.shape)
+            ), utils.rand.gaussian(self.shape)
         # TODO: check below, assumes weights generated elsewhere
-        return self, rand.gaussian(self.shape)
+        return self, utils.rand.gaussian(self.shape)
 
     def apply(self, state):
         weights = xf.get_location(self.site, state)
@@ -105,8 +110,8 @@ class PCA_Encoder(typing.NamedTuple):
         return jax.numpy.matmul(data, weights)
 
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class PCA_Decoder(typing.NamedTuple):
     
     sites: xt.iTuple
@@ -119,9 +124,8 @@ class PCA_Decoder(typing.NamedTuple):
     # and then concat both, or if size = 1, then as below
     # can also pass as a nested tuple? probs cleaner to have separate
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
-    train: bool = None
+    
+    
 
     def apply(self, state):
         assert len(self.sites) == 2
@@ -132,8 +136,8 @@ class PCA_Decoder(typing.NamedTuple):
 
 # ---------------------------------------------------------------
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class PPCA_NegLikelihood(typing.NamedTuple):
     
     site_sigma: xf.Location
@@ -144,9 +148,8 @@ class PPCA_NegLikelihood(typing.NamedTuple):
 
     # ---
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
-    train: bool = None
+    
+    
 
     # NOTE: direct minimisation with gradient descent
     # doesn't seem to recover pca weights
@@ -212,8 +215,8 @@ class PPCA_NegLikelihood(typing.NamedTuple):
 
 # ---------------------------------------------------------------
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class PPCA_Rolling_NegLikelihood(typing.NamedTuple):
     
     site_sigma: xf.Location
@@ -224,9 +227,8 @@ class PPCA_Rolling_NegLikelihood(typing.NamedTuple):
 
     # ---
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
-    train: bool = None
+    
+    
 
     # NOTE: direct minimisation with gradient descent
     # doesn't seem to recover pca weights
@@ -241,8 +243,8 @@ class PPCA_Rolling_NegLikelihood(typing.NamedTuple):
 
 # ---------------------------------------------------------------
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class PPCA_EM(typing.NamedTuple):
     
     site_sigma: xf.Location
@@ -253,9 +255,8 @@ class PPCA_EM(typing.NamedTuple):
 
     # ---
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
-    train: bool = None
+    
+    
 
     random: float = 0
 
@@ -314,8 +315,8 @@ class PPCA_EM(typing.NamedTuple):
 
 # ---------------------------------------------------------------
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class PPCA_Marginal_Observations(typing.NamedTuple):
     
     site_sigma: xf.Location
@@ -327,9 +328,8 @@ class PPCA_Marginal_Observations(typing.NamedTuple):
 
     # ---
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
-    train: bool = None
+    
+    
 
     random: float = 0
 
@@ -359,8 +359,8 @@ class PPCA_Marginal_Observations(typing.NamedTuple):
 
         return dist.log_prob(data)
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class PPCA_Conditional_Latents(typing.NamedTuple):
     
     site_sigma: xf.Location
@@ -372,9 +372,8 @@ class PPCA_Conditional_Latents(typing.NamedTuple):
 
     # ---
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
-    train: bool = None
+    
+    
 
     random: float = 0
 

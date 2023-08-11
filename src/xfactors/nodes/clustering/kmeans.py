@@ -21,9 +21,7 @@ import optax
 
 import xtuples as xt
 
-from . import rand
-from . import dates
-from . import xfactors as xf
+from ... import xfactors as xf
 
 # ---------------------------------------------------------------
 
@@ -42,8 +40,8 @@ def reindex_labels(labels):
 
 # ---------------------------------------------------------------
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class KMeans_Labels(typing.NamedTuple):
     
     k: int
@@ -52,8 +50,7 @@ class KMeans_Labels(typing.NamedTuple):
 
     sites_data: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
 
     def apply(self, state):
@@ -97,8 +94,8 @@ class KMeans_Labels(typing.NamedTuple):
     
 # ---------------------------------------------------------------
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class KMeans_EM_MeanDiff(typing.NamedTuple):
     
     k: int
@@ -108,8 +105,7 @@ class KMeans_EM_MeanDiff(typing.NamedTuple):
     sites_data: xt.iTuple
     sites_labels: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
 
     def apply(self, state):
@@ -160,8 +156,8 @@ class KMeans_EM_MeanDiff(typing.NamedTuple):
 
 # ---------------------------------------------------------------
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class KMeans_EM_Naive(typing.NamedTuple):
     
     k: int
@@ -169,8 +165,7 @@ class KMeans_EM_Naive(typing.NamedTuple):
     sites_data: xt.iTuple
     sites_labels: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
 
     def apply(self, state):

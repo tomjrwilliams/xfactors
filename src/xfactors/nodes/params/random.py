@@ -21,20 +21,17 @@ import optax
 
 import xtuples as xt
 
-from . import rand
-from . import dates
-from . import xfactors as xf
+from ... import xfactors as xf
 
 # ---------------------------------------------------------------
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Scalar(typing.NamedTuple):
 
     v: numpy.ndarray
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def init_params(self, model, params):
         return self, jax.numpy.array(self.v)
@@ -45,15 +42,14 @@ class Scalar(typing.NamedTuple):
 
 # ---------------------------------------------------------------
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class RandomCovariance(typing.NamedTuple):
 
     n: int
     d: int
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def init_params(self, model, params):
         gaussians = [
@@ -70,14 +66,13 @@ class RandomCovariance(typing.NamedTuple):
 
 # ---------------------------------------------------------------
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Gaussian(typing.NamedTuple):
 
     shape: tuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def init_params(self, model, params):
         return self, rand.gaussian(self.shape)
@@ -85,14 +80,13 @@ class Gaussian(typing.NamedTuple):
     def apply(self, state):
         return xf.get_location(self.loc.as_param(), state)
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class GaussianSoftmax(typing.NamedTuple):
 
     shape: tuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def init_params(self, model, params):
         return self, jax.nn.softmax(
@@ -105,14 +99,13 @@ class GaussianSoftmax(typing.NamedTuple):
 
 # ---------------------------------------------------------------
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Beta(typing.NamedTuple):
 
     shape: tuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def init_params(self, model, params):
         return self, rand.beta(self.shape)

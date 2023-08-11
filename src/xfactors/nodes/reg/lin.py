@@ -21,15 +21,12 @@ import optax
 
 import xtuples as xt
 
-from . import rand
-from . import dates
-from . import xfactors as xf
-
-from . import pca
+from ... import xfactors as xf
+from .. import pca
 
 # ---------------------------------------------------------------
 
-Lin_Reg = pca.PCA_Encoder
+Lin_Reg = pca.vanilla.PCA_Encoder
 
 # lasso / ridge / elastic net
 # via coordinate descent type algos (?)

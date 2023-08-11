@@ -13,8 +13,6 @@ import pandas
 
 import pathlib
 
-import operators
-
 import scipy.stats
 
 import plotly.express

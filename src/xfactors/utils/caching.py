@@ -1,7 +1,7 @@
 
 
-CACHE = {}
-CACHE_ORDER = {}
+CACHE: dict = {}
+CACHE_ORDER: dict = {}
 
 # because vs code ikernel doesn't like functools.lru_cache
 def lru_cache(size=None, drop_keys = False, key_order = None):

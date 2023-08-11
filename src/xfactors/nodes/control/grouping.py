@@ -20,10 +20,7 @@ import jaxopt
 import optax
 
 import xtuples as xt
-
-from . import rand
-from . import dates
-from . import xfactors as xf
+from ... import xfactors as xf
 
 # ---------------------------------------------------------------
 
@@ -34,15 +31,14 @@ from . import xfactors as xf
 
 # ---------------------------------------------------------------
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Group_By(typing.NamedTuple):
     
     sites_values: xt.iTuple
     sites_keys: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     # return tuple of values vmapped over indices
     # given by the values in the map(get_location(site_keys))

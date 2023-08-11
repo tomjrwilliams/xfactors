@@ -5,11 +5,11 @@ import numpy
 import pandas
 
 import xtuples as xt
-import src.xfactors as xf
+import xfactors as xf
 
 from tests import utils
 
-def test_pca():
+def test_pca() -> bool:
 
     ds = xf.dates.starting(datetime.date(2020, 1, 1), 100)
 
@@ -24,7 +24,7 @@ def test_pca():
         }),
     )
     
-    model, STAGES = xf.Model().init_stages(1)
+    model, STAGES = xf.Model().init_stages(None)
     INPUT, PCA = STAGES
 
     model = (

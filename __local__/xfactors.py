@@ -41,7 +41,7 @@ def update_param(param, grad, lr = 0.1):
 
 # # ---------------------------------------------------------------
 
-# @xtuples.nTuple.decorate
+# @xtuples.nTuple.decorate()
 # class Example(typing.NamedTuple):
 #     x: float
 #     y: float
@@ -61,7 +61,7 @@ def update_param(param, grad, lr = 0.1):
     
 # ---------------------------------------------------------------
 
-@xtuples.nTuple.decorate
+@xtuples.nTuple.decorate()
 class Flags_NaN(typing.NamedTuple):
     max_n: int = None
     min_values: int = None
@@ -255,7 +255,7 @@ def decode_factors(model, factors):
 #     eigvals=eigvals.shape,
 # ))
 
-@xtuples.nTuple.decorate
+@xtuples.nTuple.decorate()
 class PCA(typing.NamedTuple):
 
     columns: xtuples.iTuple
@@ -286,7 +286,7 @@ class PCA(typing.NamedTuple):
 
 # ---------------------------------------------------------------
 
-@xtuples.nTuple.decorate
+@xtuples.nTuple.decorate()
 class Flags_PPCA(typing.NamedTuple):
     ordered: bool = True
     orthogonal: bool = True
@@ -342,7 +342,7 @@ def loss_ppca(weights, data):
 
 grad_loss_ppca = jax.jacrev(loss_ppca)
 
-@xtuples.nTuple.decorate
+@xtuples.nTuple.decorate()
 class PPCA(typing.NamedTuple):
 
     columns: xtuples.iTuple
@@ -414,7 +414,7 @@ class PPCA(typing.NamedTuple):
 
 # ---------------------------------------------------------------
 
-@xtuples.nTuple.decorate
+@xtuples.nTuple.decorate()
 class Feature(typing.NamedTuple):
 
     name: str
@@ -794,7 +794,7 @@ grad_loss_ppca_instr_weights = jax.jacrev(loss_ppca_instr_weights)
 
 # todo: rename instr features
 
-@xtuples.nTuple.decorate
+@xtuples.nTuple.decorate()
 class PPCA_Instr_Weights(typing.NamedTuple):
 
     # data columns specifically
@@ -1241,7 +1241,7 @@ def variational_instrumented_weights(
 
 # ---------------------------------------------------------------
 
-@xtuples.nTuple.decorate
+@xtuples.nTuple.decorate()
 class Results_Instruments_Factors(typing.NamedTuple):
     weights: pandas.DataFrame
     instruments: pandas.DataFrame
@@ -1288,7 +1288,7 @@ def variational_instrumented_factors(
 
 # ---------------------------------------------------------------
 
-@xtuples.nTuple.decorate
+@xtuples.nTuple.decorate()
 class Results_Instrumented(typing.NamedTuple):
     instruments_weights: pandas.DataFrame
     instruments_factors: pandas.DataFrame
@@ -1341,7 +1341,7 @@ def variational_instrumented_weights_factors(
 
 # ---------------------------------------------------------------
 
-@xtuples.nTuple.decorate
+@xtuples.nTuple.decorate()
 class Results_Kernel_Weights(typing.NamedTuple):
     kernels: pandas.DataFrame # ?
 
@@ -1352,7 +1352,7 @@ class Results_Kernel_Weights(typing.NamedTuple):
     factors: pandas.DataFrame
     eigvals: pandas.Series = None
 
-@xtuples.nTuple.decorate
+@xtuples.nTuple.decorate()
 class Results_Kernel_Factors(typing.NamedTuple):
     weights: pandas.DataFrame
     kernels: pandas.DataFrame # ?

@@ -21,9 +21,8 @@ import optax
 
 import xtuples as xt
 
-from . import rand
-from . import dates
-from . import xfactors as xf
+from ... import utils
+from ... import xfactors as xf
 
 # ---------------------------------------------------------------
 
@@ -88,27 +87,25 @@ from . import xfactors as xf
 
 # ---------------------------------------------------------------
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class KF_State_Predicted(typing.NamedTuple):
     
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     # Fx + Bu
     def apply(self, state):
         assert False, self
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class KF_Cov_Predicted(typing.NamedTuple):
     
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     # FPFt + Q
     def apply(self, state):
@@ -116,27 +113,25 @@ class KF_Cov_Predicted(typing.NamedTuple):
 
 # ---------------------------------------------------------------
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class KF_State_Innovation(typing.NamedTuple):
     
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     # z - Hx
     def apply(self, state):
         assert False, self
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class KF_Cov_Innovation(typing.NamedTuple):
     
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     # HPHt + R
     def apply(self, state):
@@ -144,14 +139,13 @@ class KF_Cov_Innovation(typing.NamedTuple):
 
 # ---------------------------------------------------------------
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class KF_Kalman_Gain(typing.NamedTuple):
     
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     # PHtS-1
     def apply(self, state):
@@ -159,40 +153,37 @@ class KF_Kalman_Gain(typing.NamedTuple):
 
 # ---------------------------------------------------------------
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class KF_State_Updated(typing.NamedTuple):
     
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     # x + Ky
     def apply(self, state):
         assert False, self
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class KF_Cov_Updated(typing.NamedTuple):
     
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     # (I - KH)P
     def apply(self, state):
         assert False, self
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class KF_Residual(typing.NamedTuple):
     
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     # z - Hx
     def apply(self, state):

@@ -3,20 +3,20 @@
 # over the domain
 
 # against each param (?)
-
+import jax
 
 
 def sigmoid_curve(x, upper = 1, mid = 0, rate = 1):
     return upper / (
-        1 + torch.exp(-1 * rate * (x - mid))
+        1 + jax.numpy.exp(-1 * rate * (x - mid))
     )
 
 def overextension(x, mid = 0):
-    return x * torch.exp(-(x - mid).square())
+    return x * jax.numpy.exp(-(x - mid).square())
 
 def gaussian(x, rate = 1, mid = 0):
     return 2 / (
-        1 + torch.exp(k * (x - mid).square)
+        1 + jax.numpy.exp(k * (x - mid).square)
     )
 
 def gaussian_flipped(x, rate = 1, mid = 0):
@@ -24,7 +24,7 @@ def gaussian_flipped(x, rate = 1, mid = 0):
 
 def gaussian_sigmoid(x, rate = 1, mid = 0):
     return 1 + (-1 / (
-        1 + torch.exp(-1 * rate * (x - mid).square)
+        1 + jax.numpy.exp(-1 * rate * (x - mid).square)
     ))
 
 
@@ -32,11 +32,11 @@ def gaussian_sigmoid(x, rate = 1, mid = 0):
 
 
 def slope(x, rate = 1):
-    return torch.log(1 + torch.exp(rate * x))
+    return jax.numpy.log(1 + jax.numpy.exp(rate * x))
 
 def trough(x, mid):
     return 1 / (
-        1 + torch.exp(-x (x - mid))
+        1 + jax.numpy.exp(-x (x - mid))
     )
 
 # hyperbolic tangent is an s curve
@@ -50,6 +50,7 @@ def velocity(
     drag,
     density,
     area,
+    g=10,
 ):
     alpha_square = (
         density * area * density,
@@ -57,7 +58,7 @@ def velocity(
     #
     alpha = alpha_square ** (1/2)
     #
-    return (1 / alpha) * torch.tanh(
+    return (1 / alpha) * jax.numpy.tanh(
         alpha * g * t
     )
 

@@ -21,25 +21,23 @@ import optax
 
 import xtuples as xt
 
-from . import rand
-from . import dates
-from . import xfactors as xf
+from ... import utils
+from ... import xfactors as xf
 
-from . import pca
+from . import vanilla
 
 # ---------------------------------------------------------------
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class PCA_Rolling(typing.NamedTuple):
     
     n: int
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
-    def init_shape(self, model, data):
+    def init_shape(self, site, model, data):
         objs = self.sites.map(xf.f_get_location(model))
         return self._replace(
             shape = (
@@ -57,19 +55,18 @@ class PCA_Rolling(typing.NamedTuple):
 
 # ---------------------------------------------------------------
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class PCA_Rolling_Encoder(typing.NamedTuple):
     
     n: int
     sites: xt.iTuple
-    site: xf.Location = None
+    site: xf.OptionalLocation = None
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
-    train: bool = None
+    
+    
 
-    def init_shape(self, model, data):
+    def init_shape(self, site, model, data):
         objs = self.sites.map(xf.f_get_location(model))
         return self._replace(
             shape = (
@@ -78,13 +75,13 @@ class PCA_Rolling_Encoder(typing.NamedTuple):
             )
         )
 
-    def init_params(self, model, state):
+    def init_params(self, site, model, data):
         if self.site is None:
             return self._replace(
                 site=self.loc.as_param()
-            ), rand.gaussian(self.shape)
+            ), utils.rand.gaussian(self.shape)
         # TODO: check below, assumes weights generated elsewhere
-        return self, rand.gaussian(self.shape)
+        return self, utils.rand.gaussian(self.shape)
 
     def apply(self, state):
         weights = xf.get_location(self.site, state)
@@ -92,8 +89,8 @@ class PCA_Rolling_Encoder(typing.NamedTuple):
         return jax.numpy.matmul(data, weights)
 
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class PCA_Rolling_Decoder(typing.NamedTuple):
     
     sites: xt.iTuple
@@ -109,9 +106,8 @@ class PCA_Rolling_Decoder(typing.NamedTuple):
     # todo. split out the apply method
     # to a class method on the non rolling class
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
-    train: bool = None
+    
+    
 
     def apply(self, state):
         assert len(self.sites) == 2
@@ -129,8 +125,8 @@ class PCA_Rolling_Decoder(typing.NamedTuple):
 # on the equivalent index loading factor
 # with 1 in the features (tickers) in that sector, zero elsewhere
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class PCA_Rolling_LatentWeightedMean_MSE(typing.NamedTuple):
     
     # sites
@@ -184,8 +180,8 @@ class PCA_Rolling_LatentWeightedMean_MSE(typing.NamedTuple):
 
 # ---------------------------------------------------------------
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class PPCA_Rolling_NegLikelihood(typing.NamedTuple):
     
     site_sigma: xf.Location
@@ -196,9 +192,8 @@ class PPCA_Rolling_NegLikelihood(typing.NamedTuple):
 
     # ---
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
-    train: bool = None
+    
+    
 
     # NOTE: direct minimisation with gradient descent
     # doesn't seem to recover pca weights
@@ -213,8 +208,8 @@ class PPCA_Rolling_NegLikelihood(typing.NamedTuple):
 
 # ---------------------------------------------------------------
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class PPCA_Rolling_EM(typing.NamedTuple):
     
     site_sigma: xf.Location
@@ -225,9 +220,8 @@ class PPCA_Rolling_EM(typing.NamedTuple):
 
     # ---
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
-    train: bool = None
+    
+    
 
     random: float = 0
 
@@ -286,8 +280,8 @@ class PPCA_Rolling_EM(typing.NamedTuple):
 
 # ---------------------------------------------------------------
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class PPCA_Rolling_Marginal_Observations(typing.NamedTuple):
     
     site_sigma: xf.Location
@@ -299,9 +293,8 @@ class PPCA_Rolling_Marginal_Observations(typing.NamedTuple):
 
     # ---
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
-    train: bool = None
+    
+    
 
     random: float = 0
 
@@ -331,8 +324,8 @@ class PPCA_Rolling_Marginal_Observations(typing.NamedTuple):
 
         return dist.log_prob(data)
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class PPCA_Rolling_Conditional_Latents(typing.NamedTuple):
     
     site_sigma: xf.Location
@@ -344,9 +337,8 @@ class PPCA_Rolling_Conditional_Latents(typing.NamedTuple):
 
     # ---
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
-    train: bool = None
+    
+    
 
     random: float = 0
 

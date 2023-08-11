@@ -19,18 +19,15 @@ import jaxopt
 import optax
 
 import xtuples as xt
-
-from . import rand
-from . import dates
-from . import xfactors as xf
+from ... import xfactors as xf
 
 # ---------------------------------------------------------------
 
 # TODO: pass the kernel as a field (s) for multiple
 
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class GP_RBF(typing.NamedTuple):
 
     # sigma: float
@@ -40,13 +37,12 @@ class GP_RBF(typing.NamedTuple):
     # optional weights?
     # optional mean
 
-    n: int = None
+    n: typing.Optional[int] = None
     # shape determines how many samples
     # eg. if using a gp for three factors
     # if mean provided, assert mean.shape == n
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def init_params(self, model, params):
         return self, (
@@ -107,44 +103,41 @@ class GP_RBF(typing.NamedTuple):
 # ---------------------------------------------------------------
 
 # aka white noise
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class GP_Kernel_Sigmoid(typing.NamedTuple):
 
     sigma: float
     # or variance?
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def apply(self, state):
         assert False, self
 
 # ---------------------------------------------------------------
  
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class GP_Kernel_SquaredExp(typing.NamedTuple):
 
     length_scale: float
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def apply(self, state):
         assert False, self
         
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class GP_Kernel_OU(typing.NamedTuple):
 
     length_scale: float
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     @classmethod
     def f(cls, features_l, features_r, sigma, l):
@@ -160,15 +153,14 @@ class GP_Kernel_OU(typing.NamedTuple):
      
 # ---------------------------------------------------------------
    
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class GP_Kernel_RationalQuadratic(typing.NamedTuple):
 
     length_scale: float
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def apply(self, state):
         assert False, self

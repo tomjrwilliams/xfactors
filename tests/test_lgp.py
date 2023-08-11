@@ -6,7 +6,7 @@ import numpy
 import pandas
 
 import xtuples as xt
-import src.xfactors as xf
+import xfactors as xf
 
 from tests import utils
 
@@ -15,7 +15,7 @@ from tests import utils
 
 from sklearn.cluster import KMeans
 
-def test_lgp():
+def test_lgp() -> bool:
 
     ds = xf.dates.starting(datetime.date(2020, 1, 1), 100)
 

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import enum
 
 import operator
@@ -19,54 +21,16 @@ import jax.numpy
 import jax.numpy.linalg
 
 import jaxopt
-import jaxopt.perturbations
 import optax
 
 import xtuples as xt
 
-from . import rand
-from . import dates
 from . import utils
-
-expand_dims = utils.expand_dims
-expand_dims_like = utils.expand_dims_like
 
 # ---------------------------------------------------------------
 
-def return_false(self):
-    return False
-
-def return_true(self):
-    return True
-
-NULL_SHAPE = "NULL_SHAPE"
-NO_PARAMS = "NO_PARAMS"
-
-def init_shape_null(self, model, data):
-    return self
-
-def init_params_null(obj, model, state):
-    return obj, ()
-
-def add_bindings(cls, methods, kfs):
-    for k, f in kfs.items():
-        if k == "init_shape" and f == "NULL_SHAPE":
-            methods[k] = init_shape_null
-        elif k == "init_params" and f == "NO_PARAMS":
-            methods[k] = init_params_null
-        else:
-            methods[k] = f
-    for k, f in methods.items():
-        setattr(cls, k, f)
-    if not hasattr(cls, "static"):
-        setattr(cls, "static", property(return_false))
-    if not hasattr(cls, "random"):
-        setattr(cls, "random", property(return_false))
-    if not hasattr(cls, "init_shape"):
-        setattr(cls, "init_shape", init_shape_null)
-    if not hasattr(cls, "init_params"):
-        setattr(cls, "init_params", init_params_null)
-    return cls
+expand_dims = utils.shapes.expand_dims
+expand_dims_like = utils.shapes.expand_dims_like
 
 # ---------------------------------------------------------------
 
@@ -78,6 +42,8 @@ PARAM = 0
 RESULT = 1
 CONSTRAINT = 2
 RANDOM = 3
+
+# ---------------------------------------------------------------
 
 # as we can follow paths through the model
 def follow_path(path, acc):
@@ -105,40 +71,47 @@ def f_get_location(acc):
         return get_location(loc, acc)
     return f
 
-def concatenate_sites(sites, state, **kws):
-    if len(sites) == 1:
-        return get_location(*sites, state)
-    return jax.numpy.concatenate(
-        sites.map(f_get_location(state)),
-        **kws,
-    )
-
+# def concatenate_sites(sites, state, **kws):
+#     if len(sites) == 1:
+#         return get_location(*sites, state)
+#     return jax.numpy.concatenate(
+#         sites.map(f_get_location(state)),
+#         **kws,
+#     )
+    
 # ---------------------------------------------------------------
 
-@xt.nTuple.decorate
+@xt.nTuple.decorate()
 class Location(typing.NamedTuple):
 
-    domain: int # [0, 1, 2]
+    domain: typing.Optional[int] # [0, 1, 2]
     path: xt.iTuple
 
-    check = check_location
-    access = get_location
+    # ---
+    
+    def check(self, *args, **kwargs):
+        return check_location(self, *args, **kwargs)
+        
+    def access(self, *args, **kwargs):
+        return get_location(self, *args, **kwargs)
+
+    # ---
 
     @classmethod
     def model(cls, *path):
-        return cls(None, path)
+        return cls(None, xt.iTuple(path))
 
     @classmethod
     def param(cls, *path):
-        return cls(PARAM, path)
+        return cls(PARAM, xt.iTuple(path))
 
     @classmethod
     def result(cls, *path):
-        return cls(RESULT, path)
+        return cls(RESULT, xt.iTuple(path))
 
     @classmethod
     def constraint(cls, *path):
-        return cls(CONSTRAINT, path)
+        return cls(CONSTRAINT, xt.iTuple(path))
 
     def as_random(self):
         return Location(RANDOM, self.path)
@@ -159,12 +132,78 @@ Loc = Location
 
 # the model location shouldn't have domains?
 
+OptionalLocation = typing.Optional[Location]
+
+# ---------------------------------------------------------------
+
+import abc
+
+class Node(typing.Protocol):
+
+    @abc.abstractmethod
+    def init_shape(
+        self: NodeClass,
+        site: Site,
+        model: Model, 
+        data: tuple
+    ) -> tuple[NodeClass, tuple]:
+        ...
+
+    @abc.abstractmethod
+    def init_params(
+        self: NodeClass,
+        site: Site,
+        model: Model,
+        data: tuple,
+    ) -> tuple[NodeClass, tuple]:
+        ...
+
+    @abc.abstractmethod
+    def apply(
+        self: NodeClass, 
+        site: Site,
+        state: tuple
+    ) -> tuple:
+        ...
+
+NodeClass: typing.TypeVar("NodeClass", bound=Node)
+
+# ---------------------------------------------------------------
+
+@xt.nTuple.decorate()
+class Site(typing.NamedTuple):
+    
+    node: Node
+
+    loc: typing.Optional[Location] = None
+    shape: typing.Optional[xt.iTuple] = None
+
+    def init_shape(self, model, data):
+        node, shape = self.node.init_shape(self, model, data)
+        return self._replace(
+            node=node,
+            shape=shape,
+        )
+
+    def init_params(self, model, data):
+        node, params = self.node.init_params(self, model, data)
+        return self._replace(node=node), params
+
+    def apply(self, state):
+        return self.node.apply(self, state)
+
+OptionalSite = typing.Optional[Site]
+
 # ---------------------------------------------------------------
 
 class Stage(xt.iTuple):
     pass
 
-def update_stage(model, i, stage):
+def update_stage(
+    model: Model,
+    i: int,
+    stage: Stage
+) -> Model:
     return model._replace(
         stages = (
             model.stages[:i].append(stage)
@@ -172,102 +211,79 @@ def update_stage(model, i, stage):
         )
     )
 
-def add_stage(model, stage = None):
+def add_stage(
+    model: Model,
+    stage: typing.Optional[Stage] = None
+) -> Model:
+    """
+    >>> Model().add_stage()
+    Model(params=iTuple(), stages=iTuple(Stage(), Stage()), constraints=iTuple(), n_stages=None)
+    """
     return model._replace(
         stages = model.stages.append((
             stage if stage is not None else Stage()
         ))
     )
 
-# 1 + n as we always have input stage pre-defined
-def init_stages(model, n):
+# return 1 + n indices as we always have input stage pre-defined
+def init_stages(
+    model: Model, n: int
+) -> tuple[Model, xt.iTuple]:
     return xt.iTuple.range(n).map(lambda i: None).fold(
         add_stage, initial=model
     ), xt.iTuple.range(n + 1)
     
 # ---------------------------------------------------------------
 
-def check_input(obj, model):
-    assert hasattr(obj, "loc"), obj
-    assert hasattr(obj, "shape"), obj
+def check_input(node: Node, model: Model) -> bool:
+    assert hasattr(node, "loc"), node
+    assert hasattr(node, "shape"), node
     return True
 
-def add_input(model, obj):
+def add_input(model: Model, node: Node) -> Model:
     """
     Inputs are always the first stage.
     """
-    assert check_input(obj, model)
+    assert check_input(node, model)
     stage = model.stages[0]
     return update_stage(
-        model, 0, stage.append(obj._replace(
+        model, 0, stage.append(Site(
+            node,
             loc=Location.model(0, stage.len())
         ))
     )
 
-def input_bindings(**kfs):
-    def decorator(cls):
-        methods = dict(
-            check = check_input,
-            add = add_input,
-        )
-        return add_bindings(cls, methods, kfs)
-    return decorator
-
-# ---------------------------------------------------------------
-
-def check_operator(obj, model):
-    assert hasattr(obj, "loc"), obj
-    assert hasattr(obj, "shape"), obj
+def check_node(node: Node, model: Model) -> bool:
+    assert hasattr(node, "loc"), node
+    assert hasattr(node, "shape"), node
     return True
 
-def add_operator(model, i, obj):
+def add_node(model: Model, i: int, node: Node) -> Model:
     stage = model.stages[i]
-    assert check_operator(obj, model)
+    assert check_node(node, model)
     return update_stage(
-        model, i, stage.append(
-            obj._replace(
-                loc=Location.model(i, stage.len())
-            )
-            #
-        )
+        model, i, stage.append(Site(
+            node,
+            loc=Location.model(i, stage.len())
+        ))
     )
 
-def operator_bindings(**kfs):
-    def decorator(cls):
-        methods = dict(
-            check = check_operator,
-            add = add_operator,
-        )
-        return add_bindings(cls, methods, kfs)
-    return decorator
-
-# ---------------------------------------------------------------
-
-def check_constraint(obj, model):
+def check_constraint(node: Node, model: Model) -> bool:
     return True
 
-def add_constraint(model, obj):
-    assert check_constraint(obj, model)
+def add_constraint(model: Model, node: Node) -> Model:
+    assert check_constraint(node, model)
     return model._replace(
-        constraints = model.constraints.append(obj._replace(
+        constraints = model.constraints.append(Site(
+            node,
             loc=Location.constraint(model.constraints)
         ))
         #
     )
 
-def constraint_bindings(init_params = NO_PARAMS, **kfs):
-    def decorator(cls):
-        methods = dict(
-            check = check_constraint,
-            add = add_constraint,
-        )
-        kfs["init_params"] = init_params
-        return add_bindings(cls, methods, kfs)
-    return decorator
-
 # ---------------------------------------------------------------
 
-def init_shapes(model, data):
+def init_shapes(model: Model, data: tuple) -> Model:
     return model.stages.fold(
         lambda model, stage: model._replace(
             stages=model.stages.append(
@@ -281,9 +297,9 @@ def init_shapes(model, data):
         initial=model._replace(stages=xt.iTuple()),
     )
 
-def init_params(model, data):
+def init_params(model: Model, data: tuple) -> Model:
 
-    def f_acc(model, params, stage, data):
+    def f_acc(model: Model, params, stage, data):
         stage, stage_params = stage.map(
             operator.methodcaller("init_params", model, data)
         ).zip().map(xt.iTuple)
@@ -293,7 +309,7 @@ def init_params(model, data):
 
     model, params = model.stages.fold(
         lambda model_params, stage: f_acc(
-            *model_params, stage, data
+            model_params[0], model_params[1], stage, data
         ),
         initial=(
             model._replace(stages=xt.iTuple()), 
@@ -305,12 +321,18 @@ def init_params(model, data):
 
 # ---------------------------------------------------------------
 
-def init_objective(model, data, rand_keys, jit = True):
+def init_objective(
+    model: Model,
+    data,
+    rand_keys,
+    jit = True,
+    **flags,
+):
     init_params = model.params
     init_results = xt.iTuple().append(
         model.stages[0].map(
             operator.methodcaller(
-                "apply", (init_params, data, (), rand_keys))
+                "apply", (init_params, data, (), rand_keys, flags))
         )
     )
     n_static = model.stages[1:].len_range().last_where(
@@ -322,16 +344,16 @@ def init_objective(model, data, rand_keys, jit = True):
     init_results = model.stages[1: 1 + n_static].fold(
         lambda res, stage: res.append(stage.map(
             operator.methodcaller(
-                "apply", (init_params, res, (), rand_keys)
+                "apply", (init_params, res, (), rand_keys, flags)
             )
         )),
         initial=init_results,
     )
-    def f(params, rand_keys):
+    def f(params, rand_keys, **flags):
         results = model.stages[1 + n_static:].fold(
             lambda res, stage: res.append(stage.map(
                 operator.methodcaller(
-                    "apply", (params, res, (), rand_keys)
+                    "apply", (params, res, (), rand_keys, flags)
                 )
             )),
             initial=xt.iTuple(init_results),
@@ -339,7 +361,7 @@ def init_objective(model, data, rand_keys, jit = True):
         loss = jax.numpy.stack(
             model.constraints.map(
                 operator.methodcaller(
-                    "apply", (params, results, (), rand_keys)
+                    "apply", (params, results, (), rand_keys, flags)
                 )
             ).pipe(list)
         ).sum()
@@ -353,7 +375,8 @@ def apply_model(
     data,
     rand_keys=None,
     params = None,
-    sites = None
+    sites = None,
+    **flags,
 ):
     if params is None:
         params = model.params
@@ -366,14 +389,14 @@ def apply_model(
     init_results = xt.iTuple().append(
         model.stages[0].map(
             operator.methodcaller(
-                "apply", (params, data, (), rand_keys)
+                "apply", (params, data, (), rand_keys, flags)
             )
         )
     )
     results = model.stages[1:].fold(
         lambda res, stage: res.append(stage.map(
             operator.methodcaller(
-                "apply", (params, res, (), rand_keys)
+                "apply", (params, res, (), rand_keys, flags)
             )
         )),
         initial=init_results,
@@ -387,11 +410,11 @@ def apply_model(
 
 # ---------------------------------------------------------------
 
-def gen_rand_keys(model):
+def gen_rand_keys(model: Model):
     ks = model.stages.map(
         lambda stage: stage.map(
             lambda o: (
-                rand.next_key() if o.random else None
+                utils.rand.next_key() if o.random else None
             )
         )
     )
@@ -402,7 +425,7 @@ def gen_rand_keys(model):
 
 # ---------------------------------------------------------------
 
-def init_shapes_params(model, data):
+def init_shapes_params(model: Model, data: tuple):
     model = (
         model.init_shapes(data)
         .init_params(data)
@@ -536,51 +559,69 @@ def optimise_model(
         if n_random > 0:
             rand_keys, _ = gen_rand_keys(model)
 
-    # TODO: for all operators (inputs / constraints) that
-    # sepcify they need a key
-
-    # generate a key map, with the same shape as state
-    # that can be indexed into (expand the function sig to then be:
-    # (state, keys)
-
     model = model._replace(params=params)
     return model
 
 # ---------------------------------------------------------------
 
-@xt.nTuple.decorate
+@xt.nTuple.decorate()
 class Model(typing.NamedTuple):
 
     params: xt.iTuple = xt.iTuple()
     stages: xt.iTuple = xt.iTuple.one(Stage())
     constraints: xt.iTuple = xt.iTuple()
 
-    n_stages: int = None
+    n_stages: typing.Optional[int] = None
 
-    add_input = add_input
-    add_stage = add_stage
-    add_operator = add_operator
-    add_constraint = add_constraint
-
-    init_stages = init_stages
-
-    init_shapes = init_shapes
-    init_params = init_params
-    init_shapes_params = init_shapes_params
-
-    init_objective = init_objective
-
-    optimise = optimise_model
-
-    apply = apply_model
-
-    # TODO: rename operators as nodes
-    # in stages
-
-    # and have a render method
+    # TODO: render method
     # that renders the graph, with labelled boxs on stages
 
     # can use __name__ for node labelling
 
+    # ---
+    
+    def add_input(self: Model, node: Node) -> Model:
+        return add_input(self, node)
+
+    def add_stage(
+        self: Model,
+        stage: typing.Optional[Stage] = None
+    ) -> Model:
+        return add_stage(self, stage=stage)
+
+    def add_node(self: Model, i: int, node: Node) -> Model:
+        return add_node(self, i, node)
+
+    def add_constraint(self: Model, node: Node) -> Model:
+        return add_constraint(self, node)
+
+    # ---
+
+    def init_stages(self: Model, n: int) -> tuple[Model, xt.iTuple]:
+        return init_stages(self, n)
+
+    # ---
+
+    def init_shapes(self: Model, data: tuple) -> Model:
+        return init_shapes(self, data)
+
+    def init_params(self: Model, data: tuple) -> Model:
+        return init_params(self, data)
+
+    def init_shapes_params(self: Model, data: tuple) -> Model:
+        return init_shapes_params(self, data)
+
+    # ---
+
+    def init_objective(self, *args, **kwargs):
+        return init_objective(self, *args, **kwargs)
+
+    def optimise(self, *args, **kwargs) -> Model:
+        return optimise_model(self, *args, **kwargs)
+
+    def apply(self, *args, **kwargs):
+        return apply_model(self, *args, **kwargs)
+
+    # ---
 
 # ---------------------------------------------------------------

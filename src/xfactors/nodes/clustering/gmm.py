@@ -21,28 +21,24 @@ import optax
 
 import xtuples as xt
 
-from . import rand
-from . import dates
-from . import xfactors as xf
+from ... import xfactors as xf
+
+# ---------------------------------------------------------------
 
 import jax.scipy.special
 
 digamma = jax.scipy.special.digamma
 
-# ---------------------------------------------------------------
-
 
 # ---------------------------------------------------------------
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class GMM(typing.NamedTuple):
     
     n: int
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
 
     def apply(self, state):
         # https://en.wikipedia.org/wiki/EM_algorithm_and_GMM_model
@@ -54,8 +50,8 @@ class GMM(typing.NamedTuple):
 
 # ---------------------------------------------------------------
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class BGMM_EM(typing.NamedTuple):
     
     k: int
@@ -65,10 +61,9 @@ class BGMM_EM(typing.NamedTuple):
     sites_cov: xt.iTuple
     sites_probs: xt.iTuple
 
-    random: bool = 0.1
+    random: typing.Optional[float] = 0.1
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def apply(self, state, small = 10 ** -4):
         # https://en.wikipedia.org/wiki/EM_algorithm_and_GMM_model

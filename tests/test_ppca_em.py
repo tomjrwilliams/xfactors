@@ -7,11 +7,11 @@ import jax
 import optax
 
 import xtuples as xt
-import src.xfactors as xf
+import xfactors as xf
 
 from tests import utils
 
-def test_ppca():
+def test_ppca() -> bool:
 
     N = 3
 

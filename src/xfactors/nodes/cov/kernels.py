@@ -19,10 +19,7 @@ import jaxopt
 import optax
 
 import xtuples as xt
-
-from . import rand
-from . import dates
-from . import xfactors as xf
+from ... import xfactors as xf
 
 # ---------------------------------------------------------------
 
@@ -39,21 +36,20 @@ def euclidean_distance(l, r, small = 10 ** -3):
 # for the below, way to include vmap in the same class definition?
 # or just have V_GP_... - probably simpler to do that.
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Kernel_Sum(typing.NamedTuple):
 
     c: float
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def apply(self, state):
         assert False, self
     
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Kernel_Product(typing.NamedTuple):
 
     # take others as fields
@@ -61,8 +57,7 @@ class Kernel_Product(typing.NamedTuple):
 
     c: float
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def apply(self, state):
         assert False, self
@@ -70,14 +65,13 @@ class Kernel_Product(typing.NamedTuple):
 
 # ---------------------------------------------------------------
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Kernel_Constant(typing.NamedTuple):
 
     c: float
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def apply(self, state):
         assert False, self
@@ -85,8 +79,8 @@ class Kernel_Constant(typing.NamedTuple):
 
 # ---------------------------------------------------------------
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Kernel_Linear(typing.NamedTuple):
 
     sites: xt.iTuple
@@ -94,8 +88,7 @@ class Kernel_Linear(typing.NamedTuple):
     # optional weights?
     # optional mean
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     @classmethod
     def f(cls, features_l, features_r, sigma, l):
@@ -111,16 +104,15 @@ class Kernel_Linear(typing.NamedTuple):
 
 # ---------------------------------------------------------------
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Kernel_Gaussian(typing.NamedTuple):
 
     sigma: float
     # or variance?
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def apply(self, state):
         assert False, self
@@ -128,8 +120,8 @@ class Kernel_Gaussian(typing.NamedTuple):
 # ---------------------------------------------------------------
 
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Kernel_RBF(typing.NamedTuple):
 
     sigma: float
@@ -142,8 +134,7 @@ class Kernel_RBF(typing.NamedTuple):
     # so eg. can transform with |x - center| 
     # for eg. rate tenor kernel pca
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     @classmethod
     def f(cls, features_l, features_r, sigma, l):
@@ -160,44 +151,41 @@ class Kernel_RBF(typing.NamedTuple):
 
 # ---------------------------------------------------------------
 
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Kernel_Sigmoid(typing.NamedTuple):
 
     sigma: float
     # or variance?
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def apply(self, state):
         assert False, self
 
 # ---------------------------------------------------------------
  
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Kernel_SquaredExp(typing.NamedTuple):
 
     length_scale: float
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def apply(self, state):
         assert False, self
         
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Kernel_OU(typing.NamedTuple):
 
     length_scale: float
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     @classmethod
     def f(cls, features_l, features_r, sigma, l):
@@ -213,15 +201,14 @@ class Kernel_OU(typing.NamedTuple):
      
 # ---------------------------------------------------------------
    
-@xf.operator_bindings()
-@xt.nTuple.decorate
+
+@xt.nTuple.decorate()
 class Kernel_RationalQuadratic(typing.NamedTuple):
 
     length_scale: float
     sites: xt.iTuple
 
-    loc: xf.Location = None
-    shape: xt.iTuple = None
+    
 
     def apply(self, state):
         assert False, self
