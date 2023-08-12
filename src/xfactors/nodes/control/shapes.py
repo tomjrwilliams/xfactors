@@ -39,13 +39,17 @@ from ... import xfactors as xf
 @xt.nTuple.decorate()
 class Stack(typing.NamedTuple):
     
-    sites_values: xt.iTuple
+    locs: xt.iTuple
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PCA, tuple, tuple]: ...    
+    ) -> tuple[Stack, tuple, tuple]: ...    
 
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
 # flatten such a tuple from the above back down
@@ -55,13 +59,17 @@ class Stack(typing.NamedTuple):
 @xt.nTuple.decorate()
 class UnStack(typing.NamedTuple):
     
-    sites_values: xt.iTuple
+    loc: xf.Location
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PCA, tuple, tuple]: ...
+    ) -> tuple[UnStack, tuple, tuple]: ...
 
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
 # flatten such a tuple from the above back down
@@ -73,26 +81,34 @@ class UnStack(typing.NamedTuple):
 @xt.nTuple.decorate()
 class Flatten(typing.NamedTuple):
     
-    sites_values: xt.iTuple
+    locs: xt.iTuple
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PCA, tuple, tuple]: ...
+    ) -> tuple[Flatten, tuple, tuple]: ...
     
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
 
 @xt.nTuple.decorate()
 class UnFlatten(typing.NamedTuple):
     
-    sites_values: xt.iTuple
+    loc: xf.Location
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PCA, tuple, tuple]: ...
+    ) -> tuple[UnFlatten, tuple, tuple]: ...
     
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
 # flatten such a tuple from the above back down
@@ -105,13 +121,17 @@ class UnFlatten(typing.NamedTuple):
 @xt.nTuple.decorate()
 class Concatenate(typing.NamedTuple):
     
-    sites_values: xt.iTuple
+    locs: xt.iTuple
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PCA, tuple, tuple]: ...
+    ) -> tuple[Concatenate, tuple, tuple]: ...
     
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
 
@@ -120,13 +140,17 @@ class Concatenate(typing.NamedTuple):
 @xt.nTuple.decorate()
 class UnConcatenate(typing.NamedTuple):
     
-    sites_values: xt.iTuple
+    loc: xf.Location
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PCA, tuple, tuple]: ...
+    ) -> tuple[UnConcatenate, tuple, tuple]: ...
     
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
 # flatten such a tuple from the above back down

@@ -17,6 +17,7 @@ import jax
 import jax.numpy
 import jax.numpy.linalg
 
+import distrax
 import jaxopt
 import optax
 
@@ -34,14 +35,18 @@ from . import vanilla
 class PCA_Rolling(typing.NamedTuple):
     
     n: int
-    sites: xt.iTuple
+    data: xf.Location
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[PCA_Rolling, tuple, tuple]: ...
     
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
-        data = xf.concatenate_sites(self.sites, state, axis = 1)
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
+        data = self.data.access(state)
         eigvals, weights = jax.numpy.linalg.eig(jax.numpy.cov(
             jax.numpy.transpose(data)
         ))
@@ -54,16 +59,21 @@ class PCA_Rolling(typing.NamedTuple):
 class PCA_Rolling_Encoder(typing.NamedTuple):
     
     n: int
-    sites: xt.iTuple
-    site: xf.OptionalLocation = None
+    data: xf.Location
+    weights: xf.OptionalLocation = None
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[PCA_Rolling_Encoder, tuple, tuple]: ...
     
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
-        weights = xf.get_location(self.site, state)
-        data = xf.concatenate_sites(self.sites, state, axis = 1)
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
+        assert self.weights is not None
+        weights = self.weights.access(state)
+        data = self.data.access(state)
         return jax.numpy.matmul(data, weights)
 
 
@@ -71,17 +81,20 @@ class PCA_Rolling_Encoder(typing.NamedTuple):
 @xt.nTuple.decorate()
 class PCA_Rolling_Decoder(typing.NamedTuple):
     
-    sites: xt.iTuple
+    data: xf.Location
+    weights: xf.Location
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[PCA_Rolling_Decoder, tuple, tuple]: ...
     
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
-        assert len(self.sites) == 2
-        l_site, r_site = self.sites
-        weights = xf.get_location(r_site, state)
-        data = xf.get_location(l_site, state)
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
+        weights = self.weights.access(state)
+        data = self.data.access(state)
         return jax.numpy.matmul(weights, data.T)
 
 # ---------------------------------------------------------------
@@ -98,15 +111,19 @@ class PCA_Rolling_Decoder(typing.NamedTuple):
 class PCA_Rolling_LatentWeightedMean_MSE(typing.NamedTuple):
     
     # sites
-    loadings: xt.iTuple
-    weights: xt.iTuple
-    latents: xt.iTuple
+    loadings: xf.Location
+    weights: xf.Location
+    latents: xf.Location
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[PCA_Rolling_LatentWeightedMean_MSE, tuple, tuple]: ...
 
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
 
         # TODO: not concatenate
         # irregular shapes are likely so can't be a single data structure
@@ -122,14 +139,14 @@ class PCA_Rolling_LatentWeightedMean_MSE(typing.NamedTuple):
         # and have explicit concatenation operators
         # probably that...
 
-        loadings = xf.concatenate_sites(self.loadings, state)
+        loadings = self.loadings.access(state)
         # periods * features * factors 
         loadings = jax.numpy.transpose(loadings, (0, 2, 1))
 
-        weights = xf.concatenate_sites(self.weights, state)
+        weights = self.weights.access(state)
         # n_latents * latent_features * factors * features
 
-        latents = xf.concatenate_sites(self.latents, state)
+        latents = self.latents.access(state)
         # n_latents * latent_features
 
         weighted_loadings = jax.numpy.multiply(
@@ -157,7 +174,7 @@ class PCA_Rolling_LatentWeightedMean_MSE(typing.NamedTuple):
 class PPCA_Rolling_NegLikelihood(typing.NamedTuple):
     
     sigma: xf.Location
-    weights: xt.iTuple
+    weights: xf.Location
     # site_encoder: xf.Location
 
     cov: xf.Location
@@ -186,8 +203,7 @@ class PPCA_Rolling_NegLikelihood(typing.NamedTuple):
 class PPCA_Rolling_EM(typing.NamedTuple):
     
     sigma: xf.Location
-    weights: xt.iTuple
-    # site_encoder: xf.Location
+    weights: xf.Location
 
     cov: xf.Location
 
@@ -207,11 +223,11 @@ class PPCA_Rolling_EM(typing.NamedTuple):
     def apply(self, state, small = 10 ** -4):
         # https://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.pdf
 
-        sigma = xf.get_location(self.sigma, state)
+        sigma = self.sigma.access(state)
         sigma_sq = jax.numpy.square(sigma)
 
-        weights = xf.concatenate_sites(self.weights, state)
-        cov = xf.get_location(self.cov, state) # of obs
+        weights = self.weights.access(state)
+        cov = self.cov.access(state) # of obs
 
         # use noisy_sgd instead of random
         # if self.random:
@@ -259,9 +275,9 @@ class PPCA_Rolling_EM(typing.NamedTuple):
 class PPCA_Rolling_Marginal_Observations(typing.NamedTuple):
     
     sigma: xf.Location
-    weights: xt.iTuple
-    site_encoder: xf.Location
-    site_date: xf.Location
+    weights: xf.Location
+    encoder: xf.Location
+    data: xf.Location
 
     cov: xf.Location
 
@@ -276,13 +292,13 @@ class PPCA_Rolling_Marginal_Observations(typing.NamedTuple):
     def apply(self, state, small = 10 ** -4):
         # https://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.pdf
 
-        sigma = xf.get_location(self.sigma, state)
+        sigma = self.sigma.access(state)
         sigma_sq = jax.numpy.square(sigma)
 
-        weights = xf.concatenate_sites(self.weights, state)
-        cov = xf.get_location(self.cov, state) # of obs
+        weights = self.weights.access(state)
+        cov = self.cov.access(state) # of obs
 
-        data = xf.get_location(self.site_data, state)
+        data = self.data.access(state)
     
         # N = xf.get_location(self.site_encoder, state).shape[0]
 
@@ -304,9 +320,9 @@ class PPCA_Rolling_Marginal_Observations(typing.NamedTuple):
 class PPCA_Rolling_Conditional_Latents(typing.NamedTuple):
     
     sigma: xf.Location
-    weights: xt.iTuple
-    site_encoder: xf.Location
-    site_date: xf.Location
+    weights: xf.Location
+    encoder: xf.Location
+    data: xf.Location
 
     cov: xf.Location
 
@@ -321,20 +337,21 @@ class PPCA_Rolling_Conditional_Latents(typing.NamedTuple):
     def apply(self, state, small = 10 ** -4):
         # https://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.pdf
 
-        sigma = xf.get_location(self.sigma, state)
+        sigma = self.sigma.access(state)
         sigma_sq = jax.numpy.square(sigma)
 
-        weights = xf.concatenate_sites(self.weights, state)
-        cov = xf.get_location(self.cov, state) # of obs
+        weights = self.weights.access(state)
+        cov = self.cov.access(state) # of obs
 
-        data = xf.get_location(self.site_data, state)
+        data = self.data.access(state)
     
         # N = xf.get_location(self.site_encoder, state).shape[0]
 
         # feature * feature
         S = cov
         # d = weights.shape[0] # n_features
-        factors = xf.get_location(self.site_encoder, state)
+        factors = self.encoder.access(state)
+        # replace with factors
         
         mu = jax.numpy.zeros(weights.shape[0]) # obs mu
 

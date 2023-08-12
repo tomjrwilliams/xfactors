@@ -34,11 +34,19 @@ class Scalar(typing.NamedTuple):
 
     
 
-    def init_params(self, model, params):
-        return self, jax.numpy.array(self.v)
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[Scalar, tuple, tuple]:
+        # TODO
+        return self, (), (jax.numpy.array(self.v),)
 
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
-        return xf.get_location(self.loc.as_param(), state)
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
+        assert site.loc is not None
+        return xf.get_location(site.loc.as_param(), state)
 
 
 # ---------------------------------------------------------------

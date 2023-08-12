@@ -36,8 +36,8 @@ from ... import xfactors as xf
 @xt.nTuple.decorate()
 class Group_By(typing.NamedTuple):
     
-    sites_values: xt.iTuple
-    sites_keys: xt.iTuple
+    values: xt.iTuple
+    keys: xt.iTuple
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
@@ -46,7 +46,11 @@ class Group_By(typing.NamedTuple):
     # return tuple of values vmapped over indices
     # given by the values in the map(get_location(site_keys))
 
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
 

@@ -37,36 +37,39 @@ class Input_DataFrame_Wide(typing.NamedTuple):
     fixed_columns: bool = False
     fixed_index: bool = False
 
-    columns: xt.iTuple = None
-    index: xt.iTuple = None
+    columns_: typing.Optional[xt.iTuple] = None
+    index_: typing.Optional[xt.iTuple] = None
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[Input_DataFrame_Wide, tuple, tuple]:
+        assert site.loc is not None
         # path[0] = stage, so path[1] = index of data element
-        df = data[self.loc.path[1]]
-        return self._replace(
-            **({} if not self.fixed_columns else dict(
-                columns=xt.iTuple(df.columns)
-            )),
-            **({} if not self.fixed_index else dict(
-                index=xt.iTuple(df.index)
-            )),
-        ), df.values.shape, ()
+        df = data[site.loc.path[1]]
+        if self.fixed_columns:
+            self = self._replace(columns_ = xt.iTuple(df.columns))
+        if self.fixed_index:
+            self = self._replace(index_ = xt.iTuple(df.index))
+        return self, df.values.shape, ()
     
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
+        assert site.loc is not None
         _, data, _, _ = state
-        df = data[self.loc.path[-1]]
+        df = data[site.loc.path[-1]]
         if self.fixed_columns:
             columns = xt.iTuple(df.columns)
-            assert columns == self.columns, dict(
-                fixed=self.columns,
+            assert columns == self.columns_, dict(
+                fixed=self.columns_,
                 given=columns
             )
         if self.fixed_index:
             index = xt.iTuple(df.index)
-            assert index == self.index, dict(
-                fixed=self.index,
+            assert index == self.index_, dict(
+                fixed=self.index_,
                 given=index
             )
         return jax.numpy.array(df.values)
@@ -80,12 +83,18 @@ class Input_DataFrame_Tall(typing.NamedTuple):
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[Input_DataFrame_Tall, tuple, tuple]:
+        assert site.loc is not None
         # path[0] = stage, so path[1] = index of data element
-        return self, data[self.loc.path[1]].values.shape, ()
+        return self, data[site.loc.path[1]].values.shape, ()
     
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
+        assert site.loc is not None
         _, data, _, _ = state
-        df = data[self.loc.path[-1]]
+        df = data[site.loc.path[-1]]
         return jax.numpy.array(df.values)
 
 # ---------------------------------------------------------------

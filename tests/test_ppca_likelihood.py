@@ -34,48 +34,33 @@ def test_ppca() -> bool:
     model = (
         model.add_input(xf.nodes.inputs.dfs.Input_DataFrame_Wide())
         .add_node(COV, xf.nodes.cov.vanilla.Cov(
-            data=xt.iTuple.one(
-                xf.Loc.result(INPUT, 0),
-            ), static=True,
+            data=xf.Loc.result(INPUT, 0), static=True,
         ))
         .add_node(ENCODE, xf.nodes.pca.vanilla.PCA_Encoder(
-            data=xt.iTuple.one(
-                xf.Loc.result(INPUT, 0),
-            ),
+            data=xf.Loc.result(INPUT, 0),
             n=N,
-            train=False,
             #
         ))
         .add_node(ENCODE, xf.nodes.params.scalar.Scalar(
-            v=jax.numpy.ones(1),
+            v=numpy.ones(1),
         ))
         .add_node(DECODE, xf.nodes.pca.vanilla.PCA_Decoder(
-            data=xt.iTuple(
-                xf.Loc.param(ENCODE, 0),
-                xf.Loc.result(ENCODE, 0),
-            ),
-            train=False,
+            weights=xf.Loc.param(ENCODE, 0),
+            factors=xf.Loc.result(ENCODE, 0),
             #
         ))
         .add_node(LIKELIHOOD, xf.nodes.pca.vanilla.PPCA_NegLikelihood(
             sigma=xf.Loc.param(ENCODE, 1),
-            weights=xt.iTuple.one(
-                xf.Loc.param(ENCODE, 0),
-            ),
+            weights=xf.Loc.param(ENCODE, 0),
             cov=xf.Loc.result(COV, 0),
-            train=True,
             random=0.01,
         ))
         .add_constraint(xf.nodes.constraints.linalg.Constraint_Orthonormal(
-            data=xf.xt.iTuple.one(
-                xf.Loc.param(ENCODE, 0),
-            ),
+            data=xf.Loc.param(ENCODE, 0),
             T=True,
         ))
         .add_constraint(xf.nodes.constraints.loss.Constraint_Minimise(
-            data=xt.iTuple.one(
-                xf.Loc.result(LIKELIHOOD, 0)
-            ),
+            data=xf.Loc.result(LIKELIHOOD, 0),
         ))
         .init(data)
     )

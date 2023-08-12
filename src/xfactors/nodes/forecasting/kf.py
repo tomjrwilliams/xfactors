@@ -92,28 +92,36 @@ from ... import xfactors as xf
 @xt.nTuple.decorate()
 class KF_State_Predicted(typing.NamedTuple):
     
-    sites: xt.iTuple
+    
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[KF_State_Predicted, tuple, tuple]: ...
     
     # Fx + Bu
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
 
 @xt.nTuple.decorate()
 class KF_Cov_Predicted(typing.NamedTuple):
     
-    sites: xt.iTuple
+    
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PCA, tuple, tuple]: ...
+    ) -> tuple[KF_Cov_Predicted, tuple, tuple]: ...
     
     # FPFt + Q
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
 # ---------------------------------------------------------------
@@ -122,28 +130,36 @@ class KF_Cov_Predicted(typing.NamedTuple):
 @xt.nTuple.decorate()
 class KF_State_Innovation(typing.NamedTuple):
     
-    sites: xt.iTuple
+    
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PCA, tuple, tuple]: ...
+    ) -> tuple[KF_State_Innovation, tuple, tuple]: ...
     
     # z - Hx
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
 
 @xt.nTuple.decorate()
 class KF_Cov_Innovation(typing.NamedTuple):
     
-    sites: xt.iTuple
+    
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PCA, tuple, tuple]: ...
+    ) -> tuple[KF_Cov_Innovation, tuple, tuple]: ...
     
     # HPHt + R
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
 # ---------------------------------------------------------------
@@ -152,14 +168,18 @@ class KF_Cov_Innovation(typing.NamedTuple):
 @xt.nTuple.decorate()
 class KF_Kalman_Gain(typing.NamedTuple):
     
-    sites: xt.iTuple
+    
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PCA, tuple, tuple]: ...
+    ) -> tuple[KF_Kalman_Gain, tuple, tuple]: ...
     
     # PHtS-1
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
 # ---------------------------------------------------------------
@@ -168,42 +188,54 @@ class KF_Kalman_Gain(typing.NamedTuple):
 @xt.nTuple.decorate()
 class KF_State_Updated(typing.NamedTuple):
     
-    sites: xt.iTuple
+    
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PCA, tuple, tuple]: ...
+    ) -> tuple[KF_State_Updated, tuple, tuple]: ...
     
     # x + Ky
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
 
 @xt.nTuple.decorate()
 class KF_Cov_Updated(typing.NamedTuple):
     
-    sites: xt.iTuple
+    
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PCA, tuple, tuple]: ...
+    ) -> tuple[KF_Cov_Updated, tuple, tuple]: ...
     
     # (I - KH)P
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
 
 @xt.nTuple.decorate()
 class KF_Residual(typing.NamedTuple):
     
-    sites: xt.iTuple
+    
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PCA, tuple, tuple]: ...
+    ) -> tuple[KF_Residual, tuple, tuple]: ...
     
     # z - Hx
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
 # ---------------------------------------------------------------

@@ -17,6 +17,8 @@ import scipy.stats
 
 import plotly.express
 
+import xtuples as xt
+
 # ---------------------------------------------------------------
 
 def weights_equal(rs):
@@ -42,19 +44,20 @@ def weights_proportional(rs):
     )
 
 import scipy.special
+
 def weights_softmax(rs):
     isnan = numpy.isnan(rs)
     notnan = numpy.logical_not(isnan)
     mask = notnan.replace(False, numpy.NaN)
     if isnan.sum() == 0:
         return rs.apply_along_axis(scipy.special.softmax)
-    inds = {i: [] for i in range(len(rs))}
+    inds: dict = {i: [] for i in range(len(rs))}
     inds = {
         **inds,
         **{
-            g[0][0]: g for g in core.Array(
-                list(map(tuple, numpy.argwhere(notnan)))
-            ).groupBy(lambda ii: ii[0])
+            g[0][0]: g for g in xt.iTuple(
+                map(tuple, numpy.argwhere(notnan))
+            ).groupby(lambda ii: ii[0])
         }
     }
     width = len(rs[0])
@@ -62,7 +65,7 @@ def weights_softmax(rs):
         [
             numpy.NaN for j in range(width)
         ]
-        if not len(vs[i])
+        if not len(rs[i])
         else (
             lambda vs, js, jmap: [
                 vs[jmap[j]] if j in js else numpy.NaN
@@ -97,13 +100,13 @@ def weights_linear(rs):
             ws[r.argsort()]
             for r in rs
         ])
-    inds = {i: [] for i in range(len(rs))}
+    inds: dict = {i: [] for i in range(len(rs))}
     inds = {
         **inds,
         **{
-            g[0][0]: g for g in core.Array(
+            g[0][0]: g for g in xt.iTuple(
                 list(map(tuple, numpy.argwhere(notnan)))
-            ).groupBy(lambda ii: ii[0])
+            ).groupby(lambda ii: ii[0])
         }
     }
     width = len(rs[0])
@@ -111,7 +114,7 @@ def weights_linear(rs):
         [
             numpy.NaN for j in range(width)
         ]
-        if not len(vs[i])
+        if not len(rs[i])
         else (
             lambda vs, js, jmap: [
                 vs[jmap[j]] if j in js else numpy.NaN
@@ -119,7 +122,7 @@ def weights_linear(rs):
             ]
         )(
             weight_cache[counts[i]][
-                (rs[i][j] for j in inds[i]).argsort()
+                numpy.array(rs[i][j] for j in inds[i]).argsort()
             ],
             inds[i],
             {
@@ -174,7 +177,7 @@ def calc_weights(
         softmax=softmax,
         proportional=proportional,
     )
-    assert len(v for v in kws.values() if v) <= 1, kws
+    assert len(list(v for v in kws.values() if v)) <= 1, kws
 
     rs = signal_df[signal_df.columns].to_numpy()
 
@@ -218,12 +221,12 @@ def combine_dfs(
         add=add,
         mul=mul,
     )
-    assert len(v for v in kws.values() if v) == 1, kws
+    assert len(list(v for v in kws.values() if v)) == 1, kws
 
     if weight_df is not None:
         signal_weights[None] = weight_df
 
-    signal_ks = core.Array.from_keys(signal_weights)
+    signal_ks = xt.iTuple.from_keys(signal_weights)
 
     signal_df = signal_weights[signal_ks[0]]
 
@@ -351,7 +354,7 @@ def ls_weights(
         add=add,
         mul=mul,
     )
-    assert len(v for v in comb_kws.values() if v) <= 1, comb_kws
+    assert len(list(v for v in comb_kws.values() if v)) <= 1, comb_kws
     if not add and not mul:
         add = True
 

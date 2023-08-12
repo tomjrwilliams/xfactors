@@ -3,17 +3,17 @@
 # SPDX-License-Identifier: MIT
 
 import sys
+sys.path.append("./__local__")
 
-XTUPLES = "C:/hc/xtuples/src/xtuples"
-XTENORS = "C:/hc/xtenors/src/xtenors"
+import PATHS
 
-if XTUPLES not in sys.path:
-    sys.path.append(XTUPLES)
+if PATHS.XTUPLES not in sys.path:
+    sys.path.append(PATHS.XTUPLES)
 
-if XTENORS not in sys.path:
-    sys.path.append(XTENORS)
+if PATHS.XTENORS not in sys.path:
+    sys.path.append(PATHS.XTENORS)
 
-from . import bts
+from . import bt
 from . import nodes
 from . import utils
 from . import visuals

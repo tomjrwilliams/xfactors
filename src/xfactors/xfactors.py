@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import enum
 
-from __future__ import annotations
-
 import operator
 import collections
 # import collections.abc
@@ -52,7 +50,8 @@ def follow_path(path, acc):
         lambda acc, i: acc[i], initial=acc
     )
 
-def get_location(loc, acc):
+def get_location(loc: typing.Optional[Location], acc):
+    assert loc is not None
     try:
         return follow_path(loc.path, acc[(
             RESULT if loc.domain is None else loc.domain
@@ -68,7 +67,7 @@ def f_follow_path(acc):
     return f
 
 def f_get_location(acc):
-    def f(loc):
+    def f(loc: typing.Optional[Location]):
         return get_location(loc, acc)
     return f
 
@@ -152,13 +151,15 @@ class Node(typing.Protocol):
 
     @abc.abstractmethod
     def apply(
-        self: NodeClass, 
+        self: NodeClass,
         site: Site,
         state: tuple
-    ) -> tuple:
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         ...
 
-NodeClass: typing.TypeVar("NodeClass", bound=Node)
+# TODO: could do auto shape checking fairly easily? optionally presumably
+
+NodeClass = typing.TypeVar("NodeClass", bound=Node)
 
 def init_null(
     self, site: Site, model: Model, data: tuple
@@ -175,15 +176,23 @@ class Site(typing.NamedTuple):
     loc: typing.Optional[Location] = None
     shape: typing.Optional[xt.iTuple] = None
 
-    def init(self, model, data):
-        node, shape, params = self.node.init_shape(self, model, data)
+    def init(self, model: Model, data: tuple):
+        node, shape, params = self.node.init(self, model, data)
         return self._replace(
             node=node,
-            shape=shape,
+            shape=xt.iTuple(shape),
         ), params
 
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         return self.node.apply(self, state)
+
+    def access(self, state: tuple):
+        assert self.loc is not None
+        return self.loc.access(state)
 
 OptionalSite = typing.Optional[Site]
 

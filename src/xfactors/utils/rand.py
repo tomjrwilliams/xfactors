@@ -20,15 +20,13 @@ def next_keys(n, seed = 69):
     if seed not in KEYS:
         KEYS[seed] = jax.random.PRNGKey(seed)
     KEYS[seed], *subkeys = jax.random.split(KEYS[seed], num=n + 1)
-    return jax.numpy.vstack(subkeys)
+    return jax.numpy.vstack(subkeys) # type: ignore
 
 # ---------------------------------------------------------------
 
-def beta(shape=None, seed = 69):
-    # if mu and cov one, need shape
-    # else can infer shape from mu / cov
-    # if shape given, assert matches mu / cov
+def beta(a, b, shape=None, seed = 69):
     return jax.random.beta(
+        a, b,
         next_key(seed=seed), 
         shape = tuple(shape),
         #
@@ -58,9 +56,6 @@ def v_gaussian(n, shape=None, mu=None, var=None, seed = 69):
 def mv_gaussian(shape=None, mu=None, cov=None, seed = 69):
     if shape is None:
         assert mu is not None or cov is not None
-    # if mu and cov one, need shape
-    # else can infer shape from mu / cov
-    # if shape given, assert matches mu / cov
     return jax.random.multivariate_normal(
         next_key(seed=seed), 
         mu,
@@ -84,7 +79,8 @@ def v_mv_gaussian(n, shape = None, mu=None, cov=None, seed = 69):
 
 # # ---------------------------------------------------------------
 
-def f_norm_l2(v, n_sample_dims = None):
+# actually n batch dims more useful?
+def f_norm_l2(v, n_smaple_dims = None):
     v_sq = jax.numpy.square(v)
     scale = shapes.expand_dims_like(
         jax.numpy.sqrt(v_sq.sum(axis = -1)), -1, v
@@ -102,8 +98,8 @@ def norm_gaussian(shape, n = 1):
 # summing over the (not necessarily diag cov) samples
 def gaussian_walk(n, shape=None, mu=None, var=None, seed=69):
     shape = shape + (n,)
-    v = gaussian(shape=shape, mu=mu, cov=cov, seed=seed)
-    return jax.numpy.cumsum(v, dim = -1)
+    v = gaussian(shape=shape, mu=mu, var=var, seed=seed)
+    return jax.numpy.cumsum(v, axis = -1)
 
 def v_gaussian_walk(n, shape=None, mu=None, var=None, seed=69):
     return
@@ -117,10 +113,10 @@ def v_gaussian_gwalk(n, shape=None, mu=None, var=None, seed=69):
 
 # mu can be vector, in which case we get correalted random walk
 # summing over the (not necessarily diag cov) samples
-def mv_gaussian_walk(n, shape=None, mu=None, var=None, seed=69):
+def mv_gaussian_walk(n, shape=None, mu=None, cov=None, seed=69):
     shape = shape + (n,)
-    v = gaussian(shape=shape, mu=mu, cov=cov, seed=seed)
-    return jax.numpy.cumsum(v, dim = -1)
+    v = mv_gaussian(shape=shape, mu=mu, cov=cov, seed=seed)
+    return jax.numpy.cumsum(v, axis = -1)
 
 def v_mv_gaussian_walk(n, shape=None, mu=None, var=None, seed=69):
     return

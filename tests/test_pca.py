@@ -24,16 +24,14 @@ def test_pca() -> bool:
         }),
     )
     
-    model, STAGES = xf.Model().init_stages(None)
+    model, STAGES = xf.Model().init_stages(1)
     INPUT, PCA = STAGES
 
     model = (
         model.add_input(xf.nodes.inputs.dfs.Input_DataFrame_Wide())
         .add_node(PCA, xf.nodes.pca.vanilla.PCA(
             n=3,
-            data=xt.iTuple.one(
-                xf.Loc.result(INPUT, 0),
-            ),
+            data=xf.Loc.result(INPUT, 0),
             #
         ))
         .init(data)

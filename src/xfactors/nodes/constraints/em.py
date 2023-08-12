@@ -40,7 +40,11 @@ class Constraint_EM(typing.NamedTuple):
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[Constraint_EM, tuple, tuple]: ...
     
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         param = self.param.access(state)
         optimal = self.optimal.access(state)
         return funcs.loss_mse(
@@ -65,7 +69,11 @@ class Constraint_EM_MatMul(typing.NamedTuple):
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[Constraint_EM_MatMul, tuple, tuple]: ...
     
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         raw = self.raw.access(state)
         optimal = self.optimal.access(state)
         param = jax.numpy.matmul(

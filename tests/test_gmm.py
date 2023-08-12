@@ -67,18 +67,10 @@ def test_kmeans() -> bool:
         ))
         .add_node(EM, xf.nodes.clustering.gmm.BGMM_EM(
             k=N_CLUSTERS,
-            sites_data=xt.iTuple.one(
-                xf.Loc.result(INPUT, 0)
-            ),
-            sites_mu=xt.iTuple.one(
-                xf.Loc.param(PARAMS, 0)
-            ),
-            sites_cov=xt.iTuple.one(
-                xf.Loc.param(PARAMS, 1)
-            ),
-            sites_probs=xt.iTuple.one(
-                xf.Loc.param(PARAMS, 3)
-            ),
+            data=xf.Loc.result(INPUT, 0),
+            mu=xf.Loc.param(PARAMS, 0),
+            cov=xf.Loc.param(PARAMS, 1),
+            probs=xf.Loc.param(PARAMS, 3),
         ))
         # .add_constraint(xf.nodes.constraints.loss.Constraint_MinimiseSquare(
         #     data=xt.iTuple.one(
@@ -91,14 +83,10 @@ def test_kmeans() -> bool:
         #     ),
         # ))
         .add_constraint(xf.nodes.constraints.loss.Constraint_Maximise(
-            data=xt.iTuple.one(
-                xf.Loc.result(EM, 0, 3)
-            ),
+            data=xf.Loc.result(EM, 0, 3),
         ))
         .add_constraint(xf.nodes.constraints.loss.Constraint_Maximise(
-            data=xt.iTuple.one(
-                xf.Loc.result(EM, 0, 4)
-            ),
+            data=xf.Loc.result(EM, 0, 4),
         ))
         # .add_constraint(xf.nodes.constraints.loss.Constraint_MinimiseSquare(
         #     data=xt.iTuple.one(
@@ -111,9 +99,7 @@ def test_kmeans() -> bool:
         #     ),
         # ))
         .add_constraint(xf.nodes.constraints.linalg.Constraint_VOrthogonal(
-            data=xf.xt.iTuple.one(
-                xf.Loc.param(PARAMS, 1)
-            ),
+            data=xf.Loc.param(PARAMS, 1),
         ))
         # .add_constraint(xf.nodes.constraints.loss.Constraint_MinimiseMMSpread(
         #     data=xt.iTuple.one(
@@ -121,9 +107,7 @@ def test_kmeans() -> bool:
         #     ),
         # ))
         .add_constraint(xf.nodes.constraints.linalg.Constraint_L1_MM_Diag(
-            data=xt.iTuple.one(
-                xf.Loc.param(PARAMS, 1)
-            ),
+            raw=xf.Loc.param(PARAMS, 1),
         ))
         # .add_constraint(xf.nodes.constraints.Constraint_Orthogonal(
         #     data=xf.xt.iTuple.one(

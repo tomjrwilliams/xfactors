@@ -27,6 +27,8 @@ from ... import xfactors as xf
 # ---------------------------------------------------------------
 
 
+# TODO: static? or that's a site thing at add stage?
+
 @xt.nTuple.decorate()
 class Guard(typing.NamedTuple):
     

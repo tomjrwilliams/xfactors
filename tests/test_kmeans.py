@@ -57,24 +57,24 @@ def test_kmeans() -> bool:
         ))
         .add_node(LABEL, xf.nodes.clustering.kmeans.KMeans_Labels(
             k=3,
-            sites_mu=xt.iTuple.one(
+            mu=xt.iTuple.one(
                 xf.Loc.param(PARAMS, 0)
             ),
-            sites_var=xt.iTuple.one(
+            var=xt.iTuple.one(
                 xf.Loc.param(PARAMS, 1)
             ),
-            sites_data=xt.iTuple.one(
+            data=xt.iTuple.one(
                 xf.Loc.result(INPUT, 0)
             ),
-            # sites_mu
-            # sites_cov
+            # mu
+            # cov
         ))
         .add_node(EM, xf.nodes.clustering.kmeans.KMeans_EM_Naive(
             k=3,
-            sites_data=xt.iTuple.one(
+            data=xt.iTuple.one(
                 xf.Loc.result(INPUT, 0)
             ),
-            sites_labels=xt.iTuple.one(
+            labels=xt.iTuple.one(
                 xf.Loc.result(LABEL, 0),
             ),
         ))

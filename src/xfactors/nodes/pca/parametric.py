@@ -32,16 +32,19 @@ from . import vanilla
 @xt.nTuple.decorate()
 class Parametric_Factor(typing.NamedTuple):
     
-    features: xt.iTuple
-    params: xt.iTuple
-
+    features: xf.Location
+    params: xf.Location
     # or an operator for the function, which can have its own params site? probably that
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PCA, tuple, tuple]: ...
+    ) -> tuple[Parametric_Factor, tuple, tuple]: ...
     
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
 
         # given a feature matrix 
         # eg. simple one is a constant column per tenor (of the tenor represented as a float)
@@ -63,4 +66,4 @@ class Parametric_Factor(typing.NamedTuple):
 
         # apply the functions callables loading into the tuple
 
-        return
+        return ()

@@ -15,11 +15,12 @@ def iter_dates(d, n = None, it = 1):
             while True:
                 d += step
                 yield d
-    def f():
-        return (
-            xt.iTuple.range(n)
-            .map(lambda i: d + datetime.timedelta(days=i * it))
-        )
+    else:
+        def f():
+            return (
+                xt.iTuple.range(n)
+                .map(lambda i: d + datetime.timedelta(days=i * it))
+            )
     return f()
 
 starting = functools.partial(iter_dates, it = 1)

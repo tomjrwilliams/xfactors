@@ -14,9 +14,10 @@ def sigmoid_curve(x, upper = 1, mid = 0, rate = 1):
 def overextension(x, mid = 0):
     return x * jax.numpy.exp(-(x - mid).square())
 
+# rate??
 def gaussian(x, rate = 1, mid = 0):
     return 2 / (
-        1 + jax.numpy.exp(k * (x - mid).square)
+        1 + jax.numpy.exp(rate * (x - mid).square)
     )
 
 def gaussian_flipped(x, rate = 1, mid = 0):

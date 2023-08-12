@@ -91,31 +91,21 @@ def test_lgp() -> bool:
     model = (
         model.add_input(xf.nodes.inputs.dfs.Input_DataFrame_Wide())
         .add_node(COV, xf.nodes.cov.vanilla.Cov(
-            data=xt.iTuple.one(
-                xf.Loc.result(INPUT, 0),
-            ), static=True,
+            data=xf.Loc.result(INPUT, 0), static=True,
         ))
         .add_node(LATENT, xf.nodes.params.latent.Latent(
             n=2,
             axis=1,
-            data=xt.iTuple.one(
-                xf.Loc.result(INPUT, 0)
-            )
+            data=xf.Loc.result(INPUT, 0),
         ))
         .add_node(GP, xf.nodes.reg.gp.GP_RBF(
             # sigma=1.,
-            sites_features=xt.iTuple.one(
-                xf.Loc.result(LATENT, 0),
-            ),
-            sites_data=xt.iTuple.one(
-                xf.Loc.result(INPUT, 0),
-            )
+            features=xf.Loc.result(LATENT, 0),
+            data=xf.Loc.result(INPUT, 0),
         ))
         .add_constraint(xf.nodes.constraints.loss.Constraint_MSE(
-            data=xt.iTuple(
-                xf.Loc.result(COV, 0),
-                xf.Loc.result(GP, 0),
-            )
+            l=xf.Loc.result(COV, 0),
+            r=xf.Loc.result(GP, 0),
         ))
         # .add_constraint(xf.nodes.constraints.loss.Constraint_MSE(
         #     data=xt.iTuple(

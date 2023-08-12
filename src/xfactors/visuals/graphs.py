@@ -373,13 +373,13 @@ def vector_ray_plot(
     **kws,
 ):
     
-    ns = []
-    gs = []
-    xs = []
-    ys = []
-    rs = []
-    cs = []
-    zs = (None if not _3d else [])
+    ns: list = []
+    gs: list = []
+    xs: list = []
+    ys: list = []
+    rs: list = []
+    cs: list = []
+    zs: typing.Optional[list] = (None if not _3d else [])
 
     i = 0
     r = 0
@@ -409,19 +409,19 @@ def vector_ray_plot(
                         cs.extend([c, c])
                     i = 0
 
-    df = pandas.DataFrame(
-        {
-            **{
-                "n": ns,
-                "x": xs,
-                "y": ys,
-                "r": rs,
-                "c": cs,
-                "g": gs,
-            },
-            **({} if not _3d else {"z": zs})
-        }
-    )
+    df_cols = {
+        "n": ns,
+        "x": xs,
+        "y": ys,
+        "r": rs,
+        "c": cs,
+        "g": gs,
+    }
+    if _3d:
+        assert zs is not None
+        df_cols["z"] = zs
+
+    df = pandas.DataFrame(df_cols)
 
     f_chart = (
         df_line_chart

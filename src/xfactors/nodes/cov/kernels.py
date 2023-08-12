@@ -48,7 +48,11 @@ class Kernel_Sum(typing.NamedTuple):
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[Kernel_Sum, tuple, tuple]: ...
     
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
     
 
@@ -65,7 +69,11 @@ class Kernel_Product(typing.NamedTuple):
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[Kernel_Product, tuple, tuple]: ...
     
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
     
 
@@ -81,7 +89,11 @@ class Kernel_Constant(typing.NamedTuple):
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[Kernel_Constant, tuple, tuple]: ...
     
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
     
 
@@ -109,7 +121,11 @@ class Kernel_Linear(typing.NamedTuple):
         norms = euclidean_distance(features_l, features_r)
         return norms
 
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
 # ---------------------------------------------------------------
@@ -126,7 +142,11 @@ class Kernel_Gaussian(typing.NamedTuple):
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[Kernel_Gaussian, tuple, tuple]: ...
     
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
        
 # ---------------------------------------------------------------
@@ -159,7 +179,11 @@ class Kernel_RBF(typing.NamedTuple):
             -1 * (jax.numpy.square(norms) / l_2_sq)
         ) * sigma_sq
 
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
 
@@ -177,7 +201,11 @@ class Kernel_Sigmoid(typing.NamedTuple):
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[Kernel_Sigmoid, tuple, tuple]: ...
     
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
 # ---------------------------------------------------------------
@@ -193,7 +221,11 @@ class Kernel_SquaredExp(typing.NamedTuple):
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[Kernel_SquaredExp, tuple, tuple]: ...
     
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
         
 
@@ -216,7 +248,11 @@ class Kernel_OU(typing.NamedTuple):
             -1 * (jax.numpy.square(norms) / l)
         ) * sigma_sq
 
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
      
 # ---------------------------------------------------------------
@@ -232,7 +268,11 @@ class Kernel_RationalQuadratic(typing.NamedTuple):
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[Kernel_RationalQuadratic, tuple, tuple]: ...
     
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
 # ---------------------------------------------------------------

@@ -38,15 +38,19 @@ digamma = jax.scipy.special.digamma
 class GMM(typing.NamedTuple):
     
     n: int
-    sites: xt.iTuple
+    data: xf.Location
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PCA, tuple, tuple]: ...
+    ) -> tuple[GMM, tuple, tuple]: ...
     
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         # https://en.wikipedia.org/wiki/EM_algorithm_and_GMM_model
-        data = xf.concatenate_sites(self.sites, state, axis = 1)
+        data = self.data.access(state)
         eigvals, weights = jax.numpy.linalg.eig(jax.numpy.cov(
             jax.numpy.transpose(data)
         ))
@@ -60,26 +64,30 @@ small = 10 ** -4
 class BGMM_EM(typing.NamedTuple):
     
     k: int
-    sites_data: xt.iTuple
+    data: xf.Location
 
-    sites_mu: xt.iTuple
-    sites_cov: xt.iTuple
-    sites_probs: xt.iTuple
+    mu: xf.Location
+    cov: xf.Location
+    probs: xf.Location
 
     random: typing.Optional[float] = 0.1
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PCA, tuple, tuple]: ...
+    ) -> tuple[BGMM_EM, tuple, tuple]: ...
     
-    def apply(self, site: Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
 
         # https://en.wikipedia.org/wiki/EM_algorithm_and_GMM_model
 
-        data = xf.concatenate_sites(self.sites_data, state)
-        mu = xf.concatenate_sites(self.sites_mu, state)
-        cov = xf.concatenate_sites(self.sites_cov, state)
-        probs = xf.concatenate_sites(self.sites_probs, state)
+        data = self.data.access(state)
+        mu = self.mu.access(state)
+        cov = self.cov.access(state)
+        probs = self.probs.access(state)
 
         # probs = probs + small
         # probs = probs / probs.sum()
@@ -94,8 +102,9 @@ class BGMM_EM(typing.NamedTuple):
         # ])
         
         if self.random:
+            assert site.loc is not None
             key = xf.get_location(
-                self.loc.as_random(), state
+                site.loc.as_random(), state
             )
             noise = ((
                 jax.random.normal(key, shape=cov.shape[:-1])

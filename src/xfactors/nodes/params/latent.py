@@ -77,10 +77,6 @@ class Weights_Orthogonal(typing.NamedTuple):
 
 # ---------------------------------------------------------------
 
-def check_latent(obj, model):
-    assert obj.axis in [None, 0, 1]
-    return xf.check_operator(obj, model)
-
 @xt.nTuple.decorate()
 class Latent(typing.NamedTuple):
     """
@@ -89,7 +85,7 @@ class Latent(typing.NamedTuple):
 
     n: int
     axis: int
-    sites: xt.iTuple
+    data: xf.Location
     # TODO init: collections.abc.Iterable = None
 
     # kwargs for specifying the init - orthogonal, gaussian, etc.
@@ -98,7 +94,7 @@ class Latent(typing.NamedTuple):
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[Latent, tuple, tuple]:
         axis = self.axis
-        objs = self.sites.map(xf.f_get_location(model))
+        objs = self.data.access(model)
         shape_latent = (
             (self.n,)
             if axis is None
@@ -109,10 +105,15 @@ class Latent(typing.NamedTuple):
         )
         assert shape_latent is not None, self
         latent = utils.rand.gaussian(shape_latent)
-        return self, latent
+        return self, shape_latent, latent
 
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
-        return xf.get_location(self.loc.as_param(), state)
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
+        assert site.loc is not None
+        return xf.get_location(site.loc.as_param(), state),
 
 
 # ---------------------------------------------------------------

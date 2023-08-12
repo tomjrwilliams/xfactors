@@ -36,16 +36,12 @@ def test_linreg() -> bool:
         .add_input(xf.nodes.inputs.dfs.Input_DataFrame_Wide())
         .add_node(REGRESS, xf.nodes.reg.lin.Lin_Reg(
             n=1,
-            data=xt.iTuple.one(
-                xf.Loc.result(INPUT, 0),
-            ),
+            data=xf.Loc.result(INPUT, 0),
             #
         ))
         .add_constraint(xf.nodes.constraints.loss.Constraint_MSE(
-            data=xt.iTuple(
-                xf.Loc.result(INPUT, 1),
-                xf.Loc.result(REGRESS, 0),
-            )
+            l=xf.Loc.result(INPUT, 1),
+            r=xf.Loc.result(REGRESS, 0),
         ))
         .init(data)
     )

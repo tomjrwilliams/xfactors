@@ -25,7 +25,8 @@ def gaussian_kde_1d(x, clip_quantile=None):
     xmin = x.min()
     xmax = x.max()
 
-    X = numpy.mgrid[xmin:xmax:100j]
+    X = numpy.mgrid[xmin:xmax:100j] # type: ignore
+
     positions = X.ravel()
     kernel = scipy.stats.gaussian_kde(x)
     Z = numpy.reshape(kernel(positions).T, X.shape)
@@ -58,7 +59,7 @@ def gaussian_kde_2d(x, y, clip_quantile = None, n = 30, ravel = True):
     ymin = y.min()
     ymax = y.max()
 
-    X, Y = numpy.mgrid[xmin:xmax:30j, ymin:ymax:30j]
+    X, Y = numpy.mgrid[xmin:xmax:30j, ymin:ymax:30j] # type: ignore
 
     positions = numpy.vstack([X.ravel(), Y.ravel()])
     values = numpy.vstack([x, y])

@@ -46,23 +46,27 @@ def reindex_labels(labels):
 class KMeans_Labels(typing.NamedTuple):
     
     k: int
-    sites_mu: xt.iTuple
-    sites_var: xt.iTuple
+    mu: xf.Location
+    var: xf.Location
 
-    sites_data: xt.iTuple
+    data: xf.Location
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PCA, tuple, tuple]: ...
+    ) -> tuple[KMeans_Labels, tuple, tuple]: ...
     
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         # https://theory.stanford.edu/~sergei/papers/kMeansPP-soda.pdf
         # https://theory.stanford.edu/~sergei/papers/kMeans-socg.pdf
 
-        mu = xf.concatenate_sites(self.sites_mu, state)
-        var = xf.concatenate_sites(self.sites_var, state)
+        mu = self.mu.access(state)
+        var = self.var.access(state)
 
-        data = xf.concatenate_sites(self.sites_data, state)
+        data = self.data.access(state)
 
         # ignore var for now?
 
@@ -91,7 +95,7 @@ class KMeans_Labels(typing.NamedTuple):
 
         return jax.numpy.argmin(
             jax.numpy.square(diffs).sum(axis=1), axis=1
-        )
+        ),
 
     
 # ---------------------------------------------------------------
@@ -102,25 +106,29 @@ class KMeans_EM_MeanDiff(typing.NamedTuple):
     
     k: int
 
-    sites_mu: xt.iTuple
-    sites_var: xt.iTuple
-    sites_data: xt.iTuple
-    sites_labels: xt.iTuple
+    mu: xf.Location
+    var: xf.Location
+    data: xf.Location
+    labels: xf.Location
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PCA, tuple, tuple]: ...
+    ) -> tuple[KMeans_EM_MeanDiff, tuple, tuple]: ...
     
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         # https://theory.stanford.edu/~sergei/papers/kMeansPP-soda.pdf
         # https://theory.stanford.edu/~sergei/papers/kMeans-socg.pdf
 
-        data = xf.concatenate_sites(self.sites_data, state)
-        labels = xf.concatenate_sites(self.sites_labels, state)
+        data = self.data.access(state)
+        labels = self.labels.access(state)
         # label: n_data
 
-        mu = xf.concatenate_sites(self.sites_mu, state)
-        var = xf.concatenate_sites(self.sites_var, state)
+        mu = self.mu.access(state)
+        var = self.var.access(state)
 
         inds = xf.expand_dims(
             jax.numpy.linspace(
@@ -155,7 +163,7 @@ class KMeans_EM_MeanDiff(typing.NamedTuple):
             jax.numpy.abs(delta_mu_diff).sum(axis=1), neg_hot
         ).mean(axis=1)
 
-        return self_diff - other_diff
+        return (self_diff - other_diff,)
 
 # ---------------------------------------------------------------
 
@@ -165,19 +173,23 @@ class KMeans_EM_Naive(typing.NamedTuple):
     
     k: int
 
-    sites_data: xt.iTuple
-    sites_labels: xt.iTuple
+    data: xf.Location
+    labels: xf.Location
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PCA, tuple, tuple]: ...
+    ) -> tuple[KMeans_EM_Naive, tuple, tuple]: ...
     
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         # https://theory.stanford.edu/~sergei/papers/kMeansPP-soda.pdf
         # https://theory.stanford.edu/~sergei/papers/kMeans-socg.pdf
 
-        data = xf.concatenate_sites(self.sites_data, state)
-        labels = xf.concatenate_sites(self.sites_labels, state)
+        data = self.data.access(state)
+        labels = self.labels.access(state)
         # label: n_data
 
         inds = xf.expand_dims(

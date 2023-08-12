@@ -22,7 +22,9 @@ import jaxopt
 import optax
 
 import xtuples as xt
+
 from ... import xfactors as xf
+from .. import cov
 
 # ---------------------------------------------------------------
 
@@ -34,8 +36,8 @@ from ... import xfactors as xf
 class GP_RBF(typing.NamedTuple):
 
     # sigma: float
-    sites_features: xt.iTuple
-    sites_data: xt.iTuple
+    features: xf.Location
+    data: xf.Location
 
     # optional weights?
     # optional mean
@@ -48,26 +50,27 @@ class GP_RBF(typing.NamedTuple):
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[GP_RBF, tuple, tuple]:
-        return self, (
+        return self, (), (
             jax.numpy.ones(1),
             jax.numpy.ones(1),
         )
 
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
 
-        l, sigma = xf.get_location(self.loc.as_param(), state)
+        assert site.loc is not None
+        l, sigma = site.loc.as_param().access(state)
         
         # = n_variables, n_latents
-        features = xf.concatenate_sites(
-            self.sites_features, state, axis = 1
-        )
+        features = self.features.access(state)
 
         n_variables = features.shape[0]
         n_features = features.shape[1]
 
-        data = xf.concatenate_sites(
-            self.sites_data, state, axis = 1
-        )
+        data = self.data.access(state)
 
         assert data.shape[1] == n_variables
 
@@ -89,19 +92,19 @@ class GP_RBF(typing.NamedTuple):
             (n_variables ** 2, n_features,)
         )
         # right = blocks of same variable's latents
-        kernel = GP_Kernel_RBF.f(
+        kernel = cov.kernels.Kernel_RBF.f(
             features_r,
             features_l,
             l,
             sigma,
         )
-        cov = jax.numpy.reshape(
+        res = jax.numpy.reshape(
             kernel, (n_variables, n_variables,)
         )
 
         # assert (cov == cov.T).all()
 
-        return cov
+        return res,
 
 # ---------------------------------------------------------------
 
@@ -112,13 +115,17 @@ class GP_Kernel_Sigmoid(typing.NamedTuple):
 
     sigma: float
     # or variance?
-    sites: xt.iTuple
+    data: xf.Location
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[GP_Kernel_Sigmoid, tuple, tuple]: ...
     
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
 # ---------------------------------------------------------------
@@ -128,13 +135,17 @@ class GP_Kernel_Sigmoid(typing.NamedTuple):
 class GP_Kernel_SquaredExp(typing.NamedTuple):
 
     length_scale: float
-    sites: xt.iTuple
+    data: xf.Location
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[GP_Kernel_SquaredExp, tuple, tuple]: ...
     
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
         
 
@@ -142,7 +153,7 @@ class GP_Kernel_SquaredExp(typing.NamedTuple):
 class GP_Kernel_OU(typing.NamedTuple):
 
     length_scale: float
-    sites: xt.iTuple
+    data: xf.Location
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
@@ -152,12 +163,16 @@ class GP_Kernel_OU(typing.NamedTuple):
     def f(cls, features_l, features_r, sigma, l):
         sigma_sq = jax.numpy.square(sigma)
         # l_2_sq = 2 * jax.numpy.square(l)
-        norms = euclidean_distance(features_l, features_r)
+        norms = cov.kernels.euclidean_distance(features_l, features_r)
         return jax.numpy.exp(
             -1 * (jax.numpy.square(norms) / l)
         ) * sigma_sq
 
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
      
 # ---------------------------------------------------------------
@@ -167,13 +182,17 @@ class GP_Kernel_OU(typing.NamedTuple):
 class GP_Kernel_RationalQuadratic(typing.NamedTuple):
 
     length_scale: float
-    sites: xt.iTuple
+    data: xf.Location
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[GP_Kernel_RationalQuadratic, tuple, tuple]: ...
     
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
 # ---------------------------------------------------------------

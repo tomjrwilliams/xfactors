@@ -30,7 +30,7 @@ from ... import xfactors as xf
 @xt.nTuple.decorate()
 class Cov(typing.NamedTuple):
 
-    sites: xt.iTuple
+    data: xf.Location
 
     # ---
 
@@ -39,17 +39,17 @@ class Cov(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PCA, tuple, tuple]: ...
-    
-    def init_shape(self, site, model, data):
-        objs = self.sites.map(xf.f_get_location(model))
+    ) -> tuple[Cov, tuple, tuple]:
+        objs = self.data.access(model)
         n = objs.map(lambda o: o.shape[1]).pipe(sum)
-        return self._replace(
-            shape = (n, n,),
-        )
+        return self, (n, n,), ()
 
-    def apply(self, site: xf.Site, state: tuple) -> tuple:
-        data = xf.concatenate_sites(self.sites, state, axis = 1)
+    def apply(
+        self,
+        site: xf.Site,
+        state: tuple
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
+        data = self.data.access(state)
         res = jax.numpy.cov(
             jax.numpy.transpose(data)
         )
