@@ -4,7 +4,7 @@
 
 import sys
 
-XTUPLES = "C:/hc/xtuples/src/xtuples"
+XTUPLES = "C:/xtuples/src/xtuples"
 XFACTORS = "./src"
 
 if XTUPLES not in sys.path:

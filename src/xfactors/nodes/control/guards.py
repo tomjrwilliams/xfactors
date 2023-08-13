@@ -48,6 +48,28 @@ class Guard(typing.NamedTuple):
             return self.node.apply(site, state)
         return ()
         
+        
+# ---------------------------------------------------------------
+
+@xt.nTuple.decorate()
+class Random(typing.NamedTuple):
+    
+    node: xf.Node
+
+    random: bool = True
+
+    # return tuple of values vmapped over indices
+    # given by the values in the map(get_location(site_keys))
+
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[Train, tuple, tuple]: ...
+    
+    def apply(self, site, state):
+        return self.node.apply(site, state)
+
+# train random, test random etc. to add flagss
+
 # ---------------------------------------------------------------
 
 @xt.nTuple.decorate()

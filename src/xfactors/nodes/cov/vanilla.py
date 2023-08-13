@@ -40,8 +40,8 @@ class Cov(typing.NamedTuple):
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[Cov, tuple, tuple]:
-        objs = self.data.access(model)
-        n = objs.map(lambda o: o.shape[1]).pipe(sum)
+        data = self.data.access(model)
+        n = data.shape[1]
         return self, (n, n,), ()
 
     def apply(

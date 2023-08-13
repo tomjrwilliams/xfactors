@@ -231,15 +231,24 @@ def add_stage(
 def init_stages(
     model: Model, n: int
 ) -> tuple[Model, xt.iTuple]:
-    return xt.iTuple.range(n).map(lambda i: None).fold(
+    """
+    >>> Model().init_stages(3)
+    """
+    model = xt.iTuple.range(n).map(lambda i: None).fold(
         add_stage, initial=model
-    ), xt.iTuple.range(n + 1)
+    )
+    i_stages = xt.iTuple.range(n + 1)
+    assert model.stages.len() == i_stages.len(), dict(
+        stages=model.stages.len(),
+        i=i_stages,
+    )
+    return model, i_stages
     
 # ---------------------------------------------------------------
 
 def check_input(node: Node, model: Model) -> bool:
-    assert hasattr(node, "loc"), node
-    assert hasattr(node, "shape"), node
+    assert hasattr(node, "apply"), node
+    assert hasattr(node, "init"), node
     return True
 
 def add_input(model: Model, node: Node) -> Model:
@@ -256,8 +265,8 @@ def add_input(model: Model, node: Node) -> Model:
     )
 
 def check_node(node: Node, model: Model) -> bool:
-    assert hasattr(node, "loc"), node
-    assert hasattr(node, "shape"), node
+    assert hasattr(node, "apply"), node
+    assert hasattr(node, "init"), node
     return True
 
 def add_node(model: Model, i: int, node: Node) -> Model:
@@ -271,6 +280,8 @@ def add_node(model: Model, i: int, node: Node) -> Model:
     )
 
 def check_constraint(node: Node, model: Model) -> bool:
+    assert hasattr(node, "apply"), node
+    assert hasattr(node, "init"), node
     return True
 
 def add_constraint(model: Model, node: Node) -> Model:
@@ -402,7 +413,9 @@ def gen_rand_keys(model: Model):
     ks = model.stages.map(
         lambda stage: stage.map(
             lambda o: (
-                utils.rand.next_key() if o.random else None
+                utils.rand.next_key()
+                if getattr(o, "random", None)
+                else None
             )
         )
     )
