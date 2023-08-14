@@ -60,7 +60,8 @@ class PCA(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State
+        state: xf.State,
+        model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         data = self.data.access(state)
         eigvals, weights = jax.numpy.linalg.eig(jax.numpy.cov(
@@ -100,7 +101,8 @@ class PCA_Encoder(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State
+        state: xf.State,
+        model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert self.weights is not None
         weights = self.weights.access(state)
@@ -124,7 +126,8 @@ class PCA_Decoder(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State
+        state: xf.State,
+        model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert self.weights is not None
         data = self.factors.access(state)
@@ -158,7 +161,8 @@ class PPCA_NegLikelihood(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State
+        state: xf.State,
+        model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         # https://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.pdf
 
@@ -239,7 +243,8 @@ class PPCA_EM(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State
+        state: xf.State,
+        model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         # https://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.pdf
 

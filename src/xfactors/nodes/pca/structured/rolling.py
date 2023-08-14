@@ -54,10 +54,10 @@ class PCA_Rolling_LatentWeightedMean_MSE(typing.NamedTuple):
     ) -> tuple[PCA_Rolling_LatentWeightedMean_MSE, tuple, tuple]: ...
 
     def f_apply(
-        self, latents, weights_pca, weights_structure,
+        self, weights_pca, weights_structure, latents, 
     ):
         # weights_pca = features * factors 
-        # weights_structure = latents * features
+        # weights_structure = n_latents * features
 
         if self.share_factors:
             weights_structure = xf.expand_dims(
@@ -69,12 +69,11 @@ class PCA_Rolling_LatentWeightedMean_MSE(typing.NamedTuple):
                 weights_structure, 0, latents.shape[0]
             )
 
-        # n_latents * factors * latent_features * features
+        # n_latents, n_factors, n_features, latent_features
         weights_structure = jax.numpy.transpose(
             weights_structure,
-            (0, 2, 1, 3),
+            (0, 3, 2, 1),
         )
-        # n_latents, latent_features, factors, features
 
         weights_pca_agg = jax.numpy.multiply(
             xf.expand_dims(
@@ -90,16 +89,17 @@ class PCA_Rolling_LatentWeightedMean_MSE(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State
+        state: xf.State,
+        model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
 
         latents = self.latents.access(state)
 
-        weights_pca = self.weights_pca.access(state)
-        weights_structure = self.weights_structure.access(state)
+        weights_pca = xt.ituple(self.weights_pca.access(state))
+        weights_structure = xt.ituple(self.weights_structure.access(state))
 
         res = weights_pca.map(
-            functools.partial(self.apply, latents=latents),
+            functools.partial(self.f_apply, latents=latents),
             weights_structure,
         )
         return jax.numpy.vstack(res).mean()

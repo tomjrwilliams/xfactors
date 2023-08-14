@@ -47,7 +47,8 @@ class Cov(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State
+        state: xf.State,
+        model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         data = self.data.access(state)
         res = jax.numpy.cov(

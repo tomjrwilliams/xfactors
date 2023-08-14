@@ -39,7 +39,8 @@ class Constraint_Maximise(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State
+        state: xf.State,
+        model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         data = self.data.access(state)
         return -1 * data.mean()
@@ -57,7 +58,8 @@ class Constraint_Minimise(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State
+        state: xf.State,
+        model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         data = self.data.access(state)
         return data.mean()
@@ -75,7 +77,8 @@ class Constraint_MinimiseSquare(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State
+        state: xf.State,
+        model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         data = self.data.access(state)
         return jax.numpy.square(data).mean()
@@ -94,7 +97,8 @@ class Constraint_L0(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State
+        state: xf.State,
+        model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
@@ -111,7 +115,8 @@ class Constraint_L1(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State
+        state: xf.State,
+        model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         data = self.data.access(state)
         return jax.numpy.abs(data).mean()
@@ -129,7 +134,8 @@ class Constraint_L2(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State
+        state: xf.State,
+        model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         data = self.data.access(state)
         return jax.numpy.square(data).mean()
@@ -147,7 +153,8 @@ class Constraint_ElasticNet(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State
+        state: xf.State,
+        model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
@@ -166,11 +173,33 @@ class Constraint_MSE(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State
+        state: xf.State,
+        model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         l = self.l.access(state)
         r = self.r.access(state)
         return funcs.loss_mse(l, r)
 
+@xt.nTuple.decorate(init=xf.init_null)
+class Constraint_VMSE(typing.NamedTuple):
+    
+    l: xf.Location
+    r: xf.Location
+
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[Constraint_MSE, tuple, tuple]: ...
+
+    def apply(
+        self,
+        site: xf.Site,
+        state: xf.State,
+        model: xf.Model,
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
+        l = self.l.access(state)
+        r = self.r.access(state)
+        return jax.numpy.vstack(
+            xt.ituple(l).map(funcs.loss_mse, r).pipe(list)
+        ).mean()
 
 # ---------------------------------------------------------------

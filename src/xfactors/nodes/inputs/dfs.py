@@ -168,7 +168,8 @@ class Input_DataFrame_Wide(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State
+        state: xf.State,
+        model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
 
@@ -294,7 +295,8 @@ class Input_DataFrame_Wide_Rolling(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State
+        state: xf.State,
+        model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
 
@@ -353,16 +355,23 @@ class Slice_DataFrame_Wide_Rolling_Columns(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State
+        state: xf.State,
+        model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
-        rolling = self.rolling.access(state)
+    
         slicing = self.slicing.access(state)
 
-        # TODO: we need to pass model so can access columns?
+        rolling_columns = self.rolling.as_model().access(model).node.given_columns
+        slicing_columns = self.slicing.as_model().access(model).node.given_columns
 
-        vs = rolling.map(
-            lambda df: slicing[df.columns].values
+        vs = rolling_columns.map(
+            lambda cs: slicing_columns.enumerate().filterstar(
+                lambda i, c: c in cs
+            ).mapstar(lambda i, c: i)
+        ).map(
+            lambda inds: slicing[..., inds.pipe(list)]
         )
+
         if self.scale is not None:
             vs = vs.map(self.scale)
         if self.T:
@@ -386,7 +395,8 @@ class Input_DataFrame_Tall(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State
+        state: xf.State,
+        model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
         data = state.data

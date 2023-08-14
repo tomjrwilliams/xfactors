@@ -156,7 +156,8 @@ class Node(typing.Protocol):
     def apply(
         self: NodeClass,
         site: Site,
-        state: State
+        state: State,
+        model: Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         ...
 
@@ -220,11 +221,12 @@ class Site(typing.NamedTuple):
 
     def apply(
         self,
-        state: State
+        state: State,
+        model: Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         if self.masked:
             return self.if_not
-        return self.node.apply(self, state)
+        return self.node.apply(self, state, model)
 
     # state or Model?
     def access(self, blob: typing.Union[State, Model]):
@@ -404,7 +406,7 @@ def init_objective(
             operator.methodcaller(
                 "apply", State(
                     init_params, data, (), rand_keys, stage=0
-                )
+                ), model._replace(params=xt.iTuple())
             )
         )
     )
@@ -419,7 +421,7 @@ def init_objective(
             operator.methodcaller(
                 "apply", State(
                     init_params, res, (), rand_keys,
-                )
+                ), model._replace(params=xt.iTuple())
             )
         )),
         initial=init_results,
@@ -430,7 +432,7 @@ def init_objective(
                 operator.methodcaller(
                     "apply", State(
                         params, res, (), rand_keys,
-                    )
+                    ), model._replace(params=xt.iTuple())
                 )
             )),
             initial=xt.iTuple(init_results),
@@ -440,7 +442,7 @@ def init_objective(
                 operator.methodcaller(
                     "apply", State(
                         params, results, (), rand_keys,
-                    )
+                    ), model._replace(params=xt.iTuple())
                 )
             ).pipe(list)
         ).sum()
@@ -472,7 +474,7 @@ def apply_model(
             operator.methodcaller(
                 "apply", State(
                     params, data, (), rand_keys, stage=0
-                )
+                ), model._replace(params=xt.iTuple())
             )
         )
     )
@@ -481,7 +483,7 @@ def apply_model(
             operator.methodcaller(
                 "apply", State(
                     params, res, (), rand_keys,
-                )
+                ), model._replace(params=xt.iTuple())
             )
         )),
         initial=init_results,

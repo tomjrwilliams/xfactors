@@ -46,7 +46,8 @@ class Gaussian(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State
+        state: xf.State,
+        model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
         v = xf.get_location(site.loc.as_param(), state)
@@ -73,7 +74,8 @@ class VGaussian(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State
+        state: xf.State,
+        model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
         v = xf.get_location(site.loc.as_param(), state)
@@ -97,12 +99,13 @@ class ChainGaussian(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State
+        state: xf.State,
+        model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
         v = xf.get_location(site.loc.as_param(), state)
         if site.masked:
             return jax.lax.stop_gradient(v)
         return v
-        
+
 # ---------------------------------------------------------------

@@ -47,7 +47,8 @@ class GMM(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State
+        state: xf.State,
+        model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         # https://en.wikipedia.org/wiki/EM_algorithm_and_GMM_model
         data = self.data.access(state)
@@ -79,7 +80,8 @@ class BGMM_EM(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State
+        state: xf.State,
+        model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
 
         # https://en.wikipedia.org/wiki/EM_algorithm_and_GMM_model

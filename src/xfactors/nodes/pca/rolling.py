@@ -44,7 +44,8 @@ class PCA_Rolling(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State
+        state: xf.State,
+        model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         data = self.data.access(state)
         eigvals, weights = jax.numpy.linalg.eig(jax.numpy.cov(
@@ -69,7 +70,8 @@ class PCA_Rolling_Encoder(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State
+        state: xf.State,
+        model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert self.weights is not None
         weights = self.weights.access(state)
@@ -95,9 +97,10 @@ class PCA_Rolling_Decoder(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State
+        state: xf.State,
+        model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
-        weights = self.weights.access(state)
+        weights = xt.ituple(self.weights.access(state))
         factors = self.factors.access(state).map(lambda nd: nd.T)
         return weights.map(jax.numpy.matmul, factors).map(
             lambda nd: nd.T
