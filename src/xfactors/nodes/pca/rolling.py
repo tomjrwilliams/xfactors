@@ -74,14 +74,18 @@ class PCA_Rolling_Encoder(typing.NamedTuple):
         assert self.weights is not None
         weights = self.weights.access(state)
         data = self.data.access(state)
-        return jax.numpy.matmul(data, weights)
+        return data.map(
+            jax.numpy.matmul,
+            weights,
+            #
+        )
 
 
 
 @xt.nTuple.decorate(init=xf.init_null)
 class PCA_Rolling_Decoder(typing.NamedTuple):
     
-    data: xf.Location
+    factors: xf.Location
     weights: xf.Location
 
     def init(
@@ -94,78 +98,11 @@ class PCA_Rolling_Decoder(typing.NamedTuple):
         state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         weights = self.weights.access(state)
-        data = self.data.access(state)
-        return jax.numpy.matmul(weights, data.T)
-
-# ---------------------------------------------------------------
-
-# eg. latent features = equity sectors
-# n_latents > factors, zero weights on extras (noise factors)
-
-# so each sector (per latent_factor) has weighting
-# on the equivalent index loading factor
-# with 1 in the features (tickers) in that sector, zero elsewhere
-
-
-@xt.nTuple.decorate(init=xf.init_null)
-class PCA_Rolling_LatentWeightedMean_MSE(typing.NamedTuple):
-    
-    # sites
-    loadings: xf.Location
-    weights: xf.Location
-    latents: xf.Location
-
-    def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PCA_Rolling_LatentWeightedMean_MSE, tuple, tuple]: ...
-
-    def apply(
-        self,
-        site: xf.Site,
-        state: xf.State
-    ) -> typing.Union[tuple, jax.numpy.ndarray]:
-
-        # TODO: not concatenate
-        # irregular shapes are likely so can't be a single data structure
-
-        # ie. the rolling pca has to return a tuple not a single array
-        # makes eg. rolling universe simpler as well if covariance only has the values needed for each period
-        
-        # but the joining still makes sense
-        # so join_sites (tuple join instead of concatenate)
-        # can even be a tuple of tuple to still allow concatenation
-
-        # or we drop the idea of site concatenation?
-        # and have explicit concatenation operators
-        # probably that...
-
-        loadings = self.loadings.access(state)
-        # periods * features * factors 
-        loadings = jax.numpy.transpose(loadings, (0, 2, 1))
-
-        weights = self.weights.access(state)
-        # n_latents * latent_features * factors * features
-
-        latents = self.latents.access(state)
-        # n_latents * latent_features
-
-        weighted_loadings = jax.numpy.multiply(
-            xf.expand_dims(
-                xf.expand_dims(loadings, 0, 1), 0, 1
-            ),
-            xf.expand_dims(weights, 2, 1),
-        ).sum(axis=-1).sum(axis=-1)
-        # n_latents, latent_features, periods, factors, features
-        # n_latents, latent_features, periods
-
-        weighted_loadings = jax.numpy.transpose(
-            weighted_loadings, (2, 0, 1,)
+        factors = self.factors.access(state).map(lambda nd: nd.T)
+        return weights.map(jax.numpy.matmul, factors).map(
+            lambda nd: nd.T
         )
 
-        return jax.numpy.square(
-            xf.expand_dims(latents, 0, 1),
-            weighted_loadings,
-        ).mean()
 
 # ---------------------------------------------------------------
 

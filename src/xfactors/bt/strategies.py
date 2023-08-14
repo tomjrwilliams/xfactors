@@ -241,10 +241,16 @@ def resample_universe(
     else:
         n = 0
 
-    df_periods = df.resample(resampling)
-
-    index_l = xt.iTuple(df_periods.first().index.values)
-    index_r = xt.iTuple(df_periods.last().index.values)
+    index_l = xt.iTuple(
+        df.resample("{}{}".format(n, unit), label="left")
+        .first()
+        .index.values
+    )
+    index_r = xt.iTuple(
+        df.resample("{}{}".format(n, unit), label="right")
+        .last()
+        .index.values
+    )
 
     res = df.copy()
 

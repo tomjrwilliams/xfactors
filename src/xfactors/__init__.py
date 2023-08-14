@@ -2,16 +2,20 @@
 #
 # SPDX-License-Identifier: MIT
 
+import os
 import sys
-sys.path.append("./__local__")
+import pathlib
 
-import PATHS
+if pathlib.Path(os.getcwd()).parts[-1] == "xfactors":
+    sys.path.append("./__local__")
 
-if PATHS.XTUPLES not in sys.path:
-    sys.path.append(PATHS.XTUPLES)
+    import PATHS
 
-if PATHS.XTENORS not in sys.path:
-    sys.path.append(PATHS.XTENORS)
+    if PATHS.XTUPLES not in sys.path:
+        sys.path.append(PATHS.XTUPLES)
+
+    if PATHS.XTENORS not in sys.path:
+        sys.path.append(PATHS.XTENORS)
 
 from . import bt
 from . import nodes

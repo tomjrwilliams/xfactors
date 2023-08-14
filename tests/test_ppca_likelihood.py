@@ -63,7 +63,7 @@ def test_ppca() -> bool:
         ))
         .add_constraint(xf.nodes.constraints.loss.Constraint_Minimise(
             data=xf.Loc.result(LIKELIHOOD, 0),
-        ), not_if=dict(score=True))
+        ), not_if=dict(init=True))
         .init(data)
     )
 

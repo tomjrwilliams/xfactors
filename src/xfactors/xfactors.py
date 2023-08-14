@@ -181,7 +181,6 @@ class Site(typing.NamedTuple):
 
     random: bool = False
     static: bool = False
-
     masked: bool = False
     
     only_if: dict = {}
@@ -534,7 +533,7 @@ def init_optimisation(
     test_loss = None
     params = objective = None
 
-    score_model = model.apply_flags(**flags, score=True)
+    score_model = model.apply_flags(**flags, init=True)
 
     rand_keys, _ = gen_rand_keys(model)
 

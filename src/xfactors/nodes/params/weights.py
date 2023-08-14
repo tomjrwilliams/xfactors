@@ -29,74 +29,19 @@ from ... import utils
 
 
 @xt.nTuple.decorate()
-class RandomCovariance(typing.NamedTuple):
-
-    n: int
-    d: int
-
-    def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[RandomCovariance, tuple, tuple]:
-        shape = (self.d, self.d)
-        gaussians = [
-            utils.rand.gaussian(shape=shape)
-            for i in range(self.n)
-        ]
-        return self, shape, jax.numpy.stack([
-            jax.numpy.matmul(g.T, g)
-            for g in gaussians
-        ])
-
-    def apply(
-        self,
-        site: xf.Site,
-        state: xf.State
-    ) -> typing.Union[tuple, jax.numpy.ndarray]:
-        assert site.loc is not None
-        
-        v = xf.get_location(site.loc.as_param(), state)
-        if site.masked:
-            return jax.lax.stop_gradient(v)
-        return v
-
-# ---------------------------------------------------------------
-
-
-@xt.nTuple.decorate()
 class Gaussian(typing.NamedTuple):
 
-    shape: tuple
+    n: int
+    data: xf.Location
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[Gaussian, tuple, tuple]:
-        return self,self.shape,  utils.rand.gaussian(self.shape)
-
-    def apply(
-        self,
-        site: xf.Site,
-        state: xf.State
-    ) -> typing.Union[tuple, jax.numpy.ndarray]:
-        assert site.loc is not None
-        
-        v = xf.get_location(site.loc.as_param(), state)
-        if site.masked:
-            return jax.lax.stop_gradient(v)
-        return v
-
-
-@xt.nTuple.decorate()
-class GaussianSoftmax(typing.NamedTuple):
-
-    shape: tuple
-
-    def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[GaussianSoftmax, tuple, tuple]:
-        return self, self.shape, jax.nn.softmax(
-            utils.rand.gaussian(self.shape),
-            axis=-1
+        shape = (
+            self.data.access(model).shape[1],
+            self.n,
         )
+        return self, shape, utils.rand.gaussian(shape)
 
     def apply(
         self,
@@ -104,26 +49,26 @@ class GaussianSoftmax(typing.NamedTuple):
         state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
-        
         v = xf.get_location(site.loc.as_param(), state)
         if site.masked:
             return jax.lax.stop_gradient(v)
         return v
 
-# ---------------------------------------------------------------
-
-
 @xt.nTuple.decorate()
-class Beta(typing.NamedTuple):
+class VGaussian(typing.NamedTuple):
 
-    a: float
-    b: float
-    shape: tuple
+    n: int
+    data: xf.Location
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Beta, tuple, tuple]:
-        return self, self.shape, utils.rand.beta(self.a, self.b, self.shape)
+    ) -> tuple[Gaussian, tuple, tuple]:
+        shape = (
+            self.data.access(model).shape.map(
+                lambda s: (s[1], self.n,)
+            )
+        )
+        return self, shape, shape.map(utils.rand.gaussian)
 
     def apply(
         self,
@@ -131,10 +76,33 @@ class Beta(typing.NamedTuple):
         state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
-        
+        v = xf.get_location(site.loc.as_param(), state)
+        if site.masked:
+            return v.map(jax.lax.stop_gradient)
+        return v
+
+@xt.nTuple.decorate()
+class ChainGaussian(typing.NamedTuple):
+
+    n: int
+    data: xt.iTuple
+
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[Gaussian, tuple, tuple]:
+        data = self.data.map(lambda s: s.access(model))
+        shape = data.flatten()
+        return self, shape, utils.rand.gaussian(shape)
+
+    def apply(
+        self,
+        site: xf.Site,
+        state: xf.State
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
+        assert site.loc is not None
         v = xf.get_location(site.loc.as_param(), state)
         if site.masked:
             return jax.lax.stop_gradient(v)
         return v
-
+        
 # ---------------------------------------------------------------

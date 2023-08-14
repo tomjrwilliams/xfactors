@@ -44,7 +44,10 @@ class Scalar(typing.NamedTuple):
         state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
-        return xf.get_location(site.loc.as_param(), state)
+        v = xf.get_location(site.loc.as_param(), state)
+        if site.masked:
+            return jax.lax.stop_gradient(v)
+        return v
 
 
 # ---------------------------------------------------------------
