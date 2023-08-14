@@ -39,7 +39,7 @@ def euclidean_distance(l, r, small = 10 ** -3):
 # or just have V_GP_... - probably simpler to do that.
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Kernel_Sum(typing.NamedTuple):
 
     c: float
@@ -51,13 +51,13 @@ class Kernel_Sum(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
     
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Kernel_Product(typing.NamedTuple):
 
     # take others as fields
@@ -72,7 +72,7 @@ class Kernel_Product(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
     
@@ -80,7 +80,7 @@ class Kernel_Product(typing.NamedTuple):
 # ---------------------------------------------------------------
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Kernel_Constant(typing.NamedTuple):
 
     c: float
@@ -92,7 +92,7 @@ class Kernel_Constant(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
     
@@ -100,7 +100,7 @@ class Kernel_Constant(typing.NamedTuple):
 # ---------------------------------------------------------------
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Kernel_Linear(typing.NamedTuple):
 
     sites: xt.iTuple
@@ -124,14 +124,14 @@ class Kernel_Linear(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
 # ---------------------------------------------------------------
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Kernel_Gaussian(typing.NamedTuple):
 
     sigma: float
@@ -145,7 +145,7 @@ class Kernel_Gaussian(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
        
@@ -153,7 +153,7 @@ class Kernel_Gaussian(typing.NamedTuple):
 
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Kernel_RBF(typing.NamedTuple):
 
     sigma: float
@@ -182,7 +182,7 @@ class Kernel_RBF(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
@@ -190,7 +190,7 @@ class Kernel_RBF(typing.NamedTuple):
 # ---------------------------------------------------------------
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Kernel_Sigmoid(typing.NamedTuple):
 
     sigma: float
@@ -204,14 +204,14 @@ class Kernel_Sigmoid(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
 # ---------------------------------------------------------------
  
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Kernel_SquaredExp(typing.NamedTuple):
 
     length_scale: float
@@ -224,12 +224,12 @@ class Kernel_SquaredExp(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
         
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Kernel_OU(typing.NamedTuple):
 
     length_scale: float
@@ -251,14 +251,14 @@ class Kernel_OU(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
      
 # ---------------------------------------------------------------
    
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Kernel_RationalQuadratic(typing.NamedTuple):
 
     length_scale: float
@@ -271,7 +271,7 @@ class Kernel_RationalQuadratic(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 

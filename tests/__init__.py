@@ -3,12 +3,14 @@
 # SPDX-License-Identifier: MIT
 
 import sys
+sys.path.append("./__local__")
 
-XTUPLES = "C:/xtuples/src/xtuples"
-XFACTORS = "./src"
+import PATHS
 
-if XTUPLES not in sys.path:
-    sys.path.append(XTUPLES)
+if PATHS.XTUPLES not in sys.path:
+    sys.path.append(PATHS.XTUPLES)
 
-if XFACTORS not in sys.path:
-    sys.path.append(XFACTORS)
+if PATHS.XTENORS not in sys.path:
+    sys.path.append(PATHS.XTENORS)
+
+sys.path.append("./src")

@@ -27,10 +27,9 @@ from ... import utils
 # ---------------------------------------------------------------
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Weights_Constant(typing.NamedTuple):
     """
-    axis: None = scalar, 0 = time series, 1 = ticker
     """
 
     v: float
@@ -44,10 +43,9 @@ class Weights_Constant(typing.NamedTuple):
         return self, jax.numpy.ones(self.shape) * self.v
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Weights_Normal(typing.NamedTuple):
     """
-    axis: None = scalar, 0 = time series, 1 = ticker
     """
 
     shape: tuple
@@ -60,10 +58,9 @@ class Weights_Normal(typing.NamedTuple):
         return self, utils.rand.gaussian(self.shape)
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Weights_Orthogonal(typing.NamedTuple):
     """
-    axis: None = scalar, 0 = time series, 1 = ticker
     """
 
     shape: tuple
@@ -94,14 +91,11 @@ class Latent(typing.NamedTuple):
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[Latent, tuple, tuple]:
         axis = self.axis
-        objs = self.data.access(model)
+        obj = self.data.access(model)
         shape_latent = (
             (self.n,)
             if axis is None
-            else (
-                objs.map(lambda o: o.shape[axis]).pipe(sum), 
-                self.n,
-            )
+            else (obj.shape[axis], self.n,)
         )
         assert shape_latent is not None, self
         latent = utils.rand.gaussian(shape_latent)
@@ -110,10 +104,10 @@ class Latent(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
-        return xf.get_location(site.loc.as_param(), state),
+        return xf.get_location(site.loc.as_param(), state)
 
 
 # ---------------------------------------------------------------

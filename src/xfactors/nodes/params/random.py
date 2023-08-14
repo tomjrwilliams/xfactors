@@ -42,18 +42,18 @@ class RandomCovariance(typing.NamedTuple):
             utils.rand.gaussian(shape=shape)
             for i in range(self.n)
         ]
-        return self, shape, (jax.numpy.stack([
+        return self, shape, jax.numpy.stack([
             jax.numpy.matmul(g.T, g)
             for g in gaussians
-        ]),)
+        ])
 
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
-        return xf.get_location(site.loc.as_param(), state),
+        return xf.get_location(site.loc.as_param(), state)
 
 # ---------------------------------------------------------------
 
@@ -71,10 +71,10 @@ class Gaussian(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
-        return xf.get_location(site.loc.as_param(), state),
+        return xf.get_location(site.loc.as_param(), state)
 
 
 @xt.nTuple.decorate()
@@ -93,10 +93,10 @@ class GaussianSoftmax(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
-        return xf.get_location(site.loc.as_param(), state),
+        return xf.get_location(site.loc.as_param(), state)
 
 # ---------------------------------------------------------------
 
@@ -116,9 +116,9 @@ class Beta(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
-        return xf.get_location(site.loc.as_param(), state),
+        return xf.get_location(site.loc.as_param(), state)
 
 # ---------------------------------------------------------------

@@ -27,7 +27,7 @@ from . import funcs
 
 # ---------------------------------------------------------------
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Constraint_Orthonormal(typing.NamedTuple):
     
     data: xf.Location
@@ -40,7 +40,7 @@ class Constraint_Orthonormal(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         X = self.data.access(state)
         if self.T:
@@ -48,7 +48,7 @@ class Constraint_Orthonormal(typing.NamedTuple):
         return funcs.loss_orthonormal(X)
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Constraint_Orthogonal(typing.NamedTuple):
     
     data: xf.Location
@@ -61,7 +61,7 @@ class Constraint_Orthogonal(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         X = self.data.access(state)
         if self.T:
@@ -69,7 +69,7 @@ class Constraint_Orthogonal(typing.NamedTuple):
         return funcs.loss_orthogonal(X)
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Constraint_VOrthogonal(typing.NamedTuple):
     
     data: xf.Location
@@ -82,7 +82,7 @@ class Constraint_VOrthogonal(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         X = self.data.access(state)
         if self.T:
@@ -90,7 +90,7 @@ class Constraint_VOrthogonal(typing.NamedTuple):
         return jax.vmap(funcs.loss_orthogonal)(X).sum()
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Constraint_VOrthonormal(typing.NamedTuple):
     
     data: xf.Location
@@ -103,7 +103,7 @@ class Constraint_VOrthonormal(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         X = self.data.access(state)
         if self.T:
@@ -111,7 +111,7 @@ class Constraint_VOrthonormal(typing.NamedTuple):
         return jax.vmap(funcs.loss_orthonormal)(X).sum()
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Constraint_VDiagonal(typing.NamedTuple):
     
     data: xf.Location
@@ -124,7 +124,7 @@ class Constraint_VDiagonal(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         X = self.data.access(state)
         if self.T:
@@ -132,7 +132,7 @@ class Constraint_VDiagonal(typing.NamedTuple):
         return jax.vmap(funcs.loss_diag)(X).sum()
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Constraint_XXt_Cov(typing.NamedTuple):
     
     data: xf.Location
@@ -145,7 +145,7 @@ class Constraint_XXt_Cov(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         
         X = self.data.access(state)
@@ -156,7 +156,7 @@ class Constraint_XXt_Cov(typing.NamedTuple):
         return funcs.loss_mse(XXt, cov)
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Constraint_EigenVLike(typing.NamedTuple):
     
     weights: xf.Location
@@ -173,7 +173,7 @@ class Constraint_EigenVLike(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
 
         w = self.weights.access(state)
@@ -202,7 +202,7 @@ class Constraint_EigenVLike(typing.NamedTuple):
 def l1_diag_loss(v):
     return jax.numpy.abs(jax.numpy.diag(v)).mean()
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Constraint_L1_MM_Diag(typing.NamedTuple):
     
     raw: xf.Location
@@ -214,7 +214,7 @@ class Constraint_L1_MM_Diag(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         raw = self.raw.access(state)
         data = jax.numpy.matmul(
@@ -227,7 +227,7 @@ class Constraint_L1_MM_Diag(typing.NamedTuple):
 
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Constraint_KernelVsCov(typing.NamedTuple):
     
     data: xf.Location
@@ -239,7 +239,7 @@ class Constraint_KernelVsCov(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         # param weights
         # y_pred = weights . normal
@@ -254,7 +254,7 @@ class Constraint_KernelVsCov(typing.NamedTuple):
 # ---------------------------------------------------------------
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Constraint_MinimiseMMSpread(typing.NamedTuple):
     
     data: xf.Location
@@ -267,7 +267,7 @@ class Constraint_MinimiseMMSpread(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         data = self.data.access(state)
         if self.T:
@@ -285,7 +285,7 @@ class Constraint_MinimiseMMSpread(typing.NamedTuple):
 
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Constraint_MinimiseVariance(typing.NamedTuple):
     
     data: xf.Location
@@ -298,7 +298,7 @@ class Constraint_MinimiseVariance(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         data = self.data.access(state)
         if self.T:
@@ -307,7 +307,7 @@ class Constraint_MinimiseVariance(typing.NamedTuple):
         return var
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Constraint_MinimiseZSpread(typing.NamedTuple):
     
     data: xf.Location
@@ -320,7 +320,7 @@ class Constraint_MinimiseZSpread(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         data = self.data.access(state)
         if self.T:
@@ -332,7 +332,7 @@ class Constraint_MinimiseZSpread(typing.NamedTuple):
         return jax.numpy.square(delta).mean()
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Constraint_MaxSpread(typing.NamedTuple):
     
     data: xf.Location
@@ -345,7 +345,7 @@ class Constraint_MaxSpread(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         data = self.data.access(state)
         if self.T:

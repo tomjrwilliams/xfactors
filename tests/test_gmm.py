@@ -18,6 +18,7 @@ import optax
 from sklearn.cluster import KMeans
 
 def test_kmeans() -> bool:
+    xf.utils.rand.reset_keys()
 
     N_COLS = 5
     N_CLUSTERS = 3
@@ -71,7 +72,7 @@ def test_kmeans() -> bool:
             mu=xf.Loc.param(PARAMS, 0),
             cov=xf.Loc.param(PARAMS, 1),
             probs=xf.Loc.param(PARAMS, 3),
-        ))
+        ), random = True)
         # .add_constraint(xf.nodes.constraints.loss.Constraint_MinimiseSquare(
         #     data=xt.iTuple.one(
         #         xf.Loc.result(EM, 0, 3)

@@ -11,6 +11,7 @@ import xfactors as xf
 from tests import utils
 
 def test_ppca() -> bool:
+    xf.utils.rand.reset_keys()
 
     N = 3
 
@@ -33,8 +34,7 @@ def test_ppca() -> bool:
     model = (
         model.add_input(xf.nodes.inputs.dfs.Input_DataFrame_Wide())
         .add_node(COV, xf.nodes.cov.vanilla.Cov(
-            data=xf.Loc.result(INPUT, 0),
-            # TODO: static
+            data=xf.Loc.result(INPUT, 0), static=True,
         ))
         .add_node(ENCODE, xf.nodes.pca.vanilla.PCA_Encoder(
             data=xf.Loc.result(INPUT, 0),
@@ -77,6 +77,8 @@ def test_ppca() -> bool:
     eigvals, eigvecs = numpy.linalg.eig(numpy.cov(
         numpy.transpose(data[0].values)
     ))
+    _order = numpy.flip(numpy.argsort(eigvals))[:N]
+    eigvecs = eigvecs[..., _order]
     # assert False, (eigvals, eigen_vals,)
 
     print(eigen_vec)

@@ -10,6 +10,7 @@ import xfactors as xf
 from tests import utils
 
 def test_pca() -> bool:
+    xf.utils.rand.reset_keys()
 
     ds = xf.utils.dates.starting(datetime.date(2020, 1, 1), 100)
 

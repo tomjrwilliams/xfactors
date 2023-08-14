@@ -50,7 +50,10 @@ def follow_path(path, acc):
         lambda acc, i: acc[i], initial=acc
     )
 
-def get_location(loc: typing.Optional[Location], acc):
+def get_location(
+    loc: typing.Optional[Location], 
+    acc: typing.Union[State, Model],
+):
     assert loc is not None
     try:
         return follow_path(loc.path, acc[(
@@ -153,7 +156,7 @@ class Node(typing.Protocol):
     def apply(
         self: NodeClass,
         site: Site,
-        state: tuple
+        state: State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         ...
 
@@ -176,8 +179,41 @@ class Site(typing.NamedTuple):
     loc: typing.Optional[Location] = None
     shape: typing.Optional[xt.iTuple] = None
 
+    random: bool = False
+    static: bool = False
+
+    masked: bool = False
+    
+    only_if: dict = {}
+    not_if: dict = {}
+    any_if: dict = {} # note: only applied after the first two
+
+    if_not: typing.Union[tuple, float, jax.numpy.ndarray] = ()
+
+    def should_run(self, flags):
+        if len(self.only_if) == len(self.not_if) == 0:
+            return True
+        for k, v in self.only_if.items():
+            if flags.get(k, None) != v:
+                return False
+        for k, v in self.not_if.items():
+            if flags.get(k, None) == v:
+                return False
+        for k, v in self.any_if.items():
+            if flags.get(k, None) == v:
+                return True
+        return True
+
+    def apply_flags(self, flags):
+        return self._replace(
+            masked=True
+        ) if not self.should_run(flags) else self
+
     def init(self, model: Model, data: tuple):
-        node, shape, params = self.node.init(self, model, data)
+        res = self.node.init(self, model, data)
+        assert res is not None, self.node # need to implement init
+        # TODO: proper error message
+        node, shape, params = res
         return self._replace(
             node=node,
             shape=xt.iTuple(shape),
@@ -185,21 +221,27 @@ class Site(typing.NamedTuple):
 
     def apply(
         self,
-        site: Site,
-        state: tuple
+        state: State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
+        if self.masked:
+            return self.if_not
         return self.node.apply(self, state)
 
-    def access(self, state: tuple):
+    # state or Model?
+    def access(self, blob: typing.Union[State, Model]):
         assert self.loc is not None
-        return self.loc.access(state)
+        return self.loc.access(blob)
 
 OptionalSite = typing.Optional[Site]
 
 # ---------------------------------------------------------------
 
 class Stage(xt.iTuple):
-    pass
+    
+    def __repr__(self):
+        return "Stage({})".format(
+            "\n\t".join(self)
+        )
 
 def update_stage(
     model: Model,
@@ -243,7 +285,7 @@ def init_stages(
         i=i_stages,
     )
     return model, i_stages
-    
+
 # ---------------------------------------------------------------
 
 def check_input(node: Node, model: Model) -> bool:
@@ -251,7 +293,7 @@ def check_input(node: Node, model: Model) -> bool:
     assert hasattr(node, "init"), node
     return True
 
-def add_input(model: Model, node: Node) -> Model:
+def add_input(model: Model, node: Node, **kws) -> Model:
     """
     Inputs are always the first stage.
     """
@@ -260,7 +302,8 @@ def add_input(model: Model, node: Node) -> Model:
     return update_stage(
         model, 0, stage.append(Site(
             node,
-            loc=Location.model(0, stage.len())
+            loc=Location.model(0, stage.len()),
+            **kws
         ))
     )
 
@@ -269,13 +312,14 @@ def check_node(node: Node, model: Model) -> bool:
     assert hasattr(node, "init"), node
     return True
 
-def add_node(model: Model, i: int, node: Node) -> Model:
+def add_node(model: Model, i: int, node: Node, **kws) -> Model:
     stage = model.stages[i]
     assert check_node(node, model)
     return update_stage(
         model, i, stage.append(Site(
             node,
-            loc=Location.model(i, stage.len())
+            loc=Location.model(i, stage.len()),
+            **kws
         ))
     )
 
@@ -284,12 +328,14 @@ def check_constraint(node: Node, model: Model) -> bool:
     assert hasattr(node, "init"), node
     return True
 
-def add_constraint(model: Model, node: Node) -> Model:
+def add_constraint(model: Model, node: Node, **kws) -> Model:
     assert check_constraint(node, model)
     return model._replace(
         constraints = model.constraints.append(Site(
             node,
-            loc=Location.constraint(model.constraints)
+            loc=Location.constraint(model.constraints),
+            if_not=0.,
+            **kws
         ))
         #
     )
@@ -320,18 +366,47 @@ def init_model(model: Model, data: tuple) -> Model:
 
 # ---------------------------------------------------------------
 
+@xt.nTuple.decorate()
+class State(typing.NamedTuple):
+
+    params: tuple
+    results: tuple # or data, for stages[0]
+    constraints: tuple
+    random: tuple
+
+    stage: typing.Optional[int] = None
+
+    @property
+    def data(self):
+        assert self.stage == 0, self.stage
+        return self.results
+       
+# ---------------------------------------------------------------
+ 
+def apply_flags(model: Model, **flags):
+    return model._replace(
+        stages=model.stages.map(
+            lambda s: s.map(lambda site: site.apply_flags(flags))
+        ),
+        constraints=model.constraints.map(
+            lambda site: site.apply_flags(flags)
+        )
+    )
+
 def init_objective(
     model: Model,
     data,
     rand_keys,
     jit = True,
-    **flags,
 ):
     init_params = model.params
-    init_results = xt.iTuple().append(
+    init_results = Stage().append(
         model.stages[0].map(
             operator.methodcaller(
-                "apply", (init_params, data, (), rand_keys, flags))
+                "apply", State(
+                    init_params, data, (), rand_keys, stage=0
+                )
+            )
         )
     )
     n_static = model.stages[1:].len_range().last_where(
@@ -343,7 +418,9 @@ def init_objective(
     init_results = model.stages[1: 1 + n_static].fold(
         lambda res, stage: res.append(stage.map(
             operator.methodcaller(
-                "apply", (init_params, res, (), rand_keys, flags)
+                "apply", State(
+                    init_params, res, (), rand_keys,
+                )
             )
         )),
         initial=init_results,
@@ -352,7 +429,9 @@ def init_objective(
         results = model.stages[1 + n_static:].fold(
             lambda res, stage: res.append(stage.map(
                 operator.methodcaller(
-                    "apply", (params, res, (), rand_keys, flags)
+                    "apply", State(
+                        params, res, (), rand_keys,
+                    )
                 )
             )),
             initial=xt.iTuple(init_results),
@@ -360,7 +439,9 @@ def init_objective(
         loss = jax.numpy.stack(
             model.constraints.map(
                 operator.methodcaller(
-                    "apply", (params, results, (), rand_keys, flags)
+                    "apply", State(
+                        params, results, (), rand_keys,
+                    )
                 )
             ).pipe(list)
         ).sum()
@@ -383,19 +464,25 @@ def apply_model(
     if rand_keys is None:
         rand_keys, _ = gen_rand_keys(model)
 
+    model = model.apply_flags(**flags, apply = True)
+
     # init_results = just inputs (ie. parsed data)
     # no model results yet
-    init_results = xt.iTuple().append(
+    init_results = Stage().append(
         model.stages[0].map(
             operator.methodcaller(
-                "apply", (params, data, (), rand_keys, flags)
+                "apply", State(
+                    params, data, (), rand_keys, stage=0
+                )
             )
         )
     )
     results = model.stages[1:].fold(
         lambda res, stage: res.append(stage.map(
             operator.methodcaller(
-                "apply", (params, res, (), rand_keys, flags)
+                "apply", State(
+                    params, res, (), rand_keys,
+                )
             )
         )),
         initial=init_results,
@@ -414,7 +501,7 @@ def gen_rand_keys(model: Model):
         lambda stage: stage.map(
             lambda o: (
                 utils.rand.next_key()
-                if getattr(o, "random", None)
+                if o.random
                 else None
             )
         )
@@ -441,15 +528,18 @@ def init_optimisation(
     data,
     jit=True,
     rand_init=0,
+    **flags,
 ):
     
     test_loss = None
     params = objective = None
 
+    score_model = model.apply_flags(**flags, score=True)
+
     rand_keys, _ = gen_rand_keys(model)
 
     objective = init_objective(
-        model,
+        score_model,
         data,
         rand_keys=rand_keys,
         jit = jit,
@@ -462,11 +552,11 @@ def init_optimisation(
         _params = (
             model.params
             if params is None
-            else model.init_params(data).params
+            else model.init(data).params
         ).pipe(to_tuple_rec)
 
         _test_loss, test_grad = f_grad(
-            _params, rand_keys,
+            _params, rand_keys
         )
 
         try:
@@ -480,7 +570,7 @@ def init_optimisation(
             if iter == rand_init:
                 assert tries > 0
 
-    return params, objective
+    return params
 
 def optimise_model(
     model, 
@@ -492,6 +582,7 @@ def optimise_model(
     max_error_unchanged=None,
     lr = 0.01,
     opt=None,
+    **flags,
 ):
 
     if max_error_unchanged is not None and max_error_unchanged < 1:
@@ -500,11 +591,22 @@ def optimise_model(
     if not model.constraints.len():
         return model
     
-    params, objective = init_optimisation(
+    params = init_optimisation(
         model,
         data,
         rand_init=rand_init,
         jit=jit,
+        **flags,
+    )
+    
+    train_model = model.apply_flags(**flags, train=True)
+    
+    rand_keys, _ = gen_rand_keys(model)
+    objective = init_objective(
+        train_model,
+        data,
+        rand_keys=rand_keys,
+        jit = jit,
     )
 
     if opt is None:
@@ -558,6 +660,7 @@ def optimise_model(
 
 # ---------------------------------------------------------------
 
+
 @xt.nTuple.decorate()
 class Model(typing.NamedTuple):
 
@@ -574,20 +677,21 @@ class Model(typing.NamedTuple):
 
     # ---
     
-    def add_input(self: Model, node: Node) -> Model:
-        return add_input(self, node)
+    def add_input(self: Model, node: Node, **kws) -> Model:
+        return add_input(self, node, **kws)
 
     def add_stage(
         self: Model,
-        stage: typing.Optional[Stage] = None
+        stage: typing.Optional[Stage] = None,
+        **kws,
     ) -> Model:
-        return add_stage(self, stage=stage)
+        return add_stage(self, stage=stage, **kws)
 
-    def add_node(self: Model, i: int, node: Node) -> Model:
-        return add_node(self, i, node)
+    def add_node(self: Model, i: int, node: Node, **kws) -> Model:
+        return add_node(self, i, node, **kws)
 
-    def add_constraint(self: Model, node: Node) -> Model:
-        return add_constraint(self, node)
+    def add_constraint(self: Model, node: Node, **kws) -> Model:
+        return add_constraint(self, node, **kws)
 
     # ---
 
@@ -596,6 +700,9 @@ class Model(typing.NamedTuple):
 
     def init(self: Model, data: tuple) -> Model:
         return init_model(self, data)
+
+    def apply_flags(self: Model, **flags) -> Model:
+        return apply_flags(self, **flags)
 
     # ---
 

@@ -11,7 +11,7 @@ from . import shapes
 KEYS = {}
 
 def next_key(seed = 69):
-    if seed not in KEYS:
+    if KEYS.get(seed, None) is None:
         KEYS[seed] = jax.random.PRNGKey(seed)
     KEYS[seed], subkey = jax.random.split(KEYS[seed])
     return subkey
@@ -21,6 +21,10 @@ def next_keys(n, seed = 69):
         KEYS[seed] = jax.random.PRNGKey(seed)
     KEYS[seed], *subkeys = jax.random.split(KEYS[seed], num=n + 1)
     return jax.numpy.vstack(subkeys) # type: ignore
+
+def reset_keys(seed=69):
+    KEYS[seed] = jax.random.PRNGKey(seed)
+    return
 
 # ---------------------------------------------------------------
 

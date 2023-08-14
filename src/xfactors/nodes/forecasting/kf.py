@@ -89,7 +89,7 @@ from ... import xfactors as xf
 # ---------------------------------------------------------------
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class KF_State_Predicted(typing.NamedTuple):
     
     
@@ -102,12 +102,12 @@ class KF_State_Predicted(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class KF_Cov_Predicted(typing.NamedTuple):
     
     
@@ -120,14 +120,14 @@ class KF_Cov_Predicted(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
 # ---------------------------------------------------------------
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class KF_State_Innovation(typing.NamedTuple):
     
     
@@ -140,12 +140,12 @@ class KF_State_Innovation(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class KF_Cov_Innovation(typing.NamedTuple):
     
     
@@ -158,14 +158,14 @@ class KF_Cov_Innovation(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
 # ---------------------------------------------------------------
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class KF_Kalman_Gain(typing.NamedTuple):
     
     
@@ -178,14 +178,14 @@ class KF_Kalman_Gain(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
 # ---------------------------------------------------------------
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class KF_State_Updated(typing.NamedTuple):
     
     
@@ -198,12 +198,12 @@ class KF_State_Updated(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class KF_Cov_Updated(typing.NamedTuple):
     
     
@@ -216,12 +216,12 @@ class KF_Cov_Updated(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class KF_Residual(typing.NamedTuple):
     
     
@@ -234,7 +234,7 @@ class KF_Residual(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 

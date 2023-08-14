@@ -10,6 +10,7 @@ import xfactors as xf
 from tests import utils
 
 def test_linreg() -> bool:
+    xf.utils.rand.reset_keys()
 
     ds = xf.utils.dates.starting(datetime.date(2020, 1, 1), 100)
 
@@ -74,3 +75,4 @@ def test_linreg() -> bool:
     )
 
     return True
+    

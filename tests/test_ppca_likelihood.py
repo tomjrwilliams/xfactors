@@ -4,6 +4,7 @@ import datetime
 import numpy
 import pandas
 import jax
+import optax
 
 import xtuples as xt
 import xfactors as xf
@@ -11,6 +12,7 @@ import xfactors as xf
 from tests import utils
 
 def test_ppca() -> bool:
+    xf.utils.rand.reset_keys()
 
     N = 3
 
@@ -53,22 +55,25 @@ def test_ppca() -> bool:
             sigma=xf.Loc.param(ENCODE, 1),
             weights=xf.Loc.param(ENCODE, 0),
             cov=xf.Loc.result(COV, 0),
-            random=0.01,
-        ))
+            noise=0.01,
+        ), random = True)
         .add_constraint(xf.nodes.constraints.linalg.Constraint_Orthonormal(
             data=xf.Loc.param(ENCODE, 0),
             T=True,
         ))
         .add_constraint(xf.nodes.constraints.loss.Constraint_Minimise(
             data=xf.Loc.result(LIKELIHOOD, 0),
-        ))
+        ), not_if=dict(score=True))
         .init(data)
     )
 
     model = model.optimise(
         data, 
         iters = 2500,
-        max_error_unchanged = 500,
+        # max_error_unchanged=1000,
+        rand_init=100,
+        # opt = optax.sgd(.1),
+        # opt=optax.noisy_sgd(.1),
     )
     results = model.apply(data)
     params = model.params
@@ -87,9 +92,11 @@ def test_ppca() -> bool:
     eigen_vals = eigen_vals[order]
     eigen_vec = eigen_vec[..., order]
 
-    _, eigvecs = numpy.linalg.eig(numpy.cov(
+    eigvals, eigvecs = numpy.linalg.eig(numpy.cov(
         numpy.transpose(data[0].values)
     ))
+    _order = numpy.flip(numpy.argsort(eigvals))[:N]
+    eigvecs = eigvecs[..., _order]
 
     utils.assert_is_close(
         eigen_vec.real[..., :1],

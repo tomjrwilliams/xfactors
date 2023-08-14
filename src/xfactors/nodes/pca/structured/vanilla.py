@@ -34,7 +34,7 @@ from .... import xfactors as xf
 # btu want factors that are only one or the other
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Structured_PCA_Mask(typing.NamedTuple):
     
     n: int
@@ -47,14 +47,14 @@ class Structured_PCA_Mask(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         return ()
 
 # ---------------------------------------------------------------
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Structured_PCA_Convex(typing.NamedTuple):
     
     n: int
@@ -67,13 +67,13 @@ class Structured_PCA_Convex(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         return ()
 
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Structured_PCA_Concave(typing.NamedTuple):
     
     n: int
@@ -86,7 +86,7 @@ class Structured_PCA_Concave(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         return ()
 
@@ -96,7 +96,7 @@ class Structured_PCA_Concave(typing.NamedTuple):
 # overall factor sign
 # has the same effect as the below (but if we don't care oither than the same can use below)
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Structured_PCA_Sign(typing.NamedTuple):
     
     n: int
@@ -109,14 +109,14 @@ class Structured_PCA_Sign(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         return ()
 
 
 # eg. just for factor alignment
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Structured_PCA_TiedSign(typing.NamedTuple):
     
     n: int
@@ -129,7 +129,7 @@ class Structured_PCA_TiedSign(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         return ()
 

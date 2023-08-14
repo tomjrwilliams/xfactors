@@ -35,15 +35,13 @@ def loss_diag(X):
     )
     return loss_mse(X, diag)
 
-def loss_orthonormal(X, scale = 1.):
+def loss_orthonormal(X):
     eye = jax.numpy.eye(X.shape[0])
-    XXt = jax.numpy.matmul(X, X.T) / scale
+    XXt = jax.numpy.matmul(X, X.T)
     return loss_mse(XXt, eye)
 
-def loss_orthogonal(X, scale = 1.):
-    XXt = jax.numpy.matmul(X, X.T) / scale
-    return loss_diag(
-        XXt, 
-    )
+def loss_orthogonal(X):
+    XXt = jax.numpy.matmul(X, X.T)
+    return loss_diag(XXt)
 
 # ---------------------------------------------------------------

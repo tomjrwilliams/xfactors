@@ -28,7 +28,7 @@ from . import funcs
 # ---------------------------------------------------------------
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Constraint_EM(typing.NamedTuple):
     
     param: xf.Location
@@ -43,7 +43,7 @@ class Constraint_EM(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         param = self.param.access(state)
         optimal = self.optimal.access(state)
@@ -57,7 +57,7 @@ class Constraint_EM(typing.NamedTuple):
         )
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Constraint_EM_MatMul(typing.NamedTuple):
     
     raw: xf.Location
@@ -72,7 +72,7 @@ class Constraint_EM_MatMul(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         raw = self.raw.access(state)
         optimal = self.optimal.access(state)

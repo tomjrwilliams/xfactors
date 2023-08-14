@@ -34,7 +34,7 @@ digamma = jax.scipy.special.digamma
 # ---------------------------------------------------------------
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class GMM(typing.NamedTuple):
     
     n: int
@@ -47,7 +47,7 @@ class GMM(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         # https://en.wikipedia.org/wiki/EM_algorithm_and_GMM_model
         data = self.data.access(state)
@@ -60,7 +60,7 @@ class GMM(typing.NamedTuple):
 
 small = 10 ** -4
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class BGMM_EM(typing.NamedTuple):
     
     k: int
@@ -70,7 +70,7 @@ class BGMM_EM(typing.NamedTuple):
     cov: xf.Location
     probs: xf.Location
 
-    random: typing.Optional[float] = 0.1
+    noise: typing.Optional[float] = 0.1
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
@@ -79,7 +79,7 @@ class BGMM_EM(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
 
         # https://en.wikipedia.org/wiki/EM_algorithm_and_GMM_model
@@ -101,14 +101,14 @@ class BGMM_EM(typing.NamedTuple):
         #     for _ in range(mu.shape[0])
         # ])
         
-        if self.random:
+        if self.noise:
             assert site.loc is not None
             key = xf.get_location(
                 site.loc.as_random(), state
             )
             noise = ((
                 jax.random.normal(key, shape=cov.shape[:-1])
-            ) * self.random)
+            ) * self.noise)
             diag_noise = jax.numpy.multiply(
                 xf.expand_dims(
                     jax.numpy.eye(cov.shape[-1]),

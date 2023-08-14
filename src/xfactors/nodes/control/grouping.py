@@ -33,7 +33,7 @@ from ... import xfactors as xf
 # ---------------------------------------------------------------
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Group_By(typing.NamedTuple):
     
     values: xt.iTuple
@@ -49,7 +49,7 @@ class Group_By(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 

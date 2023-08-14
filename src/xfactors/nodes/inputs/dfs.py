@@ -55,10 +55,10 @@ class Input_DataFrame_Wide(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
-        _, data, _, _ = state
+        data = state.data
         df = data[site.loc.path[-1]]
         if self.fixed_columns:
             columns = xt.iTuple(df.columns)
@@ -90,10 +90,10 @@ class Input_DataFrame_Tall(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
-        _, data, _, _ = state
+        data = state.data
         df = data[site.loc.path[-1]]
         return jax.numpy.array(df.values)
 

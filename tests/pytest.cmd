@@ -1,1 +1,1 @@
-python -m pytest ./tests
+python -m pytest .\tests\%1

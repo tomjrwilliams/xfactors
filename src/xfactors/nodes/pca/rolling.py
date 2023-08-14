@@ -31,7 +31,7 @@ from . import vanilla
 # ---------------------------------------------------------------
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class PCA_Rolling(typing.NamedTuple):
     
     n: int
@@ -44,7 +44,7 @@ class PCA_Rolling(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         data = self.data.access(state)
         eigvals, weights = jax.numpy.linalg.eig(jax.numpy.cov(
@@ -55,7 +55,7 @@ class PCA_Rolling(typing.NamedTuple):
 # ---------------------------------------------------------------
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class PCA_Rolling_Encoder(typing.NamedTuple):
     
     n: int
@@ -69,7 +69,7 @@ class PCA_Rolling_Encoder(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert self.weights is not None
         weights = self.weights.access(state)
@@ -78,7 +78,7 @@ class PCA_Rolling_Encoder(typing.NamedTuple):
 
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class PCA_Rolling_Decoder(typing.NamedTuple):
     
     data: xf.Location
@@ -91,7 +91,7 @@ class PCA_Rolling_Decoder(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         weights = self.weights.access(state)
         data = self.data.access(state)
@@ -107,7 +107,7 @@ class PCA_Rolling_Decoder(typing.NamedTuple):
 # with 1 in the features (tickers) in that sector, zero elsewhere
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class PCA_Rolling_LatentWeightedMean_MSE(typing.NamedTuple):
     
     # sites
@@ -122,7 +122,7 @@ class PCA_Rolling_LatentWeightedMean_MSE(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
 
         # TODO: not concatenate
@@ -170,7 +170,7 @@ class PCA_Rolling_LatentWeightedMean_MSE(typing.NamedTuple):
 # ---------------------------------------------------------------
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class PPCA_Rolling_NegLikelihood(typing.NamedTuple):
     
     sigma: xf.Location
@@ -199,7 +199,7 @@ class PPCA_Rolling_NegLikelihood(typing.NamedTuple):
 # ---------------------------------------------------------------
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class PPCA_Rolling_EM(typing.NamedTuple):
     
     sigma: xf.Location
@@ -271,7 +271,7 @@ class PPCA_Rolling_EM(typing.NamedTuple):
 # ---------------------------------------------------------------
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class PPCA_Rolling_Marginal_Observations(typing.NamedTuple):
     
     sigma: xf.Location
@@ -316,7 +316,7 @@ class PPCA_Rolling_Marginal_Observations(typing.NamedTuple):
         return dist.log_prob(data)
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class PPCA_Rolling_Conditional_Latents(typing.NamedTuple):
     
     sigma: xf.Location

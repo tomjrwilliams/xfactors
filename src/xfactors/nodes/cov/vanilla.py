@@ -27,7 +27,7 @@ from ... import xfactors as xf
 # ---------------------------------------------------------------
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Cov(typing.NamedTuple):
 
     data: xf.Location
@@ -40,14 +40,14 @@ class Cov(typing.NamedTuple):
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[Cov, tuple, tuple]:
-        data = self.data.access(model)
-        n = data.shape[1]
+        vs = self.data.access(model)
+        n = vs.shape[1]
         return self, (n, n,), ()
 
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         data = self.data.access(state)
         res = jax.numpy.cov(

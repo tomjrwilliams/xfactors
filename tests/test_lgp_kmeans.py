@@ -16,6 +16,7 @@ jax.config.update("jax_debug_nans", True)
 from sklearn.cluster import KMeans
 
 def test_lgp() -> bool:
+    xf.utils.rand.reset_keys()
 
     ds = xf.utils.dates.starting(datetime.date(2020, 1, 1), 100)
 

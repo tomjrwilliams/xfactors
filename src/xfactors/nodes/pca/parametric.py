@@ -29,7 +29,7 @@ from . import vanilla
 # ---------------------------------------------------------------
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Parametric_Factor(typing.NamedTuple):
     
     features: xf.Location
@@ -43,7 +43,7 @@ class Parametric_Factor(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
 
         # given a feature matrix 

@@ -18,6 +18,7 @@ import optax
 from sklearn.cluster import KMeans
 
 def test_kmeans() -> bool:
+    xf.utils.rand.reset_keys()
 
     N_COLS = 5
     N_CLUSTERS = 3
@@ -57,43 +58,25 @@ def test_kmeans() -> bool:
         ))
         .add_node(LABEL, xf.nodes.clustering.kmeans.KMeans_Labels(
             k=3,
-            mu=xt.iTuple.one(
-                xf.Loc.param(PARAMS, 0)
-            ),
-            var=xt.iTuple.one(
-                xf.Loc.param(PARAMS, 1)
-            ),
-            data=xt.iTuple.one(
-                xf.Loc.result(INPUT, 0)
-            ),
+            mu=xf.Loc.param(PARAMS, 0),
+            var=xf.Loc.param(PARAMS, 1),
+            data=xf.Loc.result(INPUT, 0),
             # mu
             # cov
         ))
         .add_node(EM, xf.nodes.clustering.kmeans.KMeans_EM_Naive(
             k=3,
-            data=xt.iTuple.one(
-                xf.Loc.result(INPUT, 0)
-            ),
-            labels=xt.iTuple.one(
-                xf.Loc.result(LABEL, 0),
-            ),
+            data=xf.Loc.result(INPUT, 0),
+            labels=xf.Loc.result(LABEL, 0),
         ))
         .add_constraint(xf.nodes.constraints.em.Constraint_EM(
-            param=xt.iTuple.one(
-                xf.Loc.param(PARAMS, 0)
-            ),
-            optimal=xt.iTuple.one(
-                xf.Loc.result(EM, 0, 0)
-            ),
+            param=xf.Loc.param(PARAMS, 0),
+            optimal=xf.Loc.result(EM, 0, 0),
             cut_tree=True,
         ))
         .add_constraint(xf.nodes.constraints.em.Constraint_EM(
-            param=xt.iTuple.one(
-                xf.Loc.param(PARAMS, 1)
-            ),
-            optimal=xt.iTuple.one(
-                xf.Loc.result(EM, 0, 1)
-            ),
+            param=xf.Loc.param(PARAMS, 1),
+            optimal=xf.Loc.result(EM, 0, 1),
             cut_tree=True,
         ))
         .init(data)

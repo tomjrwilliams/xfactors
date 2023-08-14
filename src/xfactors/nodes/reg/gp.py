@@ -58,7 +58,7 @@ class GP_RBF(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
 
         assert site.loc is not None
@@ -104,7 +104,7 @@ class GP_RBF(typing.NamedTuple):
 
         # assert (cov == cov.T).all()
 
-        return res,
+        return res
 
 # ---------------------------------------------------------------
 
@@ -124,7 +124,7 @@ class GP_Kernel_Sigmoid(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
@@ -144,7 +144,7 @@ class GP_Kernel_SquaredExp(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
         
@@ -171,7 +171,7 @@ class GP_Kernel_OU(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
      
@@ -191,7 +191,7 @@ class GP_Kernel_RationalQuadratic(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 

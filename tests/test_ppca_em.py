@@ -12,6 +12,7 @@ import xfactors as xf
 from tests import utils
 
 def test_ppca() -> bool:
+    xf.utils.rand.reset_keys()
 
     N = 3
 
@@ -34,13 +35,13 @@ def test_ppca() -> bool:
     model = (
         model.add_input(xf.nodes.inputs.dfs.Input_DataFrame_Wide())
         .add_node(COV, xf.nodes.cov.vanilla.Cov(
-            data=xf.Loc.result(INPUT, 0),
+            data=xf.Loc.result(INPUT, 0), static=True,
         ))
         .add_node(ENCODE, xf.nodes.pca.vanilla.PCA_Encoder(
             data=xf.Loc.result(INPUT, 0),
             n=N,
             #
-        ))
+        ), only_if=dict(apply=True))
         .add_node(ENCODE, xf.nodes.params.scalar.Scalar(
             v=numpy.ones(1),
         ))
@@ -48,25 +49,26 @@ def test_ppca() -> bool:
             weights=xf.Loc.param(ENCODE, 0),
             factors=xf.Loc.result(ENCODE, 0),
             #
-        ))
+        ), only_if=dict(apply=True))
         .add_node(EM, xf.nodes.pca.vanilla.PPCA_EM(
             sigma=xf.Loc.param(ENCODE, 1),
             weights=xf.Loc.param(ENCODE, 0),
             cov=xf.Loc.result(COV, 0),
-            # random=0.01,
-        ))
+            # noise=0.01,,
+        ), not_if=dict(apply=True))
         .add_constraint(xf.nodes.constraints.linalg.Constraint_Orthonormal(
             data=xf.Loc.param(ENCODE, 0),
+            T=True,
         ))
         .add_constraint(xf.nodes.constraints.em.Constraint_EM(
             param=xf.Loc.param(ENCODE, 0),
             optimal=xf.Loc.result(EM, 0, 0),
-            # cut_tree=True,
+            cut_tree=True,
         ))
         .add_constraint(xf.nodes.constraints.em.Constraint_EM(
             param=xf.Loc.param(ENCODE, 1),
             optimal=xf.Loc.result(EM, 0, 1),
-            # cut_tree=True,
+            cut_tree=True,
         ))
         .init(data)
     )
@@ -95,9 +97,11 @@ def test_ppca() -> bool:
     eigen_vals = eigen_vals[order]
     eigen_vec = eigen_vec[..., order]
     
-    _, eigvecs = numpy.linalg.eig(numpy.cov(
+    eigvals, eigvecs = numpy.linalg.eig(numpy.cov(
         numpy.transpose(data[0].values)
     ))
+    _order = numpy.flip(numpy.argsort(eigvals))[:N]
+    eigvecs = eigvecs[..., _order]
     
     utils.assert_is_close(
         eigen_vec.real[..., :1],

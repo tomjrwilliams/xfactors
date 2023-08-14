@@ -36,7 +36,7 @@ from ... import xfactors as xf
 
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Stack(typing.NamedTuple):
     
     locs: xt.iTuple
@@ -48,7 +48,7 @@ class Stack(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
@@ -56,7 +56,7 @@ class Stack(typing.NamedTuple):
 
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class UnStack(typing.NamedTuple):
     
     loc: xf.Location
@@ -68,7 +68,7 @@ class UnStack(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
@@ -78,7 +78,7 @@ class UnStack(typing.NamedTuple):
 
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Flatten(typing.NamedTuple):
     
     locs: xt.iTuple
@@ -90,12 +90,12 @@ class Flatten(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class UnFlatten(typing.NamedTuple):
     
     loc: xf.Location
@@ -107,7 +107,7 @@ class UnFlatten(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
@@ -118,7 +118,7 @@ class UnFlatten(typing.NamedTuple):
 
 
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class Concatenate(typing.NamedTuple):
     
     locs: xt.iTuple
@@ -130,14 +130,14 @@ class Concatenate(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
 
 # given shape definitions, can slice back out into tuple
 
-@xt.nTuple.decorate()
+@xt.nTuple.decorate(init=xf.init_null)
 class UnConcatenate(typing.NamedTuple):
     
     loc: xf.Location
@@ -149,7 +149,7 @@ class UnConcatenate(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 

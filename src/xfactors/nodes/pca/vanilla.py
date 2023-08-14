@@ -60,13 +60,14 @@ class PCA(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         data = self.data.access(state)
         eigvals, weights = jax.numpy.linalg.eig(jax.numpy.cov(
             jax.numpy.transpose(data)
         ))
-        return eigvals, weights
+        order = numpy.flip(numpy.argsort(eigvals))[:self.n]
+        return eigvals[order], weights[..., order]
 
 # ---------------------------------------------------------------
 
@@ -99,12 +100,12 @@ class PCA_Encoder(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert self.weights is not None
         weights = self.weights.access(state)
         data = self.data.access(state)
-        return jax.numpy.matmul(data, weights),
+        return jax.numpy.matmul(data, weights)
 
 
 
@@ -123,12 +124,12 @@ class PCA_Decoder(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert self.weights is not None
         data = self.factors.access(state)
         weights = self.weights.access(state)
-        return jax.numpy.matmul(weights, data.T),
+        return jax.numpy.matmul(weights, data.T).T
 
 # ---------------------------------------------------------------
 
@@ -145,7 +146,7 @@ class PPCA_NegLikelihood(typing.NamedTuple):
     # NOTE: direct minimisation with gradient descent
     # doesn't seem to recover pca weights
 
-    random: float = 0
+    noise: float = 0.01
 
     # todo put the calc into a class method
     # so can be re-used in rolling
@@ -157,7 +158,7 @@ class PPCA_NegLikelihood(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         # https://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.pdf
 
@@ -173,15 +174,14 @@ class PPCA_NegLikelihood(typing.NamedTuple):
         S = cov
         # d = weights.shape[0] # n_features
 
-        # TODO: implies self site has to be passed...
-        if self.random:
+        if self.noise:
             assert site.loc is not None
             key = xf.get_location(
                 site.loc.as_random(), state
             )
             weights = weights + ((
                 jax.random.normal(key, shape=weights.shape)
-            ) * self.random)
+            ) * self.noise)
     
         W = weights
         
@@ -210,38 +210,8 @@ class PPCA_NegLikelihood(typing.NamedTuple):
         ) / 2
         # so min neg(L)
 
-        return -L,
+        return -L
         
-# ---------------------------------------------------------------
-
-
-@xt.nTuple.decorate(init=xf.init_null)
-class PPCA_Rolling_NegLikelihood(typing.NamedTuple):
-    
-    sigma: xf.Location
-    weights: xf.Location
-    cov: xf.Location
-
-    # ---
-
-    # NOTE: direct minimisation with gradient descent
-    # doesn't seem to recover pca weights
-
-    random: float = 0
-
-    # todo put the calc into a class method
-    # so can be re-used in rolling
-
-    def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PPCA_Rolling_NegLikelihood, tuple, tuple]: ...
-
-    def apply(
-        self,
-        site: xf.Site,
-        state: tuple
-    ) -> typing.Union[tuple, jax.numpy.ndarray]:
-        return ()
 
 # ---------------------------------------------------------------
 
@@ -269,7 +239,7 @@ class PPCA_EM(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: tuple
+        state: xf.State
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         # https://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.pdf
 
@@ -338,7 +308,7 @@ class PPCA_Marginal_Observations(typing.NamedTuple):
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[PPCA_Marginal_Observations, tuple, tuple]: ...
 
-    def apply(self, site: xf.Site, state: tuple):
+    def apply(self, site: xf.Site, state: xf.State):
         # https://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.pdf
 
         sigma = self.sigma.access(state)
@@ -362,7 +332,7 @@ class PPCA_Marginal_Observations(typing.NamedTuple):
 
         dist = distrax.MultivariateNormalFullCovariance(mu, C)
 
-        return dist.log_prob(data),
+        return dist.log_prob(data)
 
 small = 10 ** -4
 
@@ -383,7 +353,7 @@ class PPCA_Conditional_Latents(typing.NamedTuple):
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[PPCA_Conditional_Latents, tuple, tuple]: ...
 
-    def apply(self, site: xf.Site, state: tuple):
+    def apply(self, site: xf.Site, state: xf.State):
         # https://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.pdf
 
         sigma = self.sigma.access(state)
@@ -416,6 +386,6 @@ class PPCA_Conditional_Latents(typing.NamedTuple):
             mm(mm(M_inv, W.T), data - mu),
             sigma_sq * M_inv
         )
-        return dist.log_prob(factors),
+        return dist.log_prob(factors)
 
 # ---------------------------------------------------------------
