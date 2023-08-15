@@ -30,6 +30,7 @@ from . import vanilla
 
 # ---------------------------------------------------------------
 
+small = 10 ** -4
 
 @xt.nTuple.decorate(init=xf.init_null)
 class PCA_Rolling(typing.NamedTuple):
@@ -55,6 +56,49 @@ class PCA_Rolling(typing.NamedTuple):
 
 # ---------------------------------------------------------------
 
+
+@xt.nTuple.decorate(init=xf.init_null)
+class PCA_Rolling_Encoder_Trimmed(typing.NamedTuple):
+    
+    n: int
+    data: xf.Location
+    weights: xf.OptionalLocation = None
+    loadings: xf.OptionalLocation = None
+
+    clamp: float = 1.
+
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[PCA_Rolling_Encoder, tuple, tuple]: ...
+    
+    def apply(
+        self,
+        site: xf.Site,
+        state: xf.State,
+        model: xf.Model,
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
+        assert self.weights is not None
+        assert self.loadings is not None
+        weights = self.weights.access(state)
+        data = self.data.access(state)
+        loadings = xt.iTuple(self.loadings.access(state)).map(
+            lambda v: jax.nn.softmax(v) * self.clamp
+            # unit scale, and then multiply back up to clamp
+            # assume clamp < n_factors
+            # so we essentially turn some off
+        )
+        # w = features, factors
+        # l = factors
+        weights = loadings.zip(weights).mapstar(
+            lambda l, w: jax.numpy.multiply(
+                xf.expand_dims(l, 0, 1), w
+            )
+        )
+        return data.map(
+            jax.numpy.matmul,
+            weights,
+            #
+        )
 
 @xt.nTuple.decorate(init=xf.init_null)
 class PCA_Rolling_Encoder(typing.NamedTuple):
@@ -115,8 +159,6 @@ class PPCA_Rolling_NegLikelihood(typing.NamedTuple):
     
     sigma: xf.Location
     weights: xf.Location
-    # site_encoder: xf.Location
-
     cov: xf.Location
 
     # ---
@@ -132,9 +174,23 @@ class PPCA_Rolling_NegLikelihood(typing.NamedTuple):
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[PPCA_Rolling_NegLikelihood, tuple, tuple]: ...
-
-    def apply(self, state, small = 10 ** -4):
-        return
+    
+    def apply(
+        self,
+        site: xf.Site,
+        state: xf.State,
+        model: xf.Model,
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
+        sigma = self.sigma.access(state)
+        weights = self.weights.access(state)
+        cov = self.cov.access(state)
+        res = xt.ituple(cov).map(
+            vanilla.PPCA_NegLikelihood.f_apply,
+            weights,
+            sigma,
+        )
+        return jax.numpy.vstack(res.pipe(list)).sum()
+        
 
 # ---------------------------------------------------------------
 
@@ -160,7 +216,12 @@ class PPCA_Rolling_EM(typing.NamedTuple):
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[PPCA_Rolling_EM, tuple, tuple]: ...
     
-    def apply(self, state, small = 10 ** -4):
+    def apply(
+        self,
+        site: xf.Site,
+        state: xf.State,
+        model: xf.Model,
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         # https://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.pdf
 
         sigma = self.sigma.access(state)
@@ -229,7 +290,13 @@ class PPCA_Rolling_Marginal_Observations(typing.NamedTuple):
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[PPCA_Rolling_Marginal_Observations, tuple, tuple]: ...
     
-    def apply(self, state, small = 10 ** -4):
+
+    def apply(
+        self,
+        site: xf.Site,
+        state: xf.State,
+        model: xf.Model,
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         # https://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.pdf
 
         sigma = self.sigma.access(state)
@@ -274,7 +341,12 @@ class PPCA_Rolling_Conditional_Latents(typing.NamedTuple):
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[PPCA_Rolling_Conditional_Latents, tuple, tuple]: ...
     
-    def apply(self, state, small = 10 ** -4):
+    def apply(
+        self,
+        site: xf.Site,
+        state: xf.State,
+        model: xf.Model,
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         # https://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.pdf
 
         sigma = self.sigma.access(state)

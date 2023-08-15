@@ -28,6 +28,31 @@ from . import funcs
 # ---------------------------------------------------------------
 
 @xt.nTuple.decorate(init=xf.init_null)
+class Constraint_Eigenvec(typing.NamedTuple):
+    
+    cov: xf.Location
+    weights: xf.Location
+    eigvals: xf.Location
+    T: bool = False
+
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[Constraint_Orthonormal, tuple, tuple]: ...
+
+    def apply(
+        self,
+        site: xf.Site,
+        state: xf.State,
+        model: xf.Model,
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
+        weights = self.weights.access(state)
+        cov = self.cov.access(state)
+        eigvals = self.eigvals.access(state)
+        if self.T:
+            weights = weights.T
+        return funcs.loss_eigenvec(cov, weights, eigvals)
+
+@xt.nTuple.decorate(init=xf.init_null)
 class Constraint_Orthonormal(typing.NamedTuple):
     
     data: xf.Location
@@ -72,6 +97,43 @@ class Constraint_Orthogonal(typing.NamedTuple):
 
 
 @xt.nTuple.decorate(init=xf.init_null)
+class Constraint_VEigenvec(typing.NamedTuple):
+    
+    cov: xf.Location
+    weights: xf.Location
+    eigvals: xf.Location
+    T: bool = False
+
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[Constraint_Orthonormal, tuple, tuple]: ...
+
+    def apply(
+        self,
+        site: xf.Site,
+        state: xf.State,
+        model: xf.Model,
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
+        weights = self.weights.access(state)
+        cov = self.cov.access(state)
+        eigvals = self.eigvals.access(state)
+        if self.T:
+            return jax.numpy.vstack([
+                xt.iTuple(cov).map(
+                    funcs.loss_eigenvec, 
+                    xt.iTuple(weights).map(
+                        lambda v: v.T
+                    ),
+                    eigvals,
+                ).pipe(list)
+            ]).sum()    
+        return jax.numpy.vstack([
+            xt.iTuple(cov).map(
+                funcs.loss_eigenvec, weights, eigvals
+            ).pipe(list)
+        ]).sum()
+
+@xt.nTuple.decorate(init=xf.init_null)
 class Constraint_VOrthogonal(typing.NamedTuple):
     
     data: xf.Location
@@ -89,8 +151,12 @@ class Constraint_VOrthogonal(typing.NamedTuple):
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         X = self.data.access(state)
         if self.T:
-            X = X.T
-        return jax.vmap(funcs.loss_orthogonal)(X).sum()
+            return jax.numpy.vstack([
+                funcs.loss_orthogonal(x.T) for x in X
+            ]).sum()    
+        return jax.numpy.vstack([
+            funcs.loss_orthogonal(x) for x in X
+        ]).sum()
 
 
 @xt.nTuple.decorate(init=xf.init_null)
@@ -111,7 +177,9 @@ class Constraint_VOrthonormal(typing.NamedTuple):
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         X = self.data.access(state)
         if self.T:
-            X = X.T
+            return jax.numpy.vstack([
+                funcs.loss_orthonormal(x.T) for x in X
+            ]).sum()    
         return jax.numpy.vstack([
             funcs.loss_orthonormal(x) for x in X
         ]).sum()

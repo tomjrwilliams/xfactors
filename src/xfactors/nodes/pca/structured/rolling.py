@@ -46,8 +46,8 @@ class PCA_Rolling_LatentWeightedMean_MSE(typing.NamedTuple):
 
     # assume feature * factor minimum
 
+    bias_factor: bool = True
     share_factors: bool = True
-    share_latents: bool = True
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
@@ -56,35 +56,43 @@ class PCA_Rolling_LatentWeightedMean_MSE(typing.NamedTuple):
     def f_apply(
         self, weights_pca, weights_structure, latents, 
     ):
+        # latents = n_latents, n_latent_features
         # weights_pca = features * factors 
-        # weights_structure = n_latents * features
+        # weights_structure = n_latents * n_features
 
         if self.share_factors:
+            #  and not self.bias_factor:
             weights_structure = xf.expand_dims(
-                weights_structure, 0, weights_pca.shape[-1]
+                weights_structure, 0, weights_pca.shape[1]
             )
+        # elif self.share_factors and self.bias_factor:
+        #     dense_features = weights_structure.sum(axis=0)
+        #     weights_structure = jax.numpy.concatenate([
+        #         xf.expand_dims(xf.expand_dims(
+        #             dense_features / dense_features.sum(),
+        #             0,
+        #             weights_structure.shape[0],
+        #         ), 0, 1),
+        #         xf.expand_dims(
+        #             weights_structure, 0, weights_pca.shape[1] - 1
+        #         ),
+        #     ])
+        else:
+            # as this means separate latent_feature * feature weights
+            # per factor
+            assert weights_structure.shape >= 3
 
-        if self.share_latents:
-            weights_structure = xf.expand_dims(
-                weights_structure, 0, latents.shape[0]
-            )
-
-        # n_latents, n_factors, n_features, latent_features
-        weights_structure = jax.numpy.transpose(
-            weights_structure,
-            (0, 3, 2, 1),
-        )
+        # n_latents = n_factors, latent_features, n_features
 
         weights_pca_agg = jax.numpy.multiply(
-            xf.expand_dims(
-                xf.expand_dims(weights_pca, 0, 1), 0, 1
-            ),
-            weights_structure,
-        ).sum(axis=-1).sum(axis=-1)
-        # n_latents, latent_features, factors, features
-        # n_latents, latent_features
+            # features * n_latent_features, n_factors
+            xf.expand_dims(weights_pca, 1, latents.shape[1]),
+            jax.numpy.transpose(weights_structure, (2, 1, 0,))
+            #
+        ).sum(axis=0).T
+        #  latent_features, factors
 
-        return jax.numpy.square(weights_pca_agg - latents).mean()
+        return weights_pca_agg
 
     def apply(
         self,
@@ -96,12 +104,23 @@ class PCA_Rolling_LatentWeightedMean_MSE(typing.NamedTuple):
         latents = self.latents.access(state)
 
         weights_pca = xt.ituple(self.weights_pca.access(state))
-        weights_structure = xt.ituple(self.weights_structure.access(state))
+        weights_structure = self.weights_structure.access(state)
 
         res = weights_pca.map(
             functools.partial(self.f_apply, latents=latents),
             weights_structure,
         )
-        return jax.numpy.vstack(res).mean()
+
+        # alternative is don't fit latents at all
+        # and just minimise the variance per latent_feature per factor
+
+        w_stack = jax.numpy.vstack(res.pipe(list))
+
+        # latent_mu = w_stack.mean(axis=0)
+        # latent_var = jax.numpy.var(w_stack, axis=0)
+        
+        return res, jax.numpy.stack(res.map(
+            lambda v: jax.numpy.square(v - latents).mean()
+        ).pipe(list)).mean()
 
 # ---------------------------------------------------------------

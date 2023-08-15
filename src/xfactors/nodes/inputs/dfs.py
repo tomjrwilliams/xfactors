@@ -361,8 +361,16 @@ class Slice_DataFrame_Wide_Rolling_Columns(typing.NamedTuple):
     
         slicing = self.slicing.access(state)
 
-        rolling_columns = self.rolling.as_model().access(model).node.given_columns
-        slicing_columns = self.slicing.as_model().access(model).node.given_columns
+        rolling_columns = (
+            self.rolling.as_model()
+            .access(model)
+            .node.given_columns
+        )
+        slicing_columns = (
+            self.slicing.as_model()
+            .access(model)
+            .node.given_columns
+        )
 
         vs = rolling_columns.map(
             lambda cs: slicing_columns.enumerate().filterstar(
@@ -374,6 +382,7 @@ class Slice_DataFrame_Wide_Rolling_Columns(typing.NamedTuple):
 
         if self.scale is not None:
             vs = vs.map(self.scale)
+
         if self.T:
             return vs.map(lambda v: v.T)
         return vs

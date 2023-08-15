@@ -84,6 +84,36 @@ class VGaussian(typing.NamedTuple):
         return v
 
 @xt.nTuple.decorate()
+class VOrthogonal(typing.NamedTuple):
+
+    n: int
+    data: xf.Location
+
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[Gaussian, tuple, tuple]:
+        shape = (
+            self.data.access(model).shape.map(
+                lambda s: (s[1], self.n,)
+            )
+        )
+        return self, shape, shape.map(
+            lambda s: utils.rand.orthogonal(s[0])[..., :s[1]]
+        )
+
+    def apply(
+        self,
+        site: xf.Site,
+        state: xf.State,
+        model: xf.Model,
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
+        assert site.loc is not None
+        v = xf.get_location(site.loc.as_param(), state)
+        if site.masked:
+            return v.map(jax.lax.stop_gradient)
+        return v
+
+@xt.nTuple.decorate()
 class ChainGaussian(typing.NamedTuple):
 
     n: int

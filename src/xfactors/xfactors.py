@@ -28,6 +28,7 @@ from . import utils
 
 # ---------------------------------------------------------------
 
+unsqueeze = utils.shapes.unsqueeze
 expand_dims = utils.shapes.expand_dims
 expand_dims_like = utils.shapes.expand_dims_like
 
@@ -276,6 +277,7 @@ def init_stages(
 ) -> tuple[Model, xt.iTuple]:
     """
     >>> Model().init_stages(3)
+    (Model(params=iTuple(), stages=iTuple(Stage(), Stage(), Stage(), Stage()), constraints=iTuple(), n_stages=None), iTuple(0, 1, 2, 3))
     """
     model = xt.iTuple.range(n).map(lambda i: None).fold(
         add_stage, initial=model
@@ -547,6 +549,8 @@ def init_optimisation(
     )
     f_grad = jax.value_and_grad(objective)
 
+    print("Rand init")
+
     tries = 0
     for iter in range(rand_init + 1):
         
@@ -555,6 +559,8 @@ def init_optimisation(
             if params is None
             else model.init(data).params
         ).pipe(to_tuple_rec)
+
+        # TODO: don't re init input / static
 
         _test_loss, test_grad = f_grad(
             _params, rand_keys

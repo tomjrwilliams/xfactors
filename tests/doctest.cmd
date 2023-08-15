@@ -1,1 +1,1 @@
-python -m pytest --doctest-modules ./src
+python -m pytest --doctest-modules --doctest-report none --doctest-continue-on-failure ./src 

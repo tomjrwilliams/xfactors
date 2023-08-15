@@ -5,7 +5,12 @@ import jax
 import jax.numpy
 import jax.numpy.linalg
 
+from ... import xfactors as xf
+
 # ---------------------------------------------------------------
+
+def loss_mabse(l, r):
+    return jax.numpy.abs(jax.numpy.subtract(l, r)).mean()
 
 def loss_mse(l, r):
     return jax.numpy.square(jax.numpy.subtract(l, r)).mean()
@@ -43,5 +48,10 @@ def loss_orthonormal(X):
 def loss_orthogonal(X):
     XXt = jax.numpy.matmul(X, X.T)
     return loss_diag(XXt)
+
+def loss_eigenvec(cov, w, eigvals):
+    cov_w = jax.numpy.matmul(cov, w)
+    w_scale = jax.numpy.multiply(w, xf.expand_dims(eigvals, 0, 1))
+    return loss_mse(cov_w, w_scale)
 
 # ---------------------------------------------------------------

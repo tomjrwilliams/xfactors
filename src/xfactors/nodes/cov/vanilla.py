@@ -56,6 +56,35 @@ class Cov(typing.NamedTuple):
         )
         return res
 
+@xt.nTuple.decorate(init=xf.init_null)
+class VCov(typing.NamedTuple):
+
+    data: xf.Location
+
+    # ---
+
+    random: bool = False
+    static: bool = False
+
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[Cov, tuple, tuple]:
+        vs = self.data.access(model)
+        shape = vs.map(lambda v: v.shape[1]).map(lambda n: (n, n,))
+        return self, shape, ()
+
+    def apply(
+        self,
+        site: xf.Site,
+        state: xf.State,
+        model: xf.Model,
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
+        data = self.data.access(state)
+        res = data.map(lambda vs: jax.numpy.cov(
+            jax.numpy.transpose(vs)
+        ))
+        return res
+        
 # TODO move shrinkage here
 
 # also add cov_with_missing where we have different number of samples not none in a given df

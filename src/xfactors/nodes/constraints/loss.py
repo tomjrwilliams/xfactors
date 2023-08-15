@@ -121,6 +121,26 @@ class Constraint_L1(typing.NamedTuple):
         data = self.data.access(state)
         return jax.numpy.abs(data).mean()
 
+@xt.nTuple.decorate(init=xf.init_null)
+class Constraint_VL1(typing.NamedTuple):
+    
+    data: xf.Location
+
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[Constraint_L1, tuple, tuple]: ...
+    
+    def apply(
+        self,
+        site: xf.Site,
+        state: xf.State,
+        model: xf.Model,
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
+        data = xt.ituple(self.data.access(state))
+        return jax.numpy.vstack(data.map(
+            lambda v: jax.numpy.abs(v).mean()
+        ).pipe(list)).mean()
+
 
 @xt.nTuple.decorate(init=xf.init_null)
 class Constraint_L2(typing.NamedTuple):
@@ -140,6 +160,26 @@ class Constraint_L2(typing.NamedTuple):
         data = self.data.access(state)
         return jax.numpy.square(data).mean()
 
+@xt.nTuple.decorate(init=xf.init_null)
+class Constraint_VL2(typing.NamedTuple):
+    
+    data: xf.Location
+
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[Constraint_L2, tuple, tuple]: ...
+    
+    def apply(
+        self,
+        site: xf.Site,
+        state: xf.State,
+        model: xf.Model,
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
+        data = xt.ituple(self.data.access(state))
+        return jax.numpy.vstack(data.map(
+            lambda v: jax.numpy.square(v).mean()
+        ).pipe(list)).mean()
+
 
 @xt.nTuple.decorate(init=xf.init_null)
 class Constraint_ElasticNet(typing.NamedTuple):
@@ -158,6 +198,49 @@ class Constraint_ElasticNet(typing.NamedTuple):
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
+# ---------------------------------------------------------------
+
+@xt.nTuple.decorate(init=xf.init_null)
+class Constraint_MAbsE(typing.NamedTuple):
+    
+    l: xf.Location
+    r: xf.Location
+
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[Constraint_MSE, tuple, tuple]: ...
+
+    def apply(
+        self,
+        site: xf.Site,
+        state: xf.State,
+        model: xf.Model,
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
+        l = self.l.access(state)
+        r = self.r.access(state)
+        return funcs.loss_mabse(l, r)
+
+@xt.nTuple.decorate(init=xf.init_null)
+class Constraint_VMAbsE(typing.NamedTuple):
+    
+    l: xf.Location
+    r: xf.Location
+
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[Constraint_MSE, tuple, tuple]: ...
+
+    def apply(
+        self,
+        site: xf.Site,
+        state: xf.State,
+        model: xf.Model,
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
+        l = self.l.access(state)
+        r = self.r.access(state)
+        return jax.numpy.vstack(
+            xt.ituple(l).map(funcs.loss_mabse, r).pipe(list)
+        ).mean()
 # ---------------------------------------------------------------
 
 @xt.nTuple.decorate(init=xf.init_null)

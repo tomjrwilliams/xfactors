@@ -86,6 +86,34 @@ class Gaussian(typing.NamedTuple):
             return jax.lax.stop_gradient(v)
         return v
 
+@xt.nTuple.decorate()
+class VGaussian(typing.NamedTuple):
+
+    data: xf.Location
+    shape: tuple
+
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[Gaussian, tuple, tuple]:
+        data = self.data.access(model)
+        return self, (
+            data.shape.map(lambda _: self.shape)
+        ), (
+            data.shape.map(lambda _: utils.rand.gaussian(self.shape))
+        )
+
+    def apply(
+        self,
+        site: xf.Site,
+        state: xf.State,
+        model: xf.Model,
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
+        assert site.loc is not None
+        
+        v = xf.get_location(site.loc.as_param(), state)
+        if site.masked:
+            return v.map(jax.lax.stop_gradient)
+        return v
 
 @xt.nTuple.decorate()
 class GaussianSoftmax(typing.NamedTuple):

@@ -158,40 +158,16 @@ class PPCA_NegLikelihood(typing.NamedTuple):
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[PPCA_NegLikelihood, tuple, tuple]: ...
 
-    def apply(
-        self,
-        site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
-    ) -> typing.Union[tuple, jax.numpy.ndarray]:
-        # https://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.pdf
-
-        sigma = self.sigma.access(state)
+    @classmethod
+    def f_apply(
+        cls, S, W, sigma
+    ):
+        
         sigma_sq = jax.numpy.square(sigma)
 
-        weights = self.weights.access(state)
-        cov = self.cov.access(state) # of obs
-    
-        # N = xf.get_location(self.site_encoder, state).shape[0]
-
-        # feature * feature
-        S = cov
-        # d = weights.shape[0] # n_features
-
-        if self.noise:
-            assert site.loc is not None
-            key = xf.get_location(
-                site.loc.as_random(), state
-            )
-            weights = weights + ((
-                jax.random.normal(key, shape=weights.shape)
-            ) * self.noise)
-    
-        W = weights
-        
-        noise = jax.numpy.eye(weights.shape[0]) * sigma_sq
+        noise = jax.numpy.eye(W.shape[0]) * sigma_sq
         C = jax.numpy.add(
-            jax.numpy.matmul(weights, weights.T),
+            jax.numpy.matmul(W, W.T),
             noise
         )
         # noise = jax.numpy.eye(weights.shape[1]) * sigma_sq
@@ -215,6 +191,38 @@ class PPCA_NegLikelihood(typing.NamedTuple):
         # so min neg(L)
 
         return -L
+
+    def apply(
+        self,
+        site: xf.Site,
+        state: xf.State,
+        model: xf.Model,
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
+        # https://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.pdf
+
+        sigma = self.sigma.access(state)
+
+        weights = self.weights.access(state)
+        cov = self.cov.access(state) # of obs
+    
+        # N = xf.get_location(self.site_encoder, state).shape[0]
+
+        # feature * feature
+        S = cov
+        # d = weights.shape[0] # n_features
+
+        if self.noise:
+            assert site.loc is not None
+            key = xf.get_location(
+                site.loc.as_random(), state
+            )
+            weights = weights + ((
+                jax.random.normal(key, shape=weights.shape)
+            ) * self.noise)
+    
+        W = weights
+
+        return self.f_apply(S, W, sigma)
         
 
 # ---------------------------------------------------------------

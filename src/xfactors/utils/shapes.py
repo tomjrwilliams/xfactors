@@ -1,4 +1,4 @@
-
+import functools
 import jax
 
 # ---------------------------------------------------------------
@@ -30,4 +30,8 @@ def expand_dims_like(v, axis, like):
         ])
     )
     
+unsqueeze = functools.partial(
+    expand_dims, axis=0, size=1,
+)
+
 # ---------------------------------------------------------------
