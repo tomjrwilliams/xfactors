@@ -181,3 +181,75 @@ def returns_df(
                 res[ticker] = df[ticker]
 
     return pandas.DataFrame(res)
+
+# ---------------------------------------------------------------
+
+# given name load from relevant path given below
+def get_curve(
+
+):
+    return
+
+
+
+def save_curve(
+    curve,
+    date_start=datetime.date(2005, 1, 1), 
+    date_end=datetime.date(2023, 4, 1), 
+    dp ="./__local__/csvs/curves",
+    dp_raw = "./__local__/csvs/curve_raw",
+):
+
+    name = curve.split(" ")[0]
+    fp = dp + "/{}.csv.zip".format(name)
+    if pathlib.Path(fp).exists():
+        print("Done:", fp)
+        return
+    
+    rs = data.id_multi_joins.curve_bbg_ticker_bbg.int.get_yields_by_tenor(
+        curve,
+        date_start,
+        date_end,
+        print_every=10,
+    ).map(
+        lambda r: [
+            {
+                "tenor": k,
+                "date": r["date"].isoformat(),
+                "yield": v["yield_mid"]
+            } for k, v in r["yields"].items()
+        ]
+    )
+
+    df = pandas.DataFrame(rs.flatten()).set_index("date")
+    df.to_csv(
+        fp,
+        compression="zip",
+    )
+
+    # fp = dp_raw + "/{}/data.csv".format(name)
+    # pathlib.Path(fp).parent.mkdir(exist_ok=True, parents=True)
+
+    # i = 0
+
+    # with open(fp, 'w+') as csvfile:
+    #     fieldnames = ["tenor", "date", "yield"]
+    #     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+    #     writer.writeheader()
+    #     for g in rs:
+    #         for r in g:
+    #             writer.write_row(r)
+    #             i += 1
+
+    #             if i % 1000 == 0:
+    #                 print(i)
+
+    # dir_name = dp_raw + "/{}".format(name)
+
+    # output_name = dp + "/{}_archive".format(name)
+    
+    # print("Zipping")
+    # shutil.make_archive(output_name, 'zip', dir_name)
+
+    return fp

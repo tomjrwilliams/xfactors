@@ -37,7 +37,7 @@ from . import weights
 
 # 
 
-def long_short_trend(
+def ls_equity_signal(
     df_returns,
     dfs_indices,
     universe_name,
@@ -46,11 +46,11 @@ def long_short_trend(
     top_n=None,
     shift="2D",
     flip=False,
-    kwargs=None,
-    combine=True,
     signal_name="signal",
     f_signal=None,
     frequency=bt.algos.RunDaily(),
+    combine=True,
+    kwargs=None,
     **strat_kwargs,
 ):
     #
@@ -93,7 +93,7 @@ def long_short_trend(
     return backtests.long_short(
         acc,
         dfs_indices,
-        name="ewma({})({}, {}, z={}{})".format(
+        name="ewm({})({}, {}, z={}{})".format(
             round(alpha, 3),
             universe_name,
             type(frequency).__name__,

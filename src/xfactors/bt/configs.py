@@ -1,4 +1,8 @@
 
+import xtuples as xt
+
+# ---------------------------------------------------------------
+
 INDICES_OLD = [
     "CAC Index",
     "DAX Index",
@@ -16,14 +20,14 @@ INDICES_OLD = [
     "OBX Index",
 ]
 
-INDICES = core.Array(INDICES_OLD + [
+INDICES = xt.iTuple(INDICES_OLD + [
     # "SXXP Index",
     # "SPX Index",
     "SX5E Index",
     "SX7E Index",
 ])
 
-INDICES_MAJOR = core.Array([
+INDICES_MAJOR = xt.iTuple([
 
     "SX5E Index",
     "SX7E Index",
@@ -38,8 +42,10 @@ INDICES_MAJOR = core.Array([
 ])
 
 
+# ---------------------------------------------------------------
 
-GICS_BREAKDOWN = core.Array([
+
+GICS_BREAKDOWN = xt.iTuple([
     #energy
     "10",
     # energy
@@ -129,3 +135,71 @@ GICS_BREAKDOWN = core.Array([
 
 GICS_SECTORS = GICS_BREAKDOWN.filter(lambda s: len(s) == 2).map(lambda s: "GICS {}".format(s))
 GICS_INDUSTRY_GROUPS = GICS_BREAKDOWN.filter(lambda s: len(s) > 2).map(lambda s: "GICS {}".format(s))
+
+# ---------------------------------------------------------------
+
+curves = [
+    # USD
+    "YCSW0023 Index",
+    "YCGT0025 Index",
+    "YCGT0169 Index",
+    # # EUR
+    "YCSW0045 Index",
+    "YCSW0092 Index",
+    # USD CORP IG CUrve
+    "BVSC0076 Index",
+    # AA
+    "BVSC0073 Index",
+    # A
+    "BVSC0074 Index",
+    # bbb
+    "BVSC0075 Index",
+    # bb
+    "BVSC0193 Index",
+    # b
+    "BVSC0195 Index",
+    # EUR
+    # aa
+    "BVSC0165 Index",
+    # a
+    "BVSC0077 Index",
+    # bbb
+    "BVSC0166 Index",
+    # JP
+    # aa
+    "BVSC0153 Index",
+    # a
+    "BVSC0154 Index",
+    # # DE
+    "YCGT0016 Index",
+    # # FR
+    "YCGT0014 Index",
+    # # JP
+    "YCGT0018 Index",
+    "YCSW0097 Index",
+    "YCGT0385 Index",
+    # # UK
+    "YCGT0022 Index",
+    "YCSW0022 Index",
+    # # AU
+    "YCGT0001 Index",
+    "YCSW0001 Index",
+    "YCGT0204 Index",
+    # # IT
+    "YCGT0040 Index",
+    "YCGT0331 Index",
+    # # CA
+    "YCGT0007 Index",
+    # # CN
+    "YCGT0299 Index",
+    # # SP
+    "YCGT0061 Index",
+    # # SW
+    "YCGT0082 Index",
+    # # SE
+    "YCGT0021 Index",
+    # NZ
+    "YCGT0049 Index",
+]
+
+# ---------------------------------------------------------------
