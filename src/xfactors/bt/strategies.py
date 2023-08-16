@@ -93,7 +93,7 @@ def ls_equity_signal(
     return backtests.long_short(
         acc,
         dfs_indices,
-        name="ewm({})({}, {}, z={}{})".format(
+        name="ewm({})({}, {}, z={}{}{})".format(
             round(alpha, 3),
             universe_name,
             type(frequency).__name__,
@@ -102,6 +102,15 @@ def ls_equity_signal(
                 "" if f_signal is None else ", f={}".format(
                     f_signal.__name__
                 )
+            ),
+            (
+                "" if not (
+                    "long" in kwargs or "short" in kwargs
+                ) else ", ".join([
+                    "{}={}".format(k, v)
+                    for k, v in kwargs.items()
+                    if k in ["long", "short"]
+                ])
             )
         ),
         strat_kwargs=strat_kwargs,
