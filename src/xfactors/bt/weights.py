@@ -463,14 +463,14 @@ def ls_weights(
         signal_dfs = {None: signal_dfs}
         add = True
 
-    if isinstance(signal_dfs, dict):
-        equal = {} if equal is None else equal
-        linear = {} if linear is None else linear
-        softmax = {} if softmax is None else softmax
-        proportional = {} if proportional is None else proportional
-        inv = {} if inv is None else inv
-        gross = {} if gross is None else gross
-        top = {} if top is None else top
+    # if isinstance(signal_dfs, dict):
+    #     equal = {} if equal is None else equal
+    #     linear = {} if linear is None else linear
+    #     softmax = {} if softmax is None else softmax
+    #     proportional = {} if proportional is None else proportional
+    #     inv = {} if inv is None else inv
+    #     gross = {} if gross is None else gross
+    #     top = {} if top is None else top
 
     # weight_kws = {
     #     signal: dict(
