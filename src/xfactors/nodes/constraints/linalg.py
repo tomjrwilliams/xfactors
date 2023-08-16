@@ -37,7 +37,7 @@ class Constraint_Eigenvec(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Constraint_Orthonormal, tuple, tuple]: ...
+    ) -> tuple[Constraint_Orthonormal, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -60,7 +60,7 @@ class Constraint_Orthonormal(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Constraint_Orthonormal, tuple, tuple]: ...
+    ) -> tuple[Constraint_Orthonormal, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -82,7 +82,7 @@ class Constraint_Orthogonal(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Constraint_Orthogonal, tuple, tuple]: ...
+    ) -> tuple[Constraint_Orthogonal, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -106,7 +106,7 @@ class Constraint_VEigenvec(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Constraint_Orthonormal, tuple, tuple]: ...
+    ) -> tuple[Constraint_Orthonormal, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -141,7 +141,7 @@ class Constraint_VOrthogonal(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Constraint_VOrthogonal, tuple, tuple]: ...
+    ) -> tuple[Constraint_VOrthogonal, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -167,7 +167,7 @@ class Constraint_VOrthonormal(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Constraint_VOrthonormal, tuple, tuple]: ...
+    ) -> tuple[Constraint_VOrthonormal, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -194,7 +194,7 @@ class Constraint_VDiagonal(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Constraint_VDiagonal, tuple, tuple]: ...
+    ) -> tuple[Constraint_VDiagonal, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -216,7 +216,7 @@ class Constraint_XXt_Cov(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Constraint_XXt_Cov, tuple, tuple]: ...
+    ) -> tuple[Constraint_XXt_Cov, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -245,7 +245,7 @@ class Constraint_EigenVLike(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Constraint_EigenVLike, tuple, tuple]: ...
+    ) -> tuple[Constraint_EigenVLike, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -287,7 +287,7 @@ class Constraint_L1_MM_Diag(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Constraint_L1_MM_Diag, tuple, tuple]: ...
+    ) -> tuple[Constraint_L1_MM_Diag, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -313,7 +313,7 @@ class Constraint_KernelVsCov(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Constraint_KernelVsCov, tuple, tuple]: ...
+    ) -> tuple[Constraint_KernelVsCov, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -342,7 +342,7 @@ class Constraint_MinimiseMMSpread(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Constraint_MinimiseMMSpread, tuple, tuple]: ...
+    ) -> tuple[Constraint_MinimiseMMSpread, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -374,7 +374,7 @@ class Constraint_MinimiseVariance(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Constraint_MinimiseVariance, tuple, tuple]: ...
+    ) -> tuple[Constraint_MinimiseVariance, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -397,7 +397,7 @@ class Constraint_MinimiseZSpread(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Constraint_MinimiseZSpread, tuple, tuple]: ...
+    ) -> tuple[Constraint_MinimiseZSpread, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -423,7 +423,7 @@ class Constraint_MaxSpread(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Constraint_MaxSpread, tuple, tuple]: ...
+    ) -> tuple[Constraint_MaxSpread, tuple, xf.SiteValue]: ...
 
     def apply(
         self,

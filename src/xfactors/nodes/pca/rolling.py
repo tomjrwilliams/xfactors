@@ -40,7 +40,7 @@ class PCA_Rolling(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PCA_Rolling, tuple, tuple]: ...
+    ) -> tuple[PCA_Rolling, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -69,7 +69,7 @@ class PCA_Rolling_Encoder_Trimmed(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PCA_Rolling_Encoder, tuple, tuple]: ...
+    ) -> tuple[PCA_Rolling_Encoder, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -109,7 +109,7 @@ class PCA_Rolling_Encoder(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PCA_Rolling_Encoder, tuple, tuple]: ...
+    ) -> tuple[PCA_Rolling_Encoder, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -136,7 +136,7 @@ class PCA_Rolling_Decoder(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PCA_Rolling_Decoder, tuple, tuple]: ...
+    ) -> tuple[PCA_Rolling_Decoder, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -173,7 +173,7 @@ class PPCA_Rolling_NegLikelihood(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PPCA_Rolling_NegLikelihood, tuple, tuple]: ...
+    ) -> tuple[PPCA_Rolling_NegLikelihood, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -214,7 +214,7 @@ class PPCA_Rolling_EM(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PPCA_Rolling_EM, tuple, tuple]: ...
+    ) -> tuple[PPCA_Rolling_EM, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -288,7 +288,7 @@ class PPCA_Rolling_Marginal_Observations(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PPCA_Rolling_Marginal_Observations, tuple, tuple]: ...
+    ) -> tuple[PPCA_Rolling_Marginal_Observations, tuple, xf.SiteValue]: ...
     
 
     def apply(
@@ -339,7 +339,7 @@ class PPCA_Rolling_Conditional_Latents(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PPCA_Rolling_Conditional_Latents, tuple, tuple]: ...
+    ) -> tuple[PPCA_Rolling_Conditional_Latents, tuple, xf.SiteValue]: ...
     
     def apply(
         self,

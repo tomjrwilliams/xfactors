@@ -8,7 +8,7 @@ from . import shapes
 
 # context generator for key scope
 
-KEYS = {}
+KEYS: dict = {}
 
 def next_key(seed = 69):
     if KEYS.get(seed, None) is None:

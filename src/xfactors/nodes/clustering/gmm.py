@@ -42,7 +42,7 @@ class GMM(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[GMM, tuple, tuple]: ...
+    ) -> tuple[GMM, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -75,7 +75,7 @@ class BGMM_EM(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[BGMM_EM, tuple, tuple]: ...
+    ) -> tuple[BGMM_EM, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -105,8 +105,8 @@ class BGMM_EM(typing.NamedTuple):
         
         if self.noise:
             assert site.loc is not None
-            key = xf.get_location(
-                site.loc.as_random(), state
+            key = site.loc.as_random().access(
+                state, into=jax.numpy.array
             )
             noise = ((
                 jax.random.normal(key, shape=cov.shape[:-1])

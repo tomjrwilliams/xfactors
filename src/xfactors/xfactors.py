@@ -51,15 +51,22 @@ def follow_path(path, acc):
         lambda acc, i: acc[i], initial=acc
     )
 
+
 def get_location(
     loc: typing.Optional[Location], 
     acc: typing.Union[State, Model],
-):
+    into: typing.Optional[typing.Type[LocationValue]] = None,
+) -> LocationValue:
     assert loc is not None
     try:
-        return follow_path(loc.path, acc[(
+        res = follow_path(loc.path, acc[(
             RESULT if loc.domain is None else loc.domain
         )])
+        if into is not None:
+            if issubclass(into, xt.iTuple):
+                res = xt.iTuple(res)
+            assert isinstance(res, into)
+        return res
     except:
         assert False, loc
 
@@ -150,7 +157,7 @@ class Node(typing.Protocol):
         site: Site,
         model: Model,
         data: tuple,
-    ) -> tuple[NodeClass, tuple, tuple]:
+    ) -> tuple[NodeClass, tuple, SiteValue]:
         ...
 
     @abc.abstractmethod
@@ -168,7 +175,7 @@ NodeClass = typing.TypeVar("NodeClass", bound=Node)
 
 def init_null(
     self, site: Site, model: Model, data: tuple
-) -> tuple[Node, tuple, tuple]:
+) -> tuple[Node, tuple, SiteValue]:
     return self, (), ()
 
 # ---------------------------------------------------------------
@@ -224,17 +231,23 @@ class Site(typing.NamedTuple):
         self,
         state: State,
         model: Model,
-    ) -> typing.Union[tuple, jax.numpy.ndarray]:
+    ) -> typing.Union[SiteValue, float]:
         if self.masked:
             return self.if_not
         return self.node.apply(self, state, model)
 
     # state or Model?
-    def access(self, blob: typing.Union[State, Model]):
+    def access(
+        self, 
+        blob: typing.Union[State, Model],
+        into: typing.Optional[typing.Type[LocationValue]] = None
+    ):
         assert self.loc is not None
-        return self.loc.access(blob)
+        return self.loc.access(blob, into=into)
 
 OptionalSite = typing.Optional[Site]
+SiteValue = typing.Union[tuple, xt.iTuple, jax.numpy.ndarray]
+LocationValue = typing.Union[Site, SiteValue]
 
 # ---------------------------------------------------------------
 

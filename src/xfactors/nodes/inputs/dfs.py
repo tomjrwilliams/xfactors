@@ -149,7 +149,7 @@ class Input_DataFrame_Wide(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Input_DataFrame_Wide, tuple, tuple]:
+    ) -> tuple[Input_DataFrame_Wide, tuple, xf.SiteValue]:
         assert site.loc is not None
         # path[0] = stage, so path[1] = index of data element
 
@@ -261,7 +261,7 @@ class Input_DataFrame_Wide_Rolling(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Input_DataFrame_Wide, tuple, tuple]:
+    ) -> tuple[Input_DataFrame_Wide_Rolling, tuple, xf.SiteValue]:
         assert site.loc is not None
         # path[0] = stage, so path[1] = index of data element
 
@@ -350,7 +350,7 @@ class Slice_DataFrame_Wide_Rolling_Columns(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Input_DataFrame_Tall, tuple, tuple]: ... 
+    ) -> tuple[Input_DataFrame_Tall, tuple, xf.SiteValue]: ... 
     
     def apply(
         self,
@@ -396,7 +396,7 @@ class Input_DataFrame_Tall(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Input_DataFrame_Tall, tuple, tuple]:
+    ) -> tuple[Input_DataFrame_Tall, tuple, xf.SiteValue]:
         assert site.loc is not None
         # path[0] = stage, so path[1] = index of data element
         return self, data[site.loc.path[1]].values.shape, ()

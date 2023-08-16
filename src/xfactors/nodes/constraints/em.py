@@ -38,7 +38,7 @@ class Constraint_EM(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Constraint_EM, tuple, tuple]: ...
+    ) -> tuple[Constraint_EM, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -68,7 +68,7 @@ class Constraint_EM_MatMul(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Constraint_EM_MatMul, tuple, tuple]: ...
+    ) -> tuple[Constraint_EM_MatMul, tuple, xf.SiteValue]: ...
     
     def apply(
         self,

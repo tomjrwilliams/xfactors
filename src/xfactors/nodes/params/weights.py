@@ -36,9 +36,9 @@ class Gaussian(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Gaussian, tuple, tuple]:
+    ) -> tuple[Gaussian, tuple, xf.SiteValue]:
         shape = (
-            self.data.access(model).shape[1],
+            self.data.access(model, into=xf.Site).shape[1],
             self.n,
         )
         return self, shape, utils.rand.gaussian(shape)
@@ -50,7 +50,7 @@ class Gaussian(typing.NamedTuple):
         model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
-        v = xf.get_location(site.loc.as_param(), state)
+        v = site.loc.as_param().access(state)
         if site.masked:
             return jax.lax.stop_gradient(v)
         return v
@@ -63,7 +63,7 @@ class VGaussian(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Gaussian, tuple, tuple]:
+    ) -> tuple[VGaussian, tuple, xf.SiteValue]:
         shape = (
             self.data.access(model).shape.map(
                 lambda s: (s[1], self.n,)
@@ -78,7 +78,7 @@ class VGaussian(typing.NamedTuple):
         model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
-        v = xf.get_location(site.loc.as_param(), state)
+        v = site.loc.as_param().access(state, into=xt.iTuple)
         if site.masked:
             return v.map(jax.lax.stop_gradient)
         return v
@@ -91,11 +91,11 @@ class VOrthogonal(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Gaussian, tuple, tuple]:
-        shape = (
-            self.data.access(model).shape.map(
-                lambda s: (s[1], self.n,)
-            )
+    ) -> tuple[VOrthogonal, tuple, xf.SiteValue]:
+        shape = xt.iTuple(
+            self.data.access(model, into=xf.Site).shape
+        ).map(
+            lambda s: (s[1], self.n,)
         )
         return self, shape, shape.map(
             lambda s: utils.rand.orthogonal(s[0])[..., :s[1]]
@@ -108,21 +108,23 @@ class VOrthogonal(typing.NamedTuple):
         model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
-        v = xf.get_location(site.loc.as_param(), state)
+        v = site.loc.as_param().access(state)
         if site.masked:
             return v.map(jax.lax.stop_gradient)
         return v
 
 @xt.nTuple.decorate()
-class ChainGaussian(typing.NamedTuple):
+class ConcatenateGaussian(typing.NamedTuple):
 
     n: int
     data: xt.iTuple
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Gaussian, tuple, tuple]:
-        data = self.data.map(lambda s: s.access(model))
+    ) -> tuple[ConcatenateGaussian, tuple, xf.SiteValue]:
+        data = self.data.map(
+            lambda s: s.access(model, into=xf.Site).shape
+        )
         shape = data.flatten()
         return self, shape, utils.rand.gaussian(shape)
 
@@ -133,7 +135,7 @@ class ChainGaussian(typing.NamedTuple):
         model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
-        v = xf.get_location(site.loc.as_param(), state)
+        v = site.loc.as_param().access(state)
         if site.masked:
             return jax.lax.stop_gradient(v)
         return v

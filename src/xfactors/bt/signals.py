@@ -1,10 +1,30 @@
 
+from __future__ import annotations
+
+import functools
+import itertools
+
+import typing
+import dataclasses
+
 import datetime
 
 import numpy
 import pandas
 
+import pathlib
+
+import scipy.stats
+
+import ffn
+import bt
+
+import xtuples as xt
+# import xtenors
+
 from .. import utils
+
+# ---------------------------------------------------------------
 
 # performance assuming weights at date: offset = 0
 
@@ -12,13 +32,6 @@ from .. import utils
 # d-1 we get data
 # d we make trade
 # d+1 we get performance
-
-def shift_weights(df_ws, shift):
-    units = shift[-1]
-    periods = int(shift[:-1])
-    return df_ws.shift(
-        periods=periods, freq=units, fill_value=0
-    )
 
 def example_dfs():
     """
@@ -64,32 +77,47 @@ def df_factor_return(df_rs, df_ws, shift = "1D", cum = False):
     dtype: float64
     """
     df_wrs = df_rs.multiply(
-        shift_weights(df_ws, shift)
+        utils.dfs.shift(df_ws, shift)
     ).sum(axis=1)
     if cum:
         return (1 + df_wrs).cumprod()
     return df_wrs
 
-def df_factor_trend(
-    df_factor, alpha=2 / 30, z = False
+def df_ewm(
+    df_returns, alpha=2 / 30, z = False
 ):
     """
-    >>> df_factor_trend(df_factor_return(*example_dfs()))
+    >>> df_ewm(df_factor_return(*example_dfs()))
     2020-01-01    0.000000
     2020-01-02    0.103448
     2020-01-03    0.030903
     2020-01-04    0.022361
     dtype: float64
     """
-    ewm = df_factor.ewm(alpha=alpha)
-    if z:
+    ewm = df_returns.ewm(alpha=alpha)
+    if isinstance(z, float):
+        return ewm.mean() / df_returns.ewm(alpha=z).std()
+    elif z:
         return ewm.mean() / ewm.std()
     return ewm.mean()
+
+def df_markov_factor_ewm(
+
+):
+    # rolling trend signal
+    # for portfolio as of weights at each date
+    # ran backward from that date
+
+    # ie. we assume the 'factor' has no sense of history
+    # beyond the weights it currently has
+
+    return
 
 # NOTE: momentum: given factor trend (> threshold), forward return prediction is positive
 
 # NOTE: reversion, given factor trend (> threshold), forward return prediction is negative
 
+# df_factor = returns
 def df_factor_betas(
     df_factor, df_rs, alpha = 2 / 30, z = False
 ):
@@ -109,9 +137,25 @@ def df_factor_betas(
     })
     df_var = df_factor_ewm.var()
     df_betas = df_cov.divide(df_var, axis = 0) 
-    if z:
+    if isinstance(z, float):
+        return df_betas / df_betas.ewm(alpha=z).std()
+    elif z:
         return df_betas / df_betas.ewm(alpha=alpha).std()
     return df_betas
+
+# eg. rolling pca
+# where no guarantee pcx is consistent between windows
+def df_markov_factor_betas(
+
+):
+    # rolling betas treating the factor
+    # as nothing more than current weights
+    # so no sense of history beyond those weights
+
+    # so beta is to a separate return history per weight change
+    # rolling
+
+    return
 
 # ie. factor spread
 # pass in alpha to take rolling mean
@@ -142,6 +186,22 @@ def df_factor_deltas(
     if cum:
         return (1 + df_deltas).cumprod()
     ewm = df_deltas.ewm(alpha=alpha)
-    if z:
+    if isinstance(z, float):
+        return ewm.mean() / df_deltas.ewm(alpha=z).std()
+    elif z:
         return ewm.mean() / ewm.std()
     return ewm.mean()
+
+def df_markov_factor_deltas(
+
+):
+    # rolling betas treating the factor
+    # as nothing more than current weights
+    # so no sense of history beyond those weights
+
+    # so beta is to a separate return history per weight change
+    # rolling
+
+    return
+
+# ---------------------------------------------------------------

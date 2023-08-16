@@ -46,7 +46,7 @@ class Kernel_Sum(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Kernel_Sum, tuple, tuple]: ...
+    ) -> tuple[Kernel_Sum, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -68,7 +68,7 @@ class Kernel_Product(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Kernel_Product, tuple, tuple]: ...
+    ) -> tuple[Kernel_Product, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -89,7 +89,7 @@ class Kernel_Constant(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Kernel_Constant, tuple, tuple]: ...
+    ) -> tuple[Kernel_Constant, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -113,7 +113,7 @@ class Kernel_Linear(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Kernel_Linear, tuple, tuple]: ...
+    ) -> tuple[Kernel_Linear, tuple, xf.SiteValue]: ...
     
     @classmethod
     def f(cls, features_l, features_r, sigma, l):
@@ -144,7 +144,7 @@ class Kernel_Gaussian(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Kernel_Gaussian, tuple, tuple]: ...
+    ) -> tuple[Kernel_Gaussian, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -173,7 +173,7 @@ class Kernel_RBF(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Kernel_RBF, tuple, tuple]: ...
+    ) -> tuple[Kernel_RBF, tuple, xf.SiteValue]: ...
     
     @classmethod
     def f(cls, features_l, features_r, sigma, l):
@@ -205,7 +205,7 @@ class Kernel_Sigmoid(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Kernel_Sigmoid, tuple, tuple]: ...
+    ) -> tuple[Kernel_Sigmoid, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -226,7 +226,7 @@ class Kernel_SquaredExp(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Kernel_SquaredExp, tuple, tuple]: ...
+    ) -> tuple[Kernel_SquaredExp, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -245,7 +245,7 @@ class Kernel_OU(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Kernel_OU, tuple, tuple]: ...
+    ) -> tuple[Kernel_OU, tuple, xf.SiteValue]: ...
     
     @classmethod
     def f(cls, features_l, features_r, sigma, l):
@@ -275,7 +275,7 @@ class Kernel_RationalQuadratic(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Kernel_RationalQuadratic, tuple, tuple]: ...
+    ) -> tuple[Kernel_RationalQuadratic, tuple, xf.SiteValue]: ...
     
     def apply(
         self,

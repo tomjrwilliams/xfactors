@@ -4,6 +4,21 @@ import numpy
 
 # ---------------------------------------------------------------
 
+def shift(df, shift, fill = numpy.NaN):
+    if shift is None:
+        return df
+    units = shift[-1]
+    periods = int(shift[:-1])
+    assert units == "D", shift # else we gotta get fancy
+    return pandas.DataFrame(
+        numpy.concatenate([
+            numpy.ones((periods, len(df.columns,))) * fill,
+            df.values[periods:]
+        ], axis = 0),
+        index=df.index,
+        columns=df.columns,
+    )
+
 def merge_indices(dfs):
     index = dfs[0].index
     for df in dfs[1:]:

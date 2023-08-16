@@ -34,7 +34,7 @@ class Constraint_Maximise(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Constraint_Maximise, tuple, tuple]: ...
+    ) -> tuple[Constraint_Maximise, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -53,7 +53,7 @@ class Constraint_Minimise(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Constraint_Minimise, tuple, tuple]: ...
+    ) -> tuple[Constraint_Minimise, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -72,7 +72,7 @@ class Constraint_MinimiseSquare(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Constraint_MinimiseSquare, tuple, tuple]: ...
+    ) -> tuple[Constraint_MinimiseSquare, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -92,7 +92,7 @@ class Constraint_L0(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Constraint_L0, tuple, tuple]: ...
+    ) -> tuple[Constraint_L0, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -110,7 +110,7 @@ class Constraint_L1(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Constraint_L1, tuple, tuple]: ...
+    ) -> tuple[Constraint_L1, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -128,7 +128,7 @@ class Constraint_VL1(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Constraint_L1, tuple, tuple]: ...
+    ) -> tuple[Constraint_L1, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -149,7 +149,7 @@ class Constraint_L2(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Constraint_L2, tuple, tuple]: ...
+    ) -> tuple[Constraint_L2, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -167,7 +167,7 @@ class Constraint_VL2(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Constraint_L2, tuple, tuple]: ...
+    ) -> tuple[Constraint_L2, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -188,7 +188,7 @@ class Constraint_ElasticNet(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Constraint_ElasticNet, tuple, tuple]: ...
+    ) -> tuple[Constraint_ElasticNet, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -208,7 +208,7 @@ class Constraint_MAbsE(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Constraint_MSE, tuple, tuple]: ...
+    ) -> tuple[Constraint_MSE, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -228,7 +228,7 @@ class Constraint_VMAbsE(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Constraint_MSE, tuple, tuple]: ...
+    ) -> tuple[Constraint_MSE, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -251,7 +251,7 @@ class Constraint_MSE(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Constraint_MSE, tuple, tuple]: ...
+    ) -> tuple[Constraint_MSE, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -271,7 +271,7 @@ class Constraint_VMSE(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Constraint_MSE, tuple, tuple]: ...
+    ) -> tuple[Constraint_MSE, tuple, xf.SiteValue]: ...
 
     def apply(
         self,

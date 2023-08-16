@@ -37,7 +37,7 @@ class Weights_Constant(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Weights_Constant, tuple, tuple]: ...
+    ) -> tuple[Weights_Constant, tuple, xf.SiteValue]: ...
     
     def init_params(self, model, params):
         return self, jax.numpy.ones(self.shape) * self.v
@@ -52,7 +52,7 @@ class Weights_Normal(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Weights_Normal, tuple, tuple]: ...
+    ) -> tuple[Weights_Normal, tuple, xf.SiteValue]: ...
     
     def init_params(self, model, params):
         return self, utils.rand.gaussian(self.shape)
@@ -67,7 +67,7 @@ class Weights_Orthogonal(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Weights_Orthogonal, tuple, tuple]: ...
+    ) -> tuple[Weights_Orthogonal, tuple, xf.SiteValue]: ...
     
     def init_params(self, model, params):
         return self, utils.rand.orthogonal(self.shape)
@@ -89,7 +89,7 @@ class Latent(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Latent, tuple, tuple]:
+    ) -> tuple[Latent, tuple, xf.SiteValue]:
         axis = self.axis
         obj = self.data.access(model)
         shape_latent = (
@@ -108,7 +108,7 @@ class Latent(typing.NamedTuple):
         model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
-        v = xf.get_location(site.loc.as_param(), state)
+        v = site.loc.as_param().access(state)
         if site.masked:
             return jax.lax.stop_gradient(v)
         return v

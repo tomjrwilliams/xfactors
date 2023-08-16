@@ -1,4 +1,5 @@
 
+import pandas
 # plot the derivatives as well of the below curves
 # over the domain
 
@@ -12,7 +13,16 @@ def sigmoid_curve(x, upper = 1, mid = 0, rate = 1):
     )
 
 def overextension(x, mid = 0):
-    return x * jax.numpy.exp(-(x - mid).square())
+    return x * jax.numpy.exp(
+        -1 * jax.numpy.square(x - mid)
+    )
+
+def overextension_df(df, mid=0):
+    return pandas.DataFrame(
+        overextension(df.values),
+        columns=df.columns,
+        index=df.index,
+    )
 
 # rate??
 def gaussian(x, rate = 1, mid = 0):

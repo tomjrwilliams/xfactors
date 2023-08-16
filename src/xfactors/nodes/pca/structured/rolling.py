@@ -51,7 +51,7 @@ class PCA_Rolling_LatentWeightedMean_MSE(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PCA_Rolling_LatentWeightedMean_MSE, tuple, tuple]: ...
+    ) -> tuple[PCA_Rolling_LatentWeightedMean_MSE, tuple, xf.SiteValue]: ...
 
     def f_apply(
         self, weights_pca, weights_structure, latents, 

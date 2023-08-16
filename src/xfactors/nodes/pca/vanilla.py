@@ -51,7 +51,7 @@ class PCA(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PCA, tuple, tuple]:
+    ) -> tuple[PCA, tuple, xf.SiteValue]:
         return self, (
             self.data.access(model).shape[1],
             self.n,
@@ -83,7 +83,7 @@ class PCA_Encoder(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PCA_Encoder, tuple, tuple]:
+    ) -> tuple[PCA_Encoder, tuple, xf.SiteValue]:
         shape = (
             self.data.access(model).shape[1],
             self.n,
@@ -119,7 +119,7 @@ class PCA_Decoder(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PCA_Decoder, tuple, tuple]:
+    ) -> tuple[PCA_Decoder, tuple, xf.SiteValue]:
         # TODO
         return self, (), ()
 
@@ -156,7 +156,7 @@ class PPCA_NegLikelihood(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PPCA_NegLikelihood, tuple, tuple]: ...
+    ) -> tuple[PPCA_NegLikelihood, tuple, xf.SiteValue]: ...
 
     @classmethod
     def f_apply(
@@ -213,8 +213,8 @@ class PPCA_NegLikelihood(typing.NamedTuple):
 
         if self.noise:
             assert site.loc is not None
-            key = xf.get_location(
-                site.loc.as_random(), state
+            key = site.loc.as_random().access(
+                state, into=jax.numpy.array
             )
             weights = weights + ((
                 jax.random.normal(key, shape=weights.shape)
@@ -246,7 +246,7 @@ class PPCA_EM(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PPCA_EM, tuple, tuple]: ...
+    ) -> tuple[PPCA_EM, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -319,7 +319,7 @@ class PPCA_Marginal_Observations(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PPCA_Marginal_Observations, tuple, tuple]: ...
+    ) -> tuple[PPCA_Marginal_Observations, tuple, xf.SiteValue]: ...
 
     def apply(self, site: xf.Site, state: xf.State):
         # https://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.pdf
@@ -364,7 +364,7 @@ class PPCA_Conditional_Latents(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[PPCA_Conditional_Latents, tuple, tuple]: ...
+    ) -> tuple[PPCA_Conditional_Latents, tuple, xf.SiteValue]: ...
 
     def apply(self, site: xf.Site, state: xf.State):
         # https://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.pdf

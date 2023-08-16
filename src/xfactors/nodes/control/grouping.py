@@ -41,7 +41,7 @@ class Group_By(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Group_By, tuple, tuple]: ...
+    ) -> tuple[Group_By, tuple, xf.SiteValue]: ...
     
     # return tuple of values vmapped over indices
     # given by the values in the map(get_location(site_keys))

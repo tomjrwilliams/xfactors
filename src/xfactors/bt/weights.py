@@ -21,117 +21,262 @@ import xtuples as xt
 
 # ---------------------------------------------------------------
 
-def weights_equal(rs):
-    isnan = numpy.isnan(rs)
-    notnan = numpy.logical_not(isnan)
-    mask = notnan.replace(False, numpy.NaN)
-    counts = notnan.sum(axis=1)
-    counts = numpy.expand_dims(counts, axis=1)
-    ones = numpy.ones(rs.shape)
-    weights = numpy.divide(ones, counts)
-    return numpy.multiply(mask, weights)
+def test_nd():
+    return numpy.array([
+        [1., 0., -1.],
+        [-1., 1., 1.],
+        [-2., 2., 0.],
+    ])
 
-def weights_proportional(rs):
-    isnan = numpy.isnan(rs)
+
+def test_nd_nan():
+    return numpy.array([
+        [numpy.NaN, 0., -1., -1, 1.],
+        [-1., numpy.NaN, 1., -1, 1.],
+        [-2., 2., numpy.NaN, -1, 1.],
+    ])
+
+# ---------------------------------------------------------------
+
+
+def f_where_top(f, top):
+
+    assert "n" in top, top
+    n = top["n"]
+
+    long = top.get("long", None)
+    short = top.get("short", None)
+
+    assert len([v for v in [long, short]]) > 0, top
+
+    def f_res(vs):
+
+        order = numpy.argsort(vs)
+        res = numpy.zeros_like(vs)
+
+        if long:
+            i = order[-n:]
+            w = f(vs[i]) * long
+            res[i] = w
+
+        if short:
+            i = order[:n]
+            # reverse order of signal (before we multiply by short)
+            w = f(vs[i] * -1) * short
+            res[i] = w
+
+        return res
+
+    return f_res
+
+def f_where_not_na(nd, f=None, top = None, dp = None):
+    """
+    >>> f_where_not_na(test_nd_nan(), f = weights_equal, dp=2)
+    array([[ nan, 0.25, 0.25, 0.25, 0.25],
+           [0.25,  nan, 0.25, 0.25, 0.25],
+           [0.25, 0.25,  nan, 0.25, 0.25]])
+    >>> f_where_not_na(test_nd_nan(), f = weights_proportional, dp=2)
+    array([[ nan, 0.33, 0.  , 0.  , 0.67],
+           [0.  ,  nan, 0.5 , 0.  , 0.5 ],
+           [0.  , 0.5 ,  nan, 0.12, 0.38]])
+    >>> f_where_not_na(test_nd_nan(), f = weights_softmax, dp=2)
+    array([[ nan, 0.22, 0.08, 0.08, 0.61],
+           [0.06,  nan, 0.44, 0.06, 0.44],
+           [0.01, 0.7 ,  nan, 0.03, 0.26]])
+    >>> f_where_not_na(test_nd_nan(), f = weights_linear, dp=2)
+    array([[ nan, 0.33, 0.67, 0.  , 1.  ],
+           [0.  ,  nan, 0.67, 0.33, 1.  ],
+           [0.  , 0.67,  nan, 1.  , 0.33]])
+    >>> f_where_not_na(test_nd_nan(), f = weights_equal, top = dict(
+    ...     n=1, long=1
+    ... ), dp=2)
+    array([[nan,  0.,  0.,  0.,  1.],
+           [ 0., nan,  0.,  0.,  1.],
+           [ 0.,  1., nan,  0.,  0.]])
+    >>> f_where_not_na(test_nd_nan(), f = weights_proportional, top = dict(
+    ...     n=1, long=1
+    ... ), dp=2)
+    array([[nan,  0.,  0.,  0.,  1.],
+           [ 0., nan,  0.,  0.,  1.],
+           [ 0.,  1., nan,  0.,  0.]])
+    >>> f_where_not_na(test_nd_nan(), f = weights_softmax, top = dict(
+    ...     n=1, long=1
+    ... ), dp=2)
+    array([[nan,  0.,  0.,  0.,  1.],
+           [ 0., nan,  0.,  0.,  1.],
+           [ 0.,  1., nan,  0.,  0.]])
+    >>> f_where_not_na(test_nd_nan(), f = weights_linear, top = dict(
+    ...     n=1, long=1
+    ... ), dp=2)
+    array([[nan,  0.,  0.,  0.,  1.],
+           [ 0., nan,  0.,  0.,  1.],
+           [ 0.,  1., nan,  0.,  0.]])
+    >>> f_where_not_na(test_nd_nan(), f = weights_equal, top = dict(
+    ...     n=1, short=-1
+    ... ), dp=2)
+    array([[nan,  0., -1.,  0.,  0.],
+           [-1., nan,  0.,  0.,  0.],
+           [-1.,  0., nan,  0.,  0.]])
+    >>> f_where_not_na(test_nd_nan(), f = weights_proportional, top = dict(
+    ...     n=1, short=-1
+    ... ), dp=2)
+    array([[nan,  0., -1.,  0.,  0.],
+           [-1., nan,  0.,  0.,  0.],
+           [-1.,  0., nan,  0.,  0.]])
+    >>> f_where_not_na(test_nd_nan(), f = weights_softmax, top = dict(
+    ...     n=1, short=-1
+    ... ), dp=2)
+    array([[nan,  0., -1.,  0.,  0.],
+           [-1., nan,  0.,  0.,  0.],
+           [-1.,  0., nan,  0.,  0.]])
+    >>> f_where_not_na(test_nd_nan(), f = weights_linear, top = dict(
+    ...     n=1, short=-1
+    ... ), dp=2)
+    array([[nan,  0., -1.,  0.,  0.],
+           [-1., nan,  0.,  0.,  0.],
+           [-1.,  0., nan,  0.,  0.]])
+    >>> f_where_not_na(test_nd_nan(), f = weights_equal, top = dict(
+    ...     n=1, long=1, short=-1
+    ... ), dp=2)
+    array([[nan,  0., -1.,  0.,  1.],
+           [-1., nan,  0.,  0.,  1.],
+           [-1.,  1., nan,  0.,  0.]])
+    >>> f_where_not_na(test_nd_nan(), f = weights_proportional, top = dict(
+    ...     n=1, long=1, short=-1
+    ... ), dp=2)
+    array([[nan,  0., -1.,  0.,  1.],
+           [-1., nan,  0.,  0.,  1.],
+           [-1.,  1., nan,  0.,  0.]])
+    >>> f_where_not_na(test_nd_nan(), f = weights_softmax, top = dict(
+    ...     n=1, long=1, short=-1
+    ... ), dp=2)
+    array([[nan,  0., -1.,  0.,  1.],
+           [-1., nan,  0.,  0.,  1.],
+           [-1.,  1., nan,  0.,  0.]])
+    >>> f_where_not_na(test_nd_nan(), f = weights_linear, top = dict(
+    ...     n=1, long=1, short=-1
+    ... ), dp=2)
+    array([[nan,  0., -1.,  0.,  1.],
+           [-1., nan,  0.,  0.,  1.],
+           [-1.,  1., nan,  0.,  0.]])
+    >>> f_where_not_na(test_nd_nan(), f = weights_equal, top = dict(
+    ...     n=2, long=1, short=-1
+    ... ), dp=2)
+    array([[ nan,  0.5, -0.5, -0.5,  0.5],
+           [-0.5,  nan,  0.5, -0.5,  0.5],
+           [-0.5,  0.5,  nan, -0.5,  0.5]])
+    >>> f_where_not_na(test_nd_nan(), f = weights_proportional, top = dict(
+    ...     n=2, long=1, short=-1
+    ... ), dp=2)
+    array([[nan,  0., nan, nan,  1.],
+           [nan, nan, nan, nan, nan],
+           [-1.,  1., nan, -0.,  0.]])
+    >>> f_where_not_na(test_nd_nan(), f = weights_softmax, top = dict(
+    ...     n=2, long=1, short=-1
+    ... ), dp=2)
+    array([[  nan,  0.27, -0.5 , -0.5 ,  0.73],
+           [-0.5 ,   nan,  0.5 , -0.5 ,  0.5 ],
+           [-0.73,  0.73,   nan, -0.27,  0.27]])
+    >>> f_where_not_na(test_nd_nan(), f = weights_linear, top = dict(
+    ...     n=2, long=1, short=-1
+    ... ), dp=2)
+    array([[nan,  0., -0., -1.,  1.],
+           [-0., nan,  0., -1.,  1.],
+           [-1.,  1., nan, -0.,  0.]])
+    """
+    if top is not None:
+        f = f_where_top(f, top)
+
+    isnan = numpy.isnan(nd)
     notnan = numpy.logical_not(isnan)
-    mask = notnan.replace(False, numpy.NaN)
-    sums = numpy.expand_dims(
-        rs.nan_to_num(0).sum(axis=1), axis = 1
+    
+    if isnan.sum() == 0:
+        return nd.apply_along_axis(f)
+    
+    not_nan_inds = xt.iTuple(notnan).map(
+        lambda r: numpy.nonzero(r)
     )
-    return numpy.multiply(
-        numpy.divide(rs, sums),
-        mask,
-    )
+    
+    def row_res(vs, js):
+        res = numpy.ones_like(nd[0]) * numpy.NaN 
+        res[js] = vs
+        return res
+
+    res = numpy.vstack([
+        numpy.ones_like(nd[0]) * numpy.NaN 
+        if not len(i)
+        else row_res(
+            f(nd[r][i]),
+            i,
+        )
+        for r, i in not_nan_inds.enumerate()
+    ])
+    if dp is not None:
+        return numpy.round(res, dp)
+    return res
+
+# ---------------------------------------------------------------
+
+def weights_equal(nd):
+    """
+    >>> weights_equal(test_nd()[0])
+    array([0.33333333, 0.33333333, 0.33333333])
+    >>> weights_equal(test_nd()[1])
+    array([0.33333333, 0.33333333, 0.33333333])
+    >>> weights_equal(test_nd()[2])
+    array([0.33333333, 0.33333333, 0.33333333])
+    """
+    return numpy.ones_like(nd) / len(nd)
+
+def weights_proportional(nd):
+    """
+    >>> weights_proportional(test_nd()[0])
+    array([0.66666667, 0.33333333, 0.        ])
+    >>> weights_proportional(test_nd()[1])
+    array([0. , 0.5, 0.5])
+    >>> weights_proportional(test_nd()[2])
+    array([0.        , 0.66666667, 0.33333333])
+    """
+    v_min = numpy.min(nd)
+    if len(nd) > 1:
+        nd_shift = nd - v_min
+    else:
+        nd_shift = nd
+    return numpy.divide(nd_shift, sum(nd_shift))
 
 import scipy.special
 
-def weights_softmax(rs):
-    isnan = numpy.isnan(rs)
-    notnan = numpy.logical_not(isnan)
-    mask = notnan.replace(False, numpy.NaN)
-    if isnan.sum() == 0:
-        return rs.apply_along_axis(scipy.special.softmax)
-    inds: dict = {i: [] for i in range(len(rs))}
-    inds = {
-        **inds,
-        **{
-            g[0][0]: g for g in xt.iTuple(
-                map(tuple, numpy.argwhere(notnan))
-            ).groupby(lambda ii: ii[0])
-        }
-    }
-    width = len(rs[0])
-    return numpy.array([
-        [
-            numpy.NaN for j in range(width)
-        ]
-        if not len(rs[i])
-        else (
-            lambda vs, js, jmap: [
-                vs[jmap[j]] if j in js else numpy.NaN
-                for j in range(width)
-            ]
-        )(
-            scipy.special.softmax(
-                rs[i][j] for j in inds[i]
-            ),
-            inds[i],
-            {
-                j: ii for ii, j in enumerate(inds[i])
-            }
-        )
-        for i in inds
-    ])
+def weights_softmax(nd):
+    """
+    >>> weights_softmax(test_nd()[0])
+    array([0.66524096, 0.24472847, 0.09003057])
+    >>> weights_softmax(test_nd()[1])
+    array([0.06337894, 0.46831053, 0.46831053])
+    >>> weights_softmax(test_nd()[2])
+    array([0.01587624, 0.86681333, 0.11731043])
+    """
+    v_min = numpy.min(nd)
+    if len(nd) > 1:
+        nd_shift = nd - v_min
+    else:
+        nd_shift = nd
+    return scipy.special.softmax(nd_shift)
 
-def weights_linear(rs):
-    isnan = numpy.isnan(rs)
-    notnan = numpy.logical_not(isnan)
-    mask = notnan.replace(False, numpy.NaN)
-    counts = notnan.sum(axis=1)
-    weight_cache = {
-        l: (
-            lambda vs: vs / sum(vs)
-        )(numpy.linspace(0, 1, num=l))
-        for l in set(counts)
-    }
-    if isnan.sum() == 0:
-        ws = weight_cache[len(rs[0])]
-        return numpy.array([
-            ws[r.argsort()]
-            for r in rs
-        ])
-    inds: dict = {i: [] for i in range(len(rs))}
-    inds = {
-        **inds,
-        **{
-            g[0][0]: g for g in xt.iTuple(
-                list(map(tuple, numpy.argwhere(notnan)))
-            ).groupby(lambda ii: ii[0])
-        }
-    }
-    width = len(rs[0])
-    return numpy.array([
-        [
-            numpy.NaN for j in range(width)
-        ]
-        if not len(rs[i])
-        else (
-            lambda vs, js, jmap: [
-                vs[jmap[j]] if j in js else numpy.NaN
-                for j in range(width)
-            ]
-        )(
-            weight_cache[counts[i]][
-                numpy.array(rs[i][j] for j in inds[i]).argsort()
-            ],
-            inds[i],
-            {
-                j: ii for ii, j in enumerate(inds[i])
-            }
-        )
-        for i in inds
-    ])
+def weights_linear(nd):
+    """
+    >>> weights_linear(test_nd()[0])
+    array([1. , 0.5, 0. ])
+    >>> weights_linear(test_nd()[1])
+    array([0. , 0.5, 1. ])
+    >>> weights_linear(test_nd()[2])
+    array([0. , 1. , 0.5])
+    """
+    if len(nd) == 1:
+        return numpy.ones(1)
+    inds = numpy.argsort(nd)
+    return numpy.linspace(0, 1, len(nd))[inds]
 
+# ---------------------------------------------------------------
 
 def calc_weights(
     signal_df,
@@ -142,6 +287,7 @@ def calc_weights(
     softmax=None,
     inv=None,
     gross=None,
+    top=None,
 ):
     index = signal_df.index
 
@@ -171,6 +317,8 @@ def calc_weights(
                 )
             #
     
+    # left with na where not in universe
+
     kws = dict(
         equal=equal,
         linear=linear,
@@ -179,34 +327,33 @@ def calc_weights(
     )
     assert len(list(v for v in kws.values() if v)) <= 1, kws
 
-    rs = signal_df[signal_df.columns].to_numpy()
+    nd = signal_df[signal_df.columns].to_numpy()
 
     if inv:
-        rs = (1 / inv).nan_to_num(
+        nd = (1 / nd).nan_to_num(
             nan=numpy.NaN,
             posinf=numpy.NaN,
             neginf=numpy.NaN,
         )
     if gross:
-        rs = numpy.abs(rs)
+        nd = numpy.abs(nd)
 
     if equal:
-        vs = weights_equal(rs) 
+        vs = f_where_not_na(nd, top = top, f= weights_equal)
     elif linear:
-        vs = weights_linear(rs)
+        vs = f_where_not_na(nd, top = top, f= weights_linear)
     elif softmax:
-        vs = weights_softmax(rs)
+        vs = f_where_not_na(nd, top = top, f= weights_softmax)
     elif proportional:
-        vs = weights_proportional(rs)
+        vs = f_where_not_na(nd, top = top, f= weights_proportional)
     else:
         assert False, kws
-
-    vs = vs.T
     
-    return pandas.DataFrame({
-        column: vs[i]
-        for i, column in enumerate(signal_df.columns)
-    })
+    return pandas.DataFrame(
+        vs,
+        index=signal_df.index,
+        columns=signal_df.columns,
+    )
 
 # ---------------------------------------------------------------
 
@@ -246,26 +393,36 @@ def combine_dfs(
 
     if norm is None:
         return signal_df
+
+    else:
+        assert isinstance(norm, dict), norm
     
-    elif norm == "equal":
+    method = norm["method"]
+    top = norm["top"]
+
+    if method == "equal":
         return calc_weights(
             signal_df,
             equal=True,
+            top=top,
         )
-    elif norm == "linear":
+    elif method == "linear":
         return calc_weights(
             signal_df,
             linear=True,
+            top=top,
         )
-    elif norm == "softmax":
+    elif method == "softmax":
         return calc_weights(
             signal_df,
             softmax=True,
+            top=top,
         )
-    elif norm == "proportional":
+    elif method == "proportional":
         return calc_weights(
             signal_df,
             proportional=True,
+            top=top,
         )
     else:
         assert False, norm
@@ -284,19 +441,23 @@ def ls_weights(
     # if truthy, either scalar
     # or None or dict
     #
-    equal=None,
-    linear=None,
-    softmax=None,
-    proportional=None,
-    #
-    inv=None,
-    gross=None,
+    weight_kws = None,
+    # equal=None,
+    # linear=None,
+    # softmax=None,
+    # proportional=None,
+    # top=None,
+    # #
+    # inv=None,
+    # gross=None,
     #
     add=False,
     mul=False,
     norm=None,
     #
 ):
+    if weight_kws is None:
+        weight_kws = {}
 
     if not isinstance(signal_dfs, dict):
         signal_dfs = {None: signal_dfs}
@@ -309,37 +470,42 @@ def ls_weights(
         proportional = {} if proportional is None else proportional
         inv = {} if inv is None else inv
         gross = {} if gross is None else gross
+        top = {} if top is None else top
 
-    weight_kws = {
-        signal: dict(
-            equal=(
-                equal if not isinstance(equal, dict)
-                else equal.get(signal, None)
-            ),
-            linear=(
-                linear if not isinstance(linear, dict)
-                else linear.get(signal, None)
-            ),
-            softmax=(
-                softmax if not isinstance(softmax, dict)
-                else softmax.get(signal, None)
-            ),
-            proportional=(
-                proportional if not isinstance(proportional, dict)
-                else proportional.get(signal, None)
-            ),
-            #
-            inv=(
-                inv if not isinstance(inv, dict)
-                else inv.get(signal, None)
-            ),
-            gross=(
-                gross if not isinstance(gross, dict)
-                else gross.get(signal, None)
-            ),
-        )
-        for signal in signal_dfs.keys()
-    }
+    # weight_kws = {
+    #     signal: dict(
+    #         equal=(
+    #             equal if not isinstance(equal, dict)
+    #             else equal.get(signal, None)
+    #         ),
+    #         linear=(
+    #             linear if not isinstance(linear, dict)
+    #             else linear.get(signal, None)
+    #         ),
+    #         softmax=(
+    #             softmax if not isinstance(softmax, dict)
+    #             else softmax.get(signal, None)
+    #         ),
+    #         proportional=(
+    #             proportional if not isinstance(proportional, dict)
+    #             else proportional.get(signal, None)
+    #         ),
+    #         #
+    #         inv=(
+    #             inv if not isinstance(inv, dict)
+    #             else inv.get(signal, None)
+    #         ),
+    #         gross=(
+    #             gross if not isinstance(gross, dict)
+    #             else gross.get(signal, None)
+    #         ),
+    #         top=(
+    #             top if not isinstance(top, dict)
+    #             else top.get(signal, None)
+    #         ),
+    #     )
+    #     for signal in signal_dfs.keys()
+    # }
 
     signal_weights = {
         signal: calc_weights(
@@ -354,7 +520,10 @@ def ls_weights(
         add=add,
         mul=mul,
     )
-    assert len(list(v for v in comb_kws.values() if v)) <= 1, comb_kws
+    assert len(
+        list(v for v in comb_kws.values() if v)
+        #
+    ) <= 1, comb_kws
     if not add and not mul:
         add = True
 

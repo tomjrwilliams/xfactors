@@ -34,7 +34,7 @@ class Constraint_Positive(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Constraint_Positive, tuple, tuple]: ...
+    ) -> tuple[Constraint_Positive, tuple, xf.SiteValue]: ...
 
     def apply(
         self,

@@ -38,7 +38,7 @@ class Parametric_Factor(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Parametric_Factor, tuple, tuple]: ...
+    ) -> tuple[Parametric_Factor, tuple, xf.SiteValue]: ...
     
     def apply(
         self,

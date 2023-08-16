@@ -53,7 +53,7 @@ class KMeans_Labels(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[KMeans_Labels, tuple, tuple]: ...
+    ) -> tuple[KMeans_Labels, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -114,7 +114,7 @@ class KMeans_EM_MeanDiff(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[KMeans_EM_MeanDiff, tuple, tuple]: ...
+    ) -> tuple[KMeans_EM_MeanDiff, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -180,7 +180,7 @@ class KMeans_EM_Naive(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[KMeans_EM_Naive, tuple, tuple]: ...
+    ) -> tuple[KMeans_EM_Naive, tuple, xf.SiteValue]: ...
     
     def apply(
         self,

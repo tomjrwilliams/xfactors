@@ -1,3 +1,6 @@
+from . import backtests
+from . import frequencies
+from . import signals
 from . import strategies
 from . import weights
 

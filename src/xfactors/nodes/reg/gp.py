@@ -49,7 +49,7 @@ class GP_RBF(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[GP_RBF, tuple, tuple]:
+    ) -> tuple[GP_RBF, tuple, xf.SiteValue]:
         return self, (), (
             jax.numpy.ones(1),
             jax.numpy.ones(1),
@@ -120,7 +120,7 @@ class GP_Kernel_Sigmoid(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[GP_Kernel_Sigmoid, tuple, tuple]: ...
+    ) -> tuple[GP_Kernel_Sigmoid, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -141,7 +141,7 @@ class GP_Kernel_SquaredExp(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[GP_Kernel_SquaredExp, tuple, tuple]: ...
+    ) -> tuple[GP_Kernel_SquaredExp, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -160,7 +160,7 @@ class GP_Kernel_OU(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[GP_Kernel_OU, tuple, tuple]: ...
+    ) -> tuple[GP_Kernel_OU, tuple, xf.SiteValue]: ...
     
     @classmethod
     def f(cls, features_l, features_r, sigma, l):
@@ -190,7 +190,7 @@ class GP_Kernel_RationalQuadratic(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[GP_Kernel_RationalQuadratic, tuple, tuple]: ...
+    ) -> tuple[GP_Kernel_RationalQuadratic, tuple, xf.SiteValue]: ...
     
     def apply(
         self,

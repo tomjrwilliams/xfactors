@@ -43,7 +43,7 @@ class Stack(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Stack, tuple, tuple]: ...    
+    ) -> tuple[Stack, tuple, xf.SiteValue]: ...    
 
     def apply(
         self,
@@ -64,7 +64,7 @@ class UnStack(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[UnStack, tuple, tuple]: ...
+    ) -> tuple[UnStack, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -87,7 +87,7 @@ class Flatten(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Flatten, tuple, tuple]: ...
+    ) -> tuple[Flatten, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -105,7 +105,7 @@ class UnFlatten(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[UnFlatten, tuple, tuple]: ...
+    ) -> tuple[UnFlatten, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -129,7 +129,7 @@ class Concatenate(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Concatenate, tuple, tuple]: ...
+    ) -> tuple[Concatenate, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -149,7 +149,7 @@ class UnConcatenate(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[UnConcatenate, tuple, tuple]: ...
+    ) -> tuple[UnConcatenate, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
