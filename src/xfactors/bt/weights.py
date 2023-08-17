@@ -515,6 +515,8 @@ def ls_weights(
         )
         for signal in weight_kws.keys()
     }
+    if len(signal_weights.keys()) == 1:
+        return signal_weights[list(signal_weights.keys())[0]]
 
     comb_kws = dict(
         add=add,

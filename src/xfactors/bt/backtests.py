@@ -268,7 +268,7 @@ def combine_rolling(
     #     assert len(indices) == 0, universe
     #     assert len(sectors) == 0, universe
 
-    # universe_dfs, _, _ = bt.algos.universe.int.rolling_indices(
+    # universe_df, _, _ = bt.algos.universe.int.rolling_indices(
     #     date_start,
     #     date_end,
     #     indices=indices,
@@ -348,7 +348,7 @@ def index_union(membership_dfs):
 
 def build(
     acc,
-    universe_dfs,
+    universe_df,
     name=None,
     tickers=xt.iTuple(),
     rolling_universe=True,
@@ -359,9 +359,10 @@ def build(
         acc["universes"] = []
     
     assert name is not None
-    assert universe_dfs is not None
+    assert universe_df is not None
 
-    universe_df = index_union(universe_dfs)
+    # universe_df = index_union(universe_df)
+
     for ticker in tickers:
         universe_df[ticker] = pandas.Series(
             index=universe_df.index,
@@ -422,7 +423,7 @@ def build(
 
 def long_short(
     acc,
-    dfs_indices,
+    universe_df,
     name,
     signal_name="signal",
     long=True,
@@ -447,7 +448,7 @@ def long_short(
         else:
             acc, strat_long = build(
                 acc,
-                dfs_indices,
+                universe_df,
                 name=name + " long",
                 rolling_universe=True,
                 reverse=False,
@@ -465,7 +466,7 @@ def long_short(
         else:
             acc, strat_short = build(
                 acc,
-                dfs_indices,
+                universe_df,
                 name=name + " short",
                 rolling_universe=True,
                 reverse=True, # only has an effect if we use top n
@@ -529,21 +530,27 @@ def clean_universes(acc, df_prices):
     }
 
 def run(
-    strategy,
-    df_returns,
     acc,
+    df_returns,
+    *strategies
 ):
     df_prices = to_prices(df_returns)
     acc = clean_universes(
         acc,
         df_prices
     )
-    return bt.run(bt.Backtest(
-        strategy,
-        df_prices,
-        integer_positions=False,
-        additional_data=acc,
-        progress_bar=True,
-    ))
+    backtests = [
+        bt.Backtest(
+            strategy,
+            df_prices,
+            integer_positions=False,
+            progress_bar=True,
+            additional_data=acc,
+        )
+        for strategy in strategies
+    ]
+    return bt.run(*backtests)
+
+# NOTE: multiple backtests for plotting long and short legs separately?
 
 # ---------------------------------------------------------------

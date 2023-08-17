@@ -22,6 +22,7 @@ import xtuples as xt
 # import xtenors
 
 from .. import utils
+from .. import visuals
 
 from . import backtests
 from . import signals
@@ -29,100 +30,135 @@ from . import weights
 
 # ---------------------------------------------------------------
 
-# use long / short to indicate if long only, short only
-# or if one should be a factor strategy
-
-# TODO: rename equity_ls_signal (as in, signal df vs weight df)
-# as opposed to eg. factor_ls (below)
-
-# 
-
 def ls_equity_signal(
+    acc,
     df_returns,
-    dfs_indices,
+    universe_df,
+    fs,
+    kws,
     universe_name,
-    alpha=2 / 30,
-    z = False,
-    top_n=None,
     shift="2D",
     flip=False,
     signal_name="signal",
-    f_signal=None,
     frequency=bt.algos.RunDaily(),
-    combine=True,
-    kwargs=None,
-    **strat_kwargs,
+    ls_kwargs=None,
+    strat_kwargs=None,
 ):
-    #
-    if kwargs is None:
-        kwargs = {}
-    #
+    
+    if ls_kwargs is None:
+        ls_kwargs = {}
+    if strat_kwargs is None:
+        strat_kwargs = {}
+    
+    assert fs.len() == kws.len()
 
-    # TODO: if f_signal is iterable
-    # fold through, res = f_signal(prev)
-    # signal name = name of first
-    # fs below are then f_signal[1:]
-
-    df_signal = signals.df_ewm(
-        df_returns,
-        alpha=alpha,
-        z=z,
+    df_signal = fs.zip(kws).foldstar(
+        lambda acc, f, _kws: f(acc, **_kws),
+        initial=df_returns,
     )
+
     if flip:
         df_signal = df_signal * -1
     df_signal.index = utils.dates.date_index(
         df_signal.index.values
     )
     df_signal = utils.dfs.shift(df_signal, shift)
-    if f_signal is not None:
-        df_signal = pandas.DataFrame(
-            f_signal(df_signal.values),
-            columns=df_signal.columns,
-            index=df_signal.index,
-        )
-    acc = {
-        signal_name: df_signal,
-    }
-    #
-    if top_n is not None:
-        strat_kwargs["top_n"] = top_n
+    
+    assert signal_name not in acc, dict(
+        signal_name=signal_name,
+        keys=list(acc.keys())
+    )
+    acc[signal_name] = df_signal
+    
+    if "top_n" in strat_kwargs:
         if "top_n_df_name" not in strat_kwargs:
             strat_kwargs["top_n_df_name"] = signal_name
-    #
+    
     strat_kwargs["frequency"] = frequency
+
     return backtests.long_short(
         acc,
-        dfs_indices,
-        name="ewm({})({}, {}, z={}{}{})".format(
-            round(alpha, 3),
-            universe_name,
-            type(frequency).__name__,
-            (z if not isinstance(z, float) else round(z, 3)), 
-            (
-                "" if f_signal is None else ", f={}".format(
-                    f_signal.__name__
-                )
+        universe_df,
+        name="{}({})".format(
+            fs.zip(kws).foldstar(
+                lambda acc, f, _kws: "{}({}{})".format(
+                    f.__name__, 
+                    visuals.formatting.kwargs(_kws),
+                    acc if acc == "" else ", " + acc,
+                ),
+                initial="",
             ),
-            (
-                "" if not (
-                    "long" in kwargs or "short" in kwargs
-                ) else ", ".join([
-                    "{}={}".format(k, v)
-                    for k, v in kwargs.items()
-                    if k in ["long", "short"]
-                ])
-            )
+            visuals.formatting.args([
+                universe_name,
+                type(frequency).__name__,
+                (
+                    visuals.formatting.args(
+                        fs[1:].map(lambda f: f.__name__)
+                    )
+                ),
+                visuals.formatting.kwargs(ls_kwargs),
+            ])
         ),
+        signal_name=signal_name,
         strat_kwargs=strat_kwargs,
-        combine=combine,
-        **kwargs
+        **ls_kwargs
     )
 
-# NOTE: can pass kwargs = dict(long | short =Strategy())
-# to do trend singles vs eg. factor strategy
+def ls_equity_weights(
+    acc,
+    signal_dfs,
+    weight_kws,
+    combine_kws,
+    universe_df,
+    universe_name,
+    shift="2D",
+    flip=False,
+    weights_name="weights",
+    frequency=bt.algos.RunDaily(),
+    **kwargs,
+):
+    
+    df_weights = weights.ls_weights(
+        signal_dfs,
+        universe_df=universe_df,
+        weight_kws=weight_kws,
+        **combine_kws,
+    )
 
-# or replace the above with just passing a weights_df
-# calculated with the relevant weighting?
+    if flip:
+        df_weights = df_weights * -1
+
+    df_weights.index = utils.dates.date_index(
+        df_weights.index.values
+    )
+    df_weights = utils.dfs.shift(df_weights, shift)
+
+    assert weights_name not in acc, dict(
+        weights_name=weights_name,
+        keys=list(acc.keys())
+    )
+    acc[weights_name] = df_weights
+    
+    kwargs["frequency"] = frequency
+
+    return backtests.build(
+        acc,
+        universe_df,
+        name="combine({}, {})".format(
+            visuals.formatting.kwargs(combine_kws),
+            visuals.formatting.args([universe_name] + [
+                "weights({})".format(
+                    visuals.formatting.kwargs(dict(
+                        signal=signal_k,
+                        **weight_kws[signal_k]
+                    ))
+                )
+                for signal_k in signal_dfs.keys()
+            ]),
+        ),
+        weights_df_name=weights_name,
+        **kwargs
+    )
 
 # ---------------------------------------------------------------
 

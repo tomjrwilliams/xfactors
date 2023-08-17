@@ -1,6 +1,25 @@
 
 # ---------------------------------------------------------------
 
+def round_if_float(v, dp):
+    if isinstance(v, float):
+        return round(v, dp)
+    return v
+
+def args(vs, join=",", dp = 3):
+    return (join + " ").join([
+        round_if_float(v, dp) for v in vs if v != ""
+    ])
+
+def kwargs(kws, outer=",", inner="=", dp = 3):
+    return (outer + " ").join([
+        "{}{}{}".format(
+            k, inner, round_if_float(v, dp)
+        ) for k, v in kws.items()
+    ])
+
+# ---------------------------------------------------------------
+
 def unindent(v):
     ls = v.split("\n")
     shared_padding = min([

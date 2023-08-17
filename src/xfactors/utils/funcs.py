@@ -7,6 +7,9 @@ import pandas
 import jax
 
 
+
+# ---------------------------------------------------------------
+
 def sigmoid_curve(x, upper = 1, mid = 0, rate = 1):
     return upper / (
         1 + jax.numpy.exp(-1 * rate * (x - mid))
@@ -50,6 +53,9 @@ def trough(x, mid):
         1 + jax.numpy.exp(-x (x - mid))
     )
 
+
+# ---------------------------------------------------------------
+
 # hyperbolic tangent is an s curve
 
 # of a falling object at time t
@@ -80,3 +86,5 @@ def velocity(
 # tanh(x) s curve
 # = (e^x - e^-x ) / (e^x + e^-x )
 # = (e^2x - 1) / (e^2x + 1)
+
+# ---------------------------------------------------------------
