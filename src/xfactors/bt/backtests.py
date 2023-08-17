@@ -254,69 +254,17 @@ def combine_rolling(
 
 # ---------------------------------------------------------------
 
-    # # fkws = dict(
-    # #     fsignals=fsignals,
-    # #     fweights=fweights,
-    # # )
-    # # assert len(v for v in fkws.values() if v) == 1, fkws
-
-    # indices = universe.get("indices", xt.iTuple())
-    # sectors = universe.get("sectors", xt.iTuple())
-    # tickers = universe.get("ticker", xt.iTuple())
-
-    # if not universe.get("rolling"):
-    #     assert len(indices) == 0, universe
-    #     assert len(sectors) == 0, universe
-
-    # universe_df, _, _ = bt.algos.universe.int.rolling_indices(
-    #     date_start,
-    #     date_end,
-    #     indices=indices,
-    #     sectors=sectors,
-    # )
-
 # for mean_var type optimisation where need a lookback for covar
 # so set per window to only universe present in relevant window
 def resample_universe(
-    df, resampling, lookback=None
+    df, lookback
 ):
     df = df.fillna(0)
-
-    if lookback is not None:
-        unit = lookback[-1]
-        n = int(lookback[:-1]) - 1
-        assert unit == resampling, dict(
-            unit=unit,
-            resampling=resampling,
-        )
-    else:
-        n = 0
-
-    index_l = xt.iTuple(
-        df.resample("{}{}".format(n, unit), label="left")
-        .first()
-        .index.values
-    )
-    index_r = xt.iTuple(
-        df.resample("{}{}".format(n, unit), label="right")
-        .last()
-        .index.values
-    )
-
     res = df.copy()
 
-    # print("Resampling:", resampling, lookback)
-
-    for l, start, r in zip(
-        index_l,
-        tuple([None for _ in range(n)]) + index_l,
-        index_r,
+    for l, r, df_slice in utils.dfs.rolling_windows(
+        df, lookback
     ):
-        df_slice = df.loc[
-            (df.index >= (
-                l if start is None else start
-            )) & (df.index <= r)
-        ]
 
         res_loc = (res.index >= l) & (res.index <= r)
         in_period = df_slice.all(axis=0)
@@ -327,8 +275,6 @@ def resample_universe(
 
         for ticker in df.columns:
             res.loc[res_loc, ticker] = in_period[ticker]
-
-    # print("Resampled:", resampling, lookback)
 
     res[res.columns] = res[res.columns].astype("bool")
     return res

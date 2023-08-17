@@ -108,9 +108,9 @@ def ls_equity_weights(
     acc,
     signal_dfs,
     weight_kws,
-    combine_kws,
     universe_df,
     universe_name,
+    combine_kws=None,
     shift="2D",
     flip=False,
     weights_name="weights",
@@ -122,7 +122,7 @@ def ls_equity_weights(
         signal_dfs,
         universe_df=universe_df,
         weight_kws=weight_kws,
-        **combine_kws,
+        **({} if combine_kws is None else combine_kws),
     )
 
     if flip:

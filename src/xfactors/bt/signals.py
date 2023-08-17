@@ -111,6 +111,8 @@ def df_markov_factor_ewm(
     # ie. we assume the 'factor' has no sense of history
     # beyond the weights it currently has
 
+    # eg. for rolling beta adjustments vs factor as currently defined
+
     return
 
 # NOTE: momentum: given factor trend (> threshold), forward return prediction is positive

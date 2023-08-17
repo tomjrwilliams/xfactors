@@ -2,6 +2,9 @@
 import pandas
 import numpy
 
+
+import xtuples as xt
+
 # ---------------------------------------------------------------
 
 def shift(df, shift, fill = numpy.NaN):
@@ -86,4 +89,35 @@ def melt_with_index(
         for col in columns
     ])
 
+# ---------------------------------------------------------------
+
+def rolling_windows(
+    df, lookback
+):
+    unit = lookback[-1]
+    n = int(lookback[:-1]) - 1
+
+    index_l = xt.iTuple(
+        df.resample("{}{}".format(n, unit), label="left")
+        .first()
+        .index.values
+    )
+    index_r = xt.iTuple(
+        df.resample("{}{}".format(n, unit), label="right")
+        .last()
+        .index.values
+    )
+
+    for l, start, r in zip(
+        index_l,
+        tuple([None for _ in range(n)]) + index_l,
+        index_r,
+    ):
+        l = l if start is None else start
+        yield l, r, df.loc[
+            (df.index >= (
+                l if start is None else start
+            )) & (df.index <= r)
+        ]
+        
 # ---------------------------------------------------------------
