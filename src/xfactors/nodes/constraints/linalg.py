@@ -247,6 +247,25 @@ class Constraint_EigenVLike(typing.NamedTuple):
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[Constraint_EigenVLike, tuple, xf.SiteValue]: ...
 
+    @classmethod
+    def f_apply(cls, w, f, eigval_max=True):
+        
+        cov = jax.numpy.cov(f.T)
+        eigvals = jax.numpy.diag(cov)
+
+        res = (
+            + funcs.loss_descending(eigvals)
+            + funcs.loss_orthogonal(w.T)
+            + funcs.loss_mean_zero(0)(f)
+            + funcs.loss_diag(cov)
+        )
+        if eigval_max:
+            return res + (
+                - jax.numpy.sum(jax.numpy.log(1 + eigvals))
+                # ridge penalty to counteract eigval max
+            )
+        return res
+
     def apply(
         self,
         site: xf.Site,
@@ -257,26 +276,41 @@ class Constraint_EigenVLike(typing.NamedTuple):
         w = self.weights.access(state)
         f = self.factors.access(state)
 
-        cov = jax.numpy.cov(f.T)
-        eigvals = jax.numpy.diag(cov)
+        return self.f_apply(w, f, eigval_max=self.eigval_max)
 
-        if self.n_check is not None:
-            assert eigvals.shape[0] == self.n_check, (
-                self, eigvals.shape,
-            )
-        res = (
-            + funcs.loss_descending(eigvals)
-            + funcs.loss_orthogonal(w.T)
-            + funcs.loss_mean_zero(0)(f)
-            + funcs.loss_diag(cov)
-        )
-        if self.eigval_max:
-            return res + (
-                - jax.numpy.sum(jax.numpy.log(1 + eigvals))
-                # ridge penalty to counteract eigval max
-            )
-        return res
+
+@xt.nTuple.decorate(init=xf.init_null)
+class Constraint_VEigenVLike(typing.NamedTuple):
     
+    weights: xf.Location
+    factors: xf.Location
+
+    eigval_max: bool = True
+
+    n_check: typing.Optional[int] = None
+
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[Constraint_EigenVLike, tuple, xf.SiteValue]: ...
+
+    def apply(
+        self,
+        site: xf.Site,
+        state: xf.State,
+        model: xf.Model,
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
+
+        w = xt.iTuple(self.weights.access(state))
+        f = self.factors.access(state)
+
+        return jax.numpy.stack(w.map(
+            functools.partial(
+                Constraint_EigenVLike.f_apply,
+                eigval_max=self.eigval_max
+            ),
+            f,
+        ).pipe(list)).sum()
+
 def l1_diag_loss(v):
     return jax.numpy.abs(jax.numpy.diag(v)).mean()
 

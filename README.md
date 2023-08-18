@@ -12,24 +12,23 @@
 
 ## Installation
 
+TBC:
+
 ```console
 pip install xfactors
 ```
 
 ## Overview
 
-xfactors (name to be reconsidered) is a work-in-progress library for practical machine learning research in finance, built on [JAX](https://jax.readthedocs.io/en/latest/index.html) (plus some other convenience utilities from my day job, until I can find a more appropriate long term home for them).
-
-xf (xfactors) is designed to make it easier to:
-
-- define machine learning pipelines out of modular, re-usable components.
-- obeying, as much as possible, the maxim that 'code that is read together should be written together'.
+xfactors (name to be reconsidered), henceforth xf, is a work-in-progress library for practical machine learning research in finance built on [JAX](https://jax.readthedocs.io/en/latest/index.html).
 
 xf does this by providing:
 
-- base classes / interfaces with which one can define machine learning pipelines as directed acyclic computation graphs of resuable components
+- base classes / interfaces for re-useable JAX model components (nodes in directed acyclic computation graphs).
 
-- an apparatus for specifying how data, parameters, and intermediate results should flow through each such pipeline
+- an apparatus for specifying how data, parameters, and intermediate results should flow such a model.
+
+Obeying, as much as possible, the maxim that 'code that is read together should be written together'.
 
 Everything in xf - models, params, results - is a tuple (or ndarray), which means:
 
@@ -50,6 +49,8 @@ This last point, in particular, allows us to:
 As mentioned above, this is still a very much work-in-progress project, that I'm in the process of refactoring out - rewriting large chunks on the way - from our main code base at [Haven Cove](https://havencove.com/).
 
 The unit tests are likely the best place to start for an idea of how the project works in pactise.
+
+Note, the package for now also includes some other convenience utilities from my day job, until I can find a more appropriate long term home for them.
 
 ## License
 
