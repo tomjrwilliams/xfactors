@@ -54,12 +54,12 @@ def f_where_top(f, top):
         order = numpy.argsort(vs)
         res = numpy.zeros_like(vs)
 
-        if long:
+        if long and len(order):
             i = order[-n:]
             w = f(vs[i]) * long
             res[i] = w
 
-        if short:
+        if short and len(order):
             i = order[:n]
             # reverse order of signal (before we multiply by short)
             w = f(vs[i] * -1) * short
@@ -187,8 +187,11 @@ def f_where_not_na(nd, f=None, top = None, dp = None):
     if top is not None:
         f = f_where_top(f, top)
 
-    isnan = numpy.isnan(nd)
-    notnan = numpy.logical_not(isnan)
+    try:
+        isnan = numpy.isnan(nd)
+        notnan = numpy.logical_not(isnan)
+    except:
+        assert False, [nd.shape, type(nd)]
     
     if isnan.sum() == 0:
         return nd.apply_along_axis(f)
@@ -285,6 +288,7 @@ def calc_weights(
     linear=None,
     proportional=None,
     softmax=None,
+    given=None,
     inv=None,
     gross=None,
     top=None,
@@ -292,7 +296,7 @@ def calc_weights(
     index = signal_df.index
 
     if universe_df is not None:
-        index = index.union(universe_df)
+        index = index.union(universe_df.index)
 
         signal_df = signal_df.reindex(index)
         universe_df = universe_df.reindex(index)
@@ -306,15 +310,13 @@ def calc_weights(
         for ticker in signal_df.columns:
             if ticker not in universe_df.columns:
                 signal_df[ticker] = pandas.Series(
-                    signal_df[ticker].index,
-                    [
+                    index=signal_df[ticker].index,
+                    data=[
                         numpy.NaN for _ in index
                     ],
                 )
             else:
-                signal_df[ticker] = (
-                    signal_df[ticker] * universe_df[ticker]
-                )
+                signal_df[ticker] *= universe_df[ticker]
             #
     
     # left with na where not in universe
@@ -324,13 +326,20 @@ def calc_weights(
         linear=linear,
         softmax=softmax,
         proportional=proportional,
+        given=given,
     )
     assert len(list(v for v in kws.values() if v)) <= 1, kws
 
-    nd = signal_df[signal_df.columns].to_numpy()
+    nd = numpy.nan_to_num(
+        signal_df.values,
+        nan=numpy.NaN,
+        posinf=numpy.NaN,
+        neginf=numpy.NaN,
+    ).astype(float)
 
     if inv:
-        nd = (1 / nd).nan_to_num(
+        nd = numpy.nan_to_num(
+            1 / nd,
             nan=numpy.NaN,
             posinf=numpy.NaN,
             neginf=numpy.NaN,
@@ -338,7 +347,9 @@ def calc_weights(
     if gross:
         nd = numpy.abs(nd)
 
-    if equal:
+    if given:
+        vs = nd
+    elif equal:
         vs = f_where_not_na(nd, top = top, f= weights_equal)
     elif linear:
         vs = f_where_not_na(nd, top = top, f= weights_linear)

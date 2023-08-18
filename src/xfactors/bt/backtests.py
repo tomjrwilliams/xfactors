@@ -64,12 +64,11 @@ def weight_algos(
         algos.append(bt.algos.WeighEqually())
 
     elif weight_df_name:
-        algos.append(bt.algos.WeighTarget(weight_df_name))
-
         assert weight_df_name in acc, dict(
             weight_df=weight_df_name,
             keys=list(acc.keys()),
         )
+        algos.append(bt.algos.WeighTarget(weight_df_name))
 
     elif inv_vol is not None:
         algos.append(bt.algos.WeighInvVol(
@@ -259,6 +258,9 @@ def combine_rolling(
 def resample_universe(
     df, lookback
 ):
+
+    df.index = utils.dates.date_index(df.index.values)
+
     df = df.fillna(0)
     res = df.copy()
 
@@ -398,11 +400,11 @@ def long_short(
                 name=name + " long",
                 rolling_universe=True,
                 reverse=False,
-                gross=1.,
                 equal=strat_kwargs.get("equal", True),
+                gross=strat_kwargs.get("gross_long", 1.),
                 **{
                     k: v for k, v in strat_kwargs.items()
-                    if k != "equal"
+                    if k not in ["equal", "gross"]
                 },
             )
         strats.append(strat_long)
@@ -416,11 +418,11 @@ def long_short(
                 name=name + " short",
                 rolling_universe=True,
                 reverse=True, # only has an effect if we use top n
-                gross=-1.,
                 equal=strat_kwargs.get("equal", True),
+                gross=strat_kwargs.get("gross_short", -1.),
                 **{
                     k: v for k, v in strat_kwargs.items()
-                    if k != "equal"
+                    if k not in ["equal", "gross"]
                 },
             )
         strats.append(strat_short)
@@ -428,16 +430,29 @@ def long_short(
     if len(strats) == 0:
         return acc, strats[0]
     elif combine:
+        if "weights" in kwargs:
+            weights = {
+                ticker: w
+                for ticker, w in zip(
+                    [strat.name for strat in strats],
+                    kwargs["weights"],
+                )
+            }
+        else:
+            weights = None
         acc, strat = combine_fixed(
             acc,
             name,
             strats,
             gross=1.,
-            equal=kwargs.get("equal", True),
+            equal=kwargs.get("equal", (
+                False if "weights" in kwargs else True
+            )),
             # default to true for convenince
+            weights=weights,
             **{
                 k: v for k, v in kwargs.items()
-                if k != "equal"
+                if k not in ["equal", "weights"]
             },
         )
         return acc, strat

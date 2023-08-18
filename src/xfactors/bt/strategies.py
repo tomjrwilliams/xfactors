@@ -79,7 +79,7 @@ def ls_equity_signal(
     return backtests.long_short(
         acc,
         universe_df,
-        name="{}({})".format(
+        name="LS(signal={})({})".format(
             fs.zip(kws).foldstar(
                 lambda acc, f, _kws: "{}({}{})".format(
                     f.__name__, 
@@ -87,7 +87,7 @@ def ls_equity_signal(
                     acc if acc == "" else ", " + acc,
                 ),
                 initial="",
-            ),
+            ), 
             visuals.formatting.args([
                 universe_name,
                 type(frequency).__name__,
@@ -96,7 +96,12 @@ def ls_equity_signal(
                         fs[1:].map(lambda f: f.__name__)
                     )
                 ),
-                visuals.formatting.kwargs(ls_kwargs),
+                visuals.formatting.kwargs({
+                    k: (v if not isinstance(
+                        v, bt.Strategy
+                    ) else "Strategy({})".format(v.name))
+                    for k, v in ls_kwargs.items()
+                }),
             ])
         ),
         signal_name=signal_name,
@@ -106,9 +111,9 @@ def ls_equity_signal(
 
 def ls_equity_weights(
     acc,
+    universe_df,
     signal_dfs,
     weight_kws,
-    universe_df,
     universe_name,
     combine_kws=None,
     shift="2D",
@@ -117,12 +122,14 @@ def ls_equity_weights(
     frequency=bt.algos.RunDaily(),
     **kwargs,
 ):
+
+    combine_kws = {} if combine_kws is None else combine_kws
     
     df_weights = weights.ls_weights(
         signal_dfs,
         universe_df=universe_df,
         weight_kws=weight_kws,
-        **({} if combine_kws is None else combine_kws),
+        **combine_kws
     )
 
     if flip:
@@ -131,7 +138,9 @@ def ls_equity_weights(
     df_weights.index = utils.dates.date_index(
         df_weights.index.values
     )
+    df_weights = df_weights.dropna(axis=0, how = "all")
     df_weights = utils.dfs.shift(df_weights, shift)
+    df_weights = df_weights.fillna(0)
 
     assert weights_name not in acc, dict(
         weights_name=weights_name,
@@ -144,8 +153,7 @@ def ls_equity_weights(
     return backtests.build(
         acc,
         universe_df,
-        name="combine({}, {})".format(
-            visuals.formatting.kwargs(combine_kws),
+        name="combine({})".format(
             visuals.formatting.args([universe_name] + [
                 "weights({})".format(
                     visuals.formatting.kwargs(dict(
@@ -154,9 +162,9 @@ def ls_equity_weights(
                     ))
                 )
                 for signal_k in signal_dfs.keys()
-            ]),
+            ] + [visuals.formatting.kwargs(combine_kws)]),
         ),
-        weights_df_name=weights_name,
+        weight_df_name=weights_name,
         **kwargs
     )
 

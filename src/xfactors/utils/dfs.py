@@ -5,6 +5,9 @@ import numpy
 
 import xtuples as xt
 
+from . import dates
+from . import shapes
+
 # ---------------------------------------------------------------
 
 def shift(df, shift, fill = numpy.NaN):
@@ -97,15 +100,19 @@ def rolling_windows(
     unit = lookback[-1]
     n = int(lookback[:-1]) - 1
 
+    df.index = dates.date_index(df.index.values)
+
     index_l = xt.iTuple(
         df.resample("{}{}".format(n, unit), label="left")
         .first()
-        .index.values
+        .index
+        .values
     )
     index_r = xt.iTuple(
         df.resample("{}{}".format(n, unit), label="right")
         .last()
-        .index.values
+        .index
+        .values
     )
 
     for l, start, r in zip(
@@ -113,11 +120,85 @@ def rolling_windows(
         tuple([None for _ in range(n)]) + index_l,
         index_r,
     ):
-        l = l if start is None else start
+        l = min(index_l) if start is None else start
         yield l, r, df.loc[
-            (df.index >= (
-                l if start is None else start
-            )) & (df.index <= r)
+            (df.index >= l) & (df.index <= r)
         ]
+
+def rolling_apply(
+    f,
+    df,
+    lookback,
+    df_mask = None,
+    na_threshold_row=0.,
+    na_threshold_col=0.,
+):
+    if df_mask is not None:
+        df_columns = xt.iTuple(df.columns)
+        df_mask_columns = xt.iTuple(df_mask.columns)
+        assert df_columns == df_mask_columns, dict(
+            df=df_columns,
+            df_mask=df_mask_columns,
+        )
+    df.index = dates.date_index(df.index.values)
+    df_res = pandas.DataFrame(
+        numpy.zeros_like(df.values),
+        columns=df.columns,
+        index=df.index,
+    )
+    if df_mask is None:
+        df_mask = pandas.DataFrame(
+            numpy.ones_like(df_res.values),
+            columns=df.columns,
+            index=df.index,
+        )
+    for l, r, df_slice in rolling_windows(
+        df_mask, lookback
+    ):
+        nd_universe = df_slice.values[0]
+        i_cols = numpy.nonzero(nd_universe)
+
+        loc = (df.index >= l) & (df.index <= r)
+        df_slice = df.loc[loc]
+
+        res = numpy.ones(df_slice.shape) * numpy.NaN
         
+        nd_slice = df_slice.values[:, i_cols][:, 0, :]
+        
+        na_row_counts = numpy.isnan(nd_slice).sum(axis=1)
+        not_na_rows = numpy.nonzero(
+            (na_row_counts / nd_slice.shape[1]) <= na_threshold_row
+        )
+
+        nd_slice = nd_slice[not_na_rows]
+
+        is_na_col = numpy.isnan(nd_slice).sum(axis=0)
+        not_na_col = (
+            is_na_col / nd_slice.shape[0]
+        ) <= na_threshold_col
+
+        nd_universe[i_cols] = nd_universe[i_cols] * not_na_col
+        i_cols = numpy.nonzero(nd_universe)
+
+        nd_slice = df_slice.values[not_na_rows]
+        nd_slice = nd_slice[:, i_cols][:, 0, :]
+
+        res_r = numpy.zeros(len(df_slice.columns))
+        
+        if not nd_slice.shape[0] or not nd_slice.shape[1]:
+            df_res.loc[loc] = res
+        
+        else:
+            res_r[i_cols] = f(nd_slice)
+            res[not_na_rows] = numpy.array(
+                shapes.expand_dims(res_r, 0, len(not_na_rows))
+            )
+            
+            df_res.loc[loc] = res
+    
+    df_res.index = dates.date_index(df_res.index.values)
+
+    return df_res
+
+
 # ---------------------------------------------------------------
