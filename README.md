@@ -20,23 +20,23 @@ pip install xfactors
 
 ## Overview
 
-xfactors (name to be reconsidered), henceforth xf, is a work-in-progress library for practical machine learning research in finance built on [JAX](https://jax.readthedocs.io/en/latest/index.html).
+xf, short for xfactors (name to be reconsidered), is a work-in-progress library for practical machine learning research in finance built on [JAX](https://jax.readthedocs.io/en/latest/index.html).
 
-xf does this by providing:
+xf provides:
 
-- base classes / interfaces for re-useable JAX model components (nodes in directed acyclic computation graphs).
+- base classes / interfaces for defining re-useable JAX model components (as nodes in directed acyclic computation graphs).
 
 - an apparatus for specifying how data, parameters, and intermediate results should flow such a model.
 
-Obeying, as much as possible, the maxim that 'code that is read together should be written together'.
+- a simple API for model training and application
+
+Where we obey, as much as possible, the maxim that 'code that is read together should be written together'.
 
 Everything in xf - models, params, results - is a tuple (or ndarray), which means:
 
-- everythings plays nicely with JAX's auto grad functionality
+- everythings plays nicely with JAX's auto grad functionality.
 
-- it's straightforward to deal with irregularly shaped data structures (for instance, rolling windows of varying sizes).
-
-- xf models can be manipulated just like any other data structure
+- xf models can be manipulated just like any other data structure.
 
 This last point, in particular, allows us to:
 
