@@ -120,7 +120,7 @@ class PCA_Rolling_LatentWeightedMean_MSE(typing.NamedTuple):
         # latent_var = jax.numpy.var(w_stack, axis=0)
         
         return res, jax.numpy.stack(res.map(
-            lambda v: jax.numpy.square(v - latents).mean()
+            lambda v: jax.numpy.abs(v - latents).mean()
         ).pipe(list)).mean()
 
 # ---------------------------------------------------------------

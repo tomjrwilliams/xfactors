@@ -255,7 +255,7 @@ class Constraint_EigenVLike(typing.NamedTuple):
 
         res = (
             + funcs.loss_descending(eigvals)
-            + funcs.loss_orthogonal(w.T)
+            + funcs.loss_orthonormal(w.T)
             + funcs.loss_mean_zero(0)(f)
             + funcs.loss_diag(cov)
         )
