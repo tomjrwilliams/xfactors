@@ -31,25 +31,25 @@ xf does this by providing:
 
 - an apparatus for specifying how data, parameters, and intermediate results should flow through each such pipeline
 
-Everything in xf - models, params, results - is a tuple, which means:
+Everything in xf - models, params, results - is a tuple (or ndarray), which means:
 
 - everythings plays nicely with JAX's auto grad functionality
 
+- it's straightforward to deal with irregularly shaped data structures (for instance, rolling windows of varying sizes).
+
 - xf models can be manipulated just like any other data structure
 
-This means, for instance, it's straightforward to:
+This last point, in particular, allows us to:
 
-- semi-dynamically filter out certain execution paths (say, for training vs scoring vs testing).
+- re-use fully- / partially- / un- trained components / pathways of one model as part of another.
 
-- re-use fully / partially trained components of one model, as part of another.
+- semi-dynamically filter out certain execution paths (say, for training vs scoring vs testing), without impinging on JAX's static shapes constraint (see [here](https://jax.readthedocs.io/en/latest/errors.html#jax.errors.UnexpectedTracerError))
 
 - semantically diff two related models (forthcoming).
 
-As such, xf helps to side-step a couple of JAX limitations, namely:
+As mentioned above, this is still a very much work-in-progress project, that I'm in the process of refactoring out - rewriting large chunks on the way - from our main code base at [Haven Cove](https://havencove.com/).
 
-- making it easier to specify conditional execution without impinging on JAX's static shapes constraint (see [here](https://jax.readthedocs.io/en/latest/errors.html#jax.errors.UnexpectedTracerError))
-
-- making it easier to deal with irregularly shaped data structures (for instance, rolling windows of varying sizes).
+The unit tests are likely the best place to start for an idea of how the project works in pactise.
 
 ## License
 
