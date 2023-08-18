@@ -37,8 +37,6 @@ Everything in xf - models, params, results - is a tuple (or ndarray), which mean
 
 - everythings plays nicely with JAX's auto grad functionality.
 
-- it's straight-forward to work with irregular array shapes (just work with the tuple instead).
-
 - xf models can be manipulated just like any other data structure.
 
 This last point, in particular, allows us to:
