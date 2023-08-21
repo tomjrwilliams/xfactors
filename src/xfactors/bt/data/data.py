@@ -11,18 +11,19 @@ import pathlib
 
 import xtuples as xt
 
-from . import curves
-from . import gics
-from . import indices
+from . import curves as _curves
+from . import gics as _gics
+from . import indices as _indices
+
+from ... import utils
 
 # ---------------------------------------------------------------
 
-def set_index(df):
-    if "Unnamed: 0" in df.columns:
-        df.index = [
-            datetime.date.fromisoformat(v)
-            for v in df["Unnamed: 0"].values
-        ]
+def set_index(df, index_col = "Unnamed: 0"):
+    df.index = [
+        datetime.date.fromisoformat(v)
+        for v in df[index_col].values
+    ]
     return df[[c for c in df.columns if "Unnamed" not in c]]
 
 # ---------------------------------------------------------------
@@ -38,10 +39,18 @@ def index_data(
     index,
     dp="./__local__/csvs",
 ):
+    """
+    >>> df = index_data("SX7E Index")
+    >>> round(numpy.mean([
+    ...     sum(numpy.isnan(df[c])) / len(df[c])
+    ...     for c in df.columns
+    ... ]), 3)
+    0.0
+    """
     fp = index_fp(index, dp=dp)
-    return pandas.read_csv(fp, compression = {
+    return set_index(pandas.read_csv(fp, compression = {
         'method': 'gzip', 'compresslevel': 1, 'mtime': 1
-    })
+    }))
 
 def returns_fp(
     index,
@@ -54,10 +63,18 @@ def returns_data(
     index,
     dp="./__local__/csvs",
 ):
+    """
+    >>> df = returns_data("SX7E Index")
+    >>> round(numpy.mean([
+    ...     sum(numpy.isnan(df[c])) / len(df[c])
+    ...     for c in df.columns
+    ... ]), 3)
+    0.53
+    """
     fp = returns_fp(index, dp=dp)
-    return pandas.read_csv(fp, compression = {
+    return set_index(pandas.read_csv(fp, compression = {
         'method': 'gzip', 'compresslevel': 1, 'mtime': 1
-    })
+    }))
 
 # ---------------------------------------------------------------
 
@@ -68,13 +85,44 @@ def curve_fp(
     assert " " not in curve_name
     return "{}/curves/{}.csv.zip".format(dp, curve_name)
 
+def sort_tenors(tenors):
+    day_map = {
+        "M": 30,
+        "Y": 365,
+    }
+    return xt.iTuple(tenors).sort(
+        lambda t: int(t[:-1]) * day_map[t[-1]]
+    )
+
+def curve_tenor_data(df, tenor):
+    return pandas.Series(
+        df["yield"].values,
+        index=utils.dates.date_index([
+            datetime.date.fromisoformat(v)
+            for v in df["date"]
+        ]),
+        name=tenor,
+    )
+
 def curve_data(
     curve_name,
     dp="./__local__/csvs"
 ):
-    return pandas.read_csv(
+    """
+    >>> df = curve_data("YCSW0023")
+    >>> {
+    ...     c: round(sum(numpy.isnan(df[c])) / len(df[c]), 3)
+    ...     for c in df.columns
+    ... }
+    {'2M': 0.998, '3M': 0.002, '6M': 0.008, '9M': 0.012, '12M': 0.014, '15M': 0.013, '18M': 0.021, '21M': 0.927, '2Y': 0.0, '3Y': 0.0, '4Y': 0.0, '5Y': 0.0, '6Y': 0.0, '7Y': 0.0, '8Y': 0.0, '9Y': 0.0, '10Y': 0.0, '11Y': 0.0, '12Y': 0.0, '15Y': 0.0, '20Y': 0.0, '25Y': 0.0, '30Y': 0.0, '40Y': 0.0, '50Y': 0.0}
+    """
+    df = pandas.read_csv(
         curve_fp(curve_name, dp=dp), compression="zip",
     )
+    return pandas.concat([
+        curve_tenor_data(df[df["tenor"] == tenor], tenor)
+        for tenor in sort_tenors(df["tenor"].unique())
+    ], axis=1)
 
 # ---------------------------------------------------------------
 
@@ -96,17 +144,19 @@ def universe_df(
     sectors=xt.iTuple([]),
     dp="./__local__/csvs"
 ):
+    assert len(indices) or len(sectors)
+
     res = {}
 
-    # TODO: sector renaming here
-
     for index in indices.sort():
-        res[index] = index_data(index, dp=dp)
+        res[index.split(" ")[0]] = index_data(index, dp=dp)
 
     for sector in sectors.sort():
-        res[sector] = index_data(sector, dp=dp)
+        res[_gics.SECTOR_MAP_SHORT.get(
+            sector, sector
+        )] = index_data(sector, dp=dp)
 
-    if (len(indices) + len(sectors)) == 1:
+    if len(indices) + len(sectors) == 1:
         return res[indices.extend(sectors).last()]
 
     return res
@@ -118,6 +168,14 @@ def returns_df(
     sectors=xt.iTuple([]),
     dp="./__local__/csvs"
 ):
+    """
+    >>> df = returns_df(indices=_indices.EU_MAJOR, sectors=_gics.SECTORS)
+    >>> round(numpy.mean([
+    ...     sum(numpy.isnan(df[c])) / len(df[c])
+    ...     for c in df.columns
+    ... ]), 3)
+    0.478
+    """
     assert len(indices) or len(sectors), dict(
         indices=indices,
         sectors=sectors,
@@ -146,18 +204,24 @@ def returns_df(
 
 # ---------------------------------------------------------------
 
-def curve_df(
+def curve_dfs(
     curves=xt.iTuple(),
     dp="./__local__/csvs",
 ):
+    """
+    >>> dfs = curve_dfs(curves=_curves.CORP_USD)
+    >>> xt.iTuple.from_keys(dfs)
+    iTuple('USD-AA', 'USD-A', 'USD-BBB', 'USD-BB', 'USD-B')
+    """
+
     assert len(curves), curves
 
     dfs = curves.map(functools.partial(
         curve_data, dp=dp
     )).zip(curves).mapstar(
         lambda df, curve: df.rename(columns={
-            "{}-{}".format(
-                curves.FULL_MAP[curve],
+            tenor: "{}-{}".format(
+                _curves.FULL_MAP[curve],
                 tenor
             )
             for tenor in df.columns
@@ -165,7 +229,7 @@ def curve_df(
     )
 
     return {
-        curve.FULL_MAP[curve]: df
+        _curves.FULL_MAP[curve]: df
         for df, curve in dfs.zip(curves)
     }
 

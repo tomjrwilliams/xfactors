@@ -61,7 +61,7 @@ def example_dfs():
     df_w = pandas.DataFrame(ws, index=index, columns=cols)
     return df_r, df_w
 
-def df_factor_return(df_rs, df_ws, shift = "1D", cum = False):
+def df_factor_return(df_rs, df_ws, shift = "1D", cum = False, calendar="FULL"):
     """
     >>> df_factor_return(*example_dfs())
     2020-01-01    0.0
@@ -77,7 +77,7 @@ def df_factor_return(df_rs, df_ws, shift = "1D", cum = False):
     dtype: float64
     """
     df_wrs = df_rs.multiply(
-        utils.dfs.shift(df_ws, shift)
+        utils.dfs.shift(df_ws, shift, calendar=calendar)
     ).sum(axis=1)
     if cum:
         return (1 + df_wrs).cumprod()

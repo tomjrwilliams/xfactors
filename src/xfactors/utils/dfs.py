@@ -10,20 +10,25 @@ from . import shapes
 
 # ---------------------------------------------------------------
 
-def shift(df, shift, fill = numpy.NaN):
+def shift(df, shift, fill = numpy.NaN, calendar = None):
     if shift is None:
         return df
     units = shift[-1]
     periods = int(shift[:-1])
-    assert units == "D", shift # else we gotta get fancy
-    return pandas.DataFrame(
-        numpy.concatenate([
-            numpy.ones((periods, len(df.columns,))) * fill,
-            df.values[periods:]
-        ], axis = 0),
-        index=df.index,
-        columns=df.columns,
-    )
+    if calendar is None:
+        assert units == "D", shift # else we gotta get fancy
+        return pandas.DataFrame(
+            numpy.concatenate([
+                numpy.ones((periods, len(df.columns,))) * fill,
+                df.values[periods:]
+            ], axis = 0),
+            index=df.index,
+            columns=df.columns,
+        )
+    elif calendar=="FULL":
+        return df.shift(periods=periods, freq=units)
+    else:
+        assert False, calendar
 
 def merge_indices(dfs):
     index = dfs[0].index

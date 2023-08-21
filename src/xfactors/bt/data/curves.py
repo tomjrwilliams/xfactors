@@ -66,6 +66,9 @@ FULL_MAP = {
     # NZ
     "YCGT0049 Index": "NZD-G",
 }
+FULL_MAP = {
+    k.split(" ")[0]: v for k, v in FULL_MAP.items()
+}
 FULL = xt.iTuple.from_keys(FULL_MAP)
 
 def is_corp(ccy, suffix, *, with_ccy = None):
@@ -77,19 +80,19 @@ def is_corp(ccy, suffix, *, with_ccy = None):
 
 CORP_USD_MAP = {
     k: v for k, v in FULL_MAP.items()
-    if is_corp(*k.split("-"), with_ccy="USD")
+    if is_corp(*v.split("-"), with_ccy="USD")
 }
 CORP_USD = xt.iTuple.from_keys(CORP_USD_MAP)
 
 CORP_EUR_MAP = {
     k: v for k, v in FULL_MAP.items()
-    if is_corp(*k.split("-"), with_ccy="EUR")
+    if is_corp(*v.split("-"), with_ccy="EUR")
 }
 CORP_EUR = xt.iTuple.from_keys(CORP_EUR_MAP)
 
 CORP_JPY_MAP = {
     k: v for k, v in FULL_MAP.items()
-    if is_corp(*k.split("-"), with_ccy="JPY")
+    if is_corp(*v.split("-"), with_ccy="JPY")
 }
 CORP_JPY = xt.iTuple.from_keys(CORP_JPY_MAP)
 

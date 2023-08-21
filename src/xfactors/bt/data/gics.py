@@ -16,6 +16,9 @@ SECTOR_MAP_SHORT = {
     "55": "UTILS",
     "60": "R-ESTATE",
 }
+SECTOR_MAP_SHORT = {
+    "GICS {}".format(k): v for k, v in SECTOR_MAP_SHORT.items()
+}
 
 # ---------------------------------------------------------------
 
@@ -95,16 +98,17 @@ FULL_MAP = {
     # management and development
     # "6020",
 }
+FULL_MAP = {"GICS {}".format(k): v for k, v in FULL_MAP.items()}
 FULL = xt.iTuple.from_keys(FULL_MAP)
 
 SECTOR_MAP = {
-    k: v for k, v in FULL.items()
+    k: v for k, v in FULL_MAP.items()
     if len(k) == 2
 }
 SECTORS = xt.iTuple.from_keys(SECTOR_MAP)
 
 DETAILED_MAP = {
-    k: v for k, v in FULL.items()
+    k: v for k, v in FULL_MAP.items()
     if len(k) > 2
 }
 DETAILED = xt.iTuple.from_keys(DETAILED_MAP)
