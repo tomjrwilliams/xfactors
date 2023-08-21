@@ -299,7 +299,6 @@ def build(
     universe_df,
     name=None,
     tickers=xt.iTuple(),
-    rolling_universe=True,
     rolling_lookback=None,
     **kws,
 ):
@@ -317,7 +316,7 @@ def build(
             data=[True for _ in universe_df.index],
         )
 
-    if rolling_universe:
+    if rolling_lookback:
         universe_df_name = "{}_universe".format(name)
 
         universe_df = pandas.DataFrame(
@@ -326,12 +325,10 @@ def build(
             index=utils.dates.date_index(universe_df.index.values)
         )
 
-        if isinstance(rolling_universe, str):
-            universe_df = resample_universe(
-                universe_df,
-                rolling_universe,
-                lookback=rolling_lookback,
-            )
+        universe_df = resample_universe(
+            universe_df,
+            rolling_lookback
+        )
 
         acc[universe_df_name] = universe_df
         acc["universes"].append(universe_df_name)
