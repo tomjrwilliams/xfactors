@@ -16,6 +16,7 @@ from . import gics as _gics
 from . import indices as _indices
 
 from ... import utils
+from ... import visuals
 
 # ---------------------------------------------------------------
 
@@ -85,15 +86,38 @@ def curve_fp(
     assert " " not in curve_name
     return "{}/curves/{}.csv.zip".format(dp, curve_name)
 
-def sort_tenors(tenors):
+def sort_tenors(tenors, with_indices = False, reverse=False):
     day_map = {
         "M": 30,
         "Y": 365,
     }
+    f_sort = lambda t: int(t[:-1]) * day_map[t[-1]]
+    if with_indices:
+        return xt.iTuple(tenors).sort_with_indices(
+            f_sort,
+            reverse=reverse
+        )
     return xt.iTuple(tenors).sort(
-        lambda t: int(t[:-1]) * day_map[t[-1]]
+        f_sort,
+        reverse=reverse
     )
 
+def enumerate_tenors(tenors, i0 = 0, reverse=False):
+    """
+    >>> enumerate_tenors(["3Y", "3M", "1Y", "1M"])
+    iTuple('03-3Y', '01-3M', '02-1Y', '00-1M')
+    """
+    return sort_tenors(
+        tenors, with_indices=True, reverse=reverse
+    ).enumerate().mapstar(
+        lambda i, it: (it[0], "{}-{}".format(
+            visuals.formatting.left_pad(
+                str(i + i0), l=2, pad="0"
+            ),
+            it[1]
+        ))
+    ).sortstar(lambda i, t: i).mapstar(lambda i, t: t)
+    
 def curve_tenor_data(df, tenor):
     return pandas.Series(
         df["yield"].values,
@@ -204,14 +228,107 @@ def returns_df(
 
 # ---------------------------------------------------------------
 
+def sort_curves(curves, with_indices = False, reverse=False):
+    f_sort = lambda pref, suff: pref + {
+        "G": "0",
+        "S": "1",
+    }.get(suff, "2{}{}".format(
+        suff[0],
+        3 - len(suff)
+    ))
+    f_split_sort = lambda c: f_sort(*c.split("-"))
+    if with_indices:
+        return xt.iTuple(curves).sort_with_indices(
+            f_split_sort,
+            reverse=reverse
+        )
+    return xt.iTuple(curves).sort(
+        f_split_sort,
+        reverse=reverse
+    )
+
+def enumerate_curves(curves, i0 = 0, reverse=False):
+    """
+    >>> enumerate_curves(["USD-B", "EUR-AA", "USD-G", "USD-AA", "EUR-S"])
+    iTuple('04-USD-B', '01-EUR-AA', '02-USD-G', '03-USD-AA', '00-EUR-S')
+    """
+    return sort_curves(
+        curves, with_indices=True, reverse=reverse
+    ).enumerate().mapstar(
+        lambda i, ic: (ic[0], "{}-{}".format(
+            visuals.formatting.left_pad(
+                str(i + i0), l=2, pad="0"
+            ),
+            ic[1]
+        ))
+    ).sortstar(lambda i, c: i).mapstar(lambda i, c: c)
+
+# reverse = descending
+def enumerate_strip_curve(df, curve, reverse=False):
+    col_tenors = {
+        col: col.replace("{}-".format(curve), "")
+        for col in df.columns if curve in col
+    }
+    df = df.rename(columns={
+        col: enum_tenor
+        for enum_tenor, (col, tenor) in enumerate_tenors(
+            col_tenors.values(), reverse=reverse
+        ).zip(col_tenors.items())
+    })
+    df = df[list(sorted(df.columns))]
+    return df
+
+def enumerate_strip_tenor(df, tenor, reverse=False):
+    col_curves = {
+        col: col.replace("-{}".format(tenor), "")
+        for col in df.columns if tenor in col
+    }
+    df = df.rename(columns={
+        col: enum_curve
+        for enum_curve, (col, curve) in enumerate_curves(
+            col_curves.values(), reverse=reverse
+        ).zip(col_curves.items())
+    })
+    df = df[list(sorted(df.columns))]
+    return df
+
+def curves_by_tenor(
+    dfs, tenor = None
+):
+    if isinstance(dfs, dict):
+        dfs = xt.iTuple.from_values(dfs)
+
+    tenors = (
+        dfs.map(xt.iTuple.from_columns)
+        .flatten()
+        .map(lambda c: c.split("-")[-1])
+        .pipe(sort_tenors)
+    )
+    if tenor is None:
+        return {
+            tenor: pandas.concat([
+                df[[col for col in df.columns if tenor in col]]
+                for df in dfs
+            ], axis=1)
+            for tenor in tenors
+        }
+    return pandas.concat([
+        df[[col for col in df.columns if tenor in col]]
+        for df in dfs
+    ], axis=1)
+
 def curve_dfs(
     curves=xt.iTuple(),
     dp="./__local__/csvs",
+    merge=False,
+    by_tenor=False,
 ):
     """
     >>> dfs = curve_dfs(curves=_curves.CORP_USD)
     >>> xt.iTuple.from_keys(dfs)
     iTuple('USD-AA', 'USD-A', 'USD-BBB', 'USD-BB', 'USD-B')
+    >>> len(curve_dfs(curves=_curves.CORP_USD, merge=True).columns)
+    79
     """
 
     assert len(curves), curves
@@ -227,6 +344,11 @@ def curve_dfs(
             for tenor in df.columns
         })
     )
+    if merge:
+        return pandas.concat(dfs, axis=1)
+
+    if by_tenor:
+        return curves_by_tenor(dfs)
 
     return {
         _curves.FULL_MAP[curve]: df

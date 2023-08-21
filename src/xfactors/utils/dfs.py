@@ -38,9 +38,9 @@ def merge_indices(dfs):
 
 def index_date_filter(df, date_start=None, date_end=None):
     if date_start is not None:
-        df = df.loc[df.index >= date_start]
+        df = df.loc[df.index >= pandas.to_datetime(date_start)]
     if date_end is not None:
-        df = df.loc[df.index <= date_end]
+        df = df.loc[df.index <= pandas.to_datetime(date_end)]
     return df
 
 def df_min_max(

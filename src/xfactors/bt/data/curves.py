@@ -83,17 +83,20 @@ CORP_USD_MAP = {
     if is_corp(*v.split("-"), with_ccy="USD")
 }
 CORP_USD = xt.iTuple.from_keys(CORP_USD_MAP)
+CORP_USD_NAMES = xt.iTuple.from_values(CORP_USD_MAP)
 
 CORP_EUR_MAP = {
     k: v for k, v in FULL_MAP.items()
     if is_corp(*v.split("-"), with_ccy="EUR")
 }
 CORP_EUR = xt.iTuple.from_keys(CORP_EUR_MAP)
+CORP_EUR_NAMES = xt.iTuple.from_values(CORP_EUR_MAP)
 
 CORP_JPY_MAP = {
     k: v for k, v in FULL_MAP.items()
     if is_corp(*v.split("-"), with_ccy="JPY")
 }
 CORP_JPY = xt.iTuple.from_keys(CORP_JPY_MAP)
+CORP_JPY_NAMES = xt.iTuple.from_values(CORP_JPY_MAP)
 
 # ---------------------------------------------------------------
