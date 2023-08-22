@@ -24,103 +24,7 @@ import optax
 import xtuples as xt
 
 from ... import xfactors as xf
-
-# ---------------------------------------------------------------
-
-def apply_na_threshold(df, na_threshold_columns, na_threshold_indices):
-
-    df = df.dropna(axis=1, how = "all")
-    df = df.dropna(axis=0, how = "all")
-
-    for thresholds in [
-        dict(
-            columns=(
-                None if na_threshold_columns is None
-                else na_threshold_columns + 0.05
-            ),
-            indices=(
-                None if na_threshold_indices is None
-                else na_threshold_indices + 0.05
-            ),
-        ),
-        dict(
-            columns=(
-                None if na_threshold_columns is None
-                else na_threshold_columns
-            ),
-            indices=(
-                None if na_threshold_indices is None
-                else na_threshold_indices
-            ),
-        )
-    ]:
-        threshold_indices = thresholds["indices"]
-        threshold_columns = thresholds["columns"]
-
-        if threshold_indices is not None:
-            keep_inds = [
-                i for i in df.index
-                if (
-                    sum(numpy.isnan(df.loc[i])) / len(
-                        df.loc[i].values
-                    )
-                ) <= threshold_indices
-            ]
-            assert len(keep_inds), df
-            df = df.loc[keep_inds]
-
-        if threshold_columns is not None:
-            keep_cols = [
-                c for c in df.columns
-                if (
-                    sum(numpy.isnan(df[c].values)) / len(df[c])
-                ) <= threshold_columns
-            ]
-            assert len(keep_cols), df
-            df = df[keep_cols]
-
-    return df
-
-def apply_allow_missing(
-    df, 
-    given_columns,
-    given_index,
-    allow_missing_columns,
-    allow_missing_indices,
-):
-
-    if not allow_missing_columns:
-        assert all([
-            c in df.columns for c in given_columns
-        ]), dict(columns=given_columns, given=df.columns)
-
-    if not allow_missing_indices:
-        assert all([
-            i in df.index for i in given_index
-        ]), dict(index=given_index, given=df.index)
-
-    return df
-
-def apply_allow_new(
-    df,
-    given_columns,
-    given_index,
-    allow_new_columns,
-    allow_new_indices,
-):
-
-    if not allow_new_columns:
-        assert all([
-            c in given_columns for c in df.columns
-        ]), dict(columns=given_columns, given=df.columns)
-
-    if not allow_new_indices:
-        assert all([
-            i in given_index for i in df.index
-        ]), dict(index=given_index, given=df.index)
-
-    return df
-
+from ... import utils
 
 # ---------------------------------------------------------------
 
@@ -181,19 +85,21 @@ class Input_DataFrame_Wide(typing.NamedTuple):
         if self.drop_na_rows:
             df = df.dropna(axis=0, how = "all")
 
-        df = apply_na_threshold(
+        df = utils.dfs.apply_na_threshold(
             df,
-            self.na_threshold_columns,
-            self.na_threshold_indices,
+            na_threshold=(
+                self.na_threshold_columns,
+                self.na_threshold_indices,
+            ),
         )
-        df = apply_allow_missing(
+        df = utils.dfs.apply_allow_missing(
             df,
             self.given_columns,
             self.given_index,
             self.allow_missing_columns,
             self.allow_missing_indices,
         )
-        df = apply_allow_new(
+        df = utils.dfs.apply_allow_new(
             df,
             self.given_columns,
             self.given_index,
@@ -273,10 +179,12 @@ class Input_DataFrame_Wide_Rolling(typing.NamedTuple):
             df = df.dropna(axis=0, how = "all")
 
         dfs = (
-            rolling_dataframes(df, self.step, self.window, self.unit)
+            dfs.utils.rolling_windows(df, "{}{}".format(
+                self.window, self.unit
+            ), step = self.step)
             .map(
                 functools.partial(
-                    apply_na_threshold,
+                    utils.dfs.apply_na_threshold,
                     na_threshold_columns=self.na_threshold_columns,
                     na_threshold_indices=self.na_threshold_indices,
                 )
@@ -308,17 +216,19 @@ class Input_DataFrame_Wide_Rolling(typing.NamedTuple):
         if self.drop_na_rows:
             df = df.dropna(axis=0, how = "all")
 
-        dfs = rolling_dataframes(df, self.step, self.window, self.unit)
+        dfs = utils.dfs.rolling_windows(df, "{}{}".format(
+            self.window, self.unit
+        ), step = self.step)
 
         dfs = dfs.map(
             functools.partial(
-                apply_na_threshold,
+                utils.dfs.apply_na_threshold,
                 na_threshold_columns=self.na_threshold_columns,
                 na_threshold_indices=self.na_threshold_indices,
             )
         ).map(
             functools.partial(
-                apply_allow_missing,
+                utils.dfs.apply_allow_missing,
                 allow_missing_columns=self.allow_missing_columns,
                 allow_missing_indices=self.allow_missing_indices,
             ),
@@ -326,7 +236,7 @@ class Input_DataFrame_Wide_Rolling(typing.NamedTuple):
             self.given_index,
         ).map(
             functools.partial(
-                apply_allow_new,
+                utils.dfs.apply_allow_new,
                 allow_new_columns=self.allow_new_columns,
                 allow_new_indices=self.allow_new_indices,
             ),

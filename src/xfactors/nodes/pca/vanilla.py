@@ -57,6 +57,12 @@ class PCA(typing.NamedTuple):
             self.n,
         ), ()
 
+    @classmethod
+    def f(cls, data, n):
+        eigvals, weights = jax.numpy.linalg.eig(jax.numpy.cov(data))
+        order = numpy.flip(numpy.argsort(eigvals))[:n]
+        return eigvals[order], weights[..., order]
+
     def apply(
         self,
         site: xf.Site,
@@ -64,11 +70,7 @@ class PCA(typing.NamedTuple):
         model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         data = self.data.access(state)
-        eigvals, weights = jax.numpy.linalg.eig(jax.numpy.cov(
-            jax.numpy.transpose(data)
-        ))
-        order = numpy.flip(numpy.argsort(eigvals))[:self.n]
-        return eigvals[order], weights[..., order]
+        return self.f(jax.numpy.transpose(data), self.n)
 
 # ---------------------------------------------------------------
 

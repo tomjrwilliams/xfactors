@@ -100,7 +100,7 @@ def melt_with_index(
 # ---------------------------------------------------------------
 
 def rolling_windows(
-    df, lookback
+    df, lookback, step = 1
 ):
     unit = lookback[-1]
     n = int(lookback[:-1]) - 1
@@ -108,27 +108,29 @@ def rolling_windows(
     df.index = dates.date_index(df.index.values)
 
     index_l = xt.iTuple(
-        df.resample("{}{}".format(n, unit), label="left")
+        df.resample("{}{}".format(1, unit), label="left")
         .first()
         .index
         .values
     )
     index_r = xt.iTuple(
-        df.resample("{}{}".format(n, unit), label="right")
+        df.resample("{}{}".format(1, unit), label="right")
         .last()
         .index
         .values
     )
 
-    for l, start, r in zip(
-        index_l,
-        tuple([None for _ in range(n)]) + index_l,
+    r_last = index_r.last()
+
+    for i, (l, start, r) in index_l.zip(
+        tuple([None for _ in range(n - 1)]) + index_l,
         index_r,
-    ):
-        l = min(index_l) if start is None else start
-        yield l, r, df.loc[
-            (df.index >= l) & (df.index <= r)
-        ]
+    ).enumerate():
+        if i % step == 0 or r == r_last:
+            l = min(index_l) if start is None else start
+            yield l, r, df.loc[
+                (df.index >= l) & (df.index <= r)
+            ]
 
 def rolling_apply(
     f,
@@ -205,5 +207,155 @@ def rolling_apply(
 
     return df_res
 
+
+# ---------------------------------------------------------------
+
+def apply_na_threshold(
+    df,
+    *,
+    na_threshold=None,
+    na_threshold_columns=None,
+    na_threshold_indices=None,
+    na_padding=None,
+    na_padding_columns=None,
+    na_padding_indices=None,
+):
+    if na_threshold is not None:
+        assert na_threshold_columns is None or (
+            na_threshold_columns == na_threshold[0]
+        ), dict(
+            na_threshold=na_threshold,
+            na_threshold_columns=na_threshold_columns,
+        )
+        assert na_threshold_indices is None or (
+            na_threshold_indices == na_threshold[0]
+        ), dict(
+            na_threshold=na_threshold,
+            na_threshold_indices=na_threshold_indices,
+        )
+        (
+            na_threshold_columns,
+            na_threshold_indices,
+        ) = na_threshold
+    if na_padding is not None:
+        assert na_padding_columns is None or (
+            na_padding_columns == na_padding[0]
+        ), dict(
+            na_padding=na_padding,
+            na_padding_columns=na_padding_columns,
+        )
+        assert na_padding_indices is None or (
+            na_padding_indices == na_padding[0]
+        ), dict(
+            na_padding=na_padding,
+            na_padding_indices=na_padding_indices,
+        )
+        (
+            na_padding_columns,
+            na_padding_indices,
+        ) = na_padding
+    else:
+        if na_padding_columns is None:
+            na_padding_columns = 0.05
+        if na_padding_indices is None:
+            na_padding_indices = 0.05
+    
+    df = df.dropna(axis=1, how = "all")
+    df = df.dropna(axis=0, how = "all")
+
+    for thresholds in [
+        dict(
+            columns=(
+                None if na_threshold_columns is None
+                else (
+                    na_threshold_columns + 
+                    na_padding_columns
+                )
+            ),
+            indices=(
+                None if na_threshold_indices is None
+                else (
+                    na_threshold_indices + 
+                    na_padding_indices
+                )
+            ),
+        ),
+        dict(
+            columns=(
+                None if na_threshold_columns is None
+                else na_threshold_columns
+            ),
+            indices=(
+                None if na_threshold_indices is None
+                else na_threshold_indices
+            ),
+        )
+    ]:
+        threshold_indices = thresholds["indices"]
+        threshold_columns = thresholds["columns"]
+
+        if threshold_indices is not None:
+            keep_inds = [
+                i for i in df.index
+                if (
+                    sum(numpy.isnan(df.loc[i])) / len(
+                        df.loc[i].values
+                    )
+                ) <= threshold_indices
+            ]
+            assert len(keep_inds), df
+            df = df.loc[keep_inds]
+
+        if threshold_columns is not None:
+            keep_cols = [
+                c for c in df.columns
+                if (
+                    sum(numpy.isnan(df[c].values)) / len(df[c])
+                ) <= threshold_columns
+            ]
+            assert len(keep_cols), df
+            df = df[keep_cols]
+
+    return df
+
+def apply_allow_missing(
+    df, 
+    given_columns,
+    given_index,
+    allow_missing_columns,
+    allow_missing_indices,
+):
+
+    if not allow_missing_columns:
+        assert all([
+            c in df.columns for c in given_columns
+        ]), dict(columns=given_columns, given=df.columns)
+
+    if not allow_missing_indices:
+        assert all([
+            i in df.index for i in given_index
+        ]), dict(index=given_index, given=df.index)
+
+    return df
+
+def apply_allow_new(
+    df,
+    given_columns,
+    given_index,
+    allow_new_columns,
+    allow_new_indices,
+):
+
+    if not allow_new_columns:
+        assert all([
+            c in given_columns for c in df.columns
+        ]), dict(columns=given_columns, given=df.columns)
+
+    if not allow_new_indices:
+        assert all([
+            i in given_index for i in df.index
+        ]), dict(index=given_index, given=df.index)
+
+    return df
 
 # ---------------------------------------------------------------
