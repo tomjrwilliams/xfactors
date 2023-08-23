@@ -56,10 +56,10 @@ def test_ppca() -> bool:
             factors=xf.Loc.result(ENCODE, 0),
             #
         ))
-        .add_constraint(xf.nodes.constraints.linalg.Constraint_Orthonormal(
-            data=xf.Loc.param(ENCODE, 0),
-            T=True,
-        ), not_if=dict(init=True))
+        # .add_constraint(xf.nodes.constraints.linalg.Constraint_Orthonormal(
+        #     data=xf.Loc.param(ENCODE, 0),
+        #     T=True,
+        # ), not_if=dict(init=True))
         .add_constraint(xf.nodes.constraints.linalg.Constraint_Eigenvec(
             cov=xf.Loc.result(COV, 0),
             weights=xf.Loc.param(ENCODE, 0),
