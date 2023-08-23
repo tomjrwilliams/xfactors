@@ -216,7 +216,7 @@ class PPCA_NegLikelihood(typing.NamedTuple):
         if self.noise:
             assert site.loc is not None
             key = site.loc.as_random().access(
-                state, into=jax.numpy.array
+                state, into=jax.numpy.ndarray
             )
             weights = weights + ((
                 jax.random.normal(key, shape=weights.shape)

@@ -179,7 +179,7 @@ class Input_DataFrame_Wide_Rolling(typing.NamedTuple):
             df = df.dropna(axis=0, how = "all")
 
         dfs = (
-            dfs.utils.rolling_windows(df, "{}{}".format(
+            utils.dfs.rolling_windows(df, "{}{}".format(
                 self.window, self.unit
             ), step = self.step)
             .map(

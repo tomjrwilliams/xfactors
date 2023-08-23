@@ -51,11 +51,7 @@ class GMM(typing.NamedTuple):
         model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         # https://en.wikipedia.org/wiki/EM_algorithm_and_GMM_model
-        data = self.data.access(state)
-        eigvals, weights = jax.numpy.linalg.eig(jax.numpy.cov(
-            jax.numpy.transpose(data)
-        ))
-        return eigvals, weights
+        assert False
 
 # ---------------------------------------------------------------
 
@@ -69,7 +65,7 @@ class BGMM_EM(typing.NamedTuple):
 
     mu: xf.Location
     cov: xf.Location
-    probs: xf.Location
+    # probs: xf.Location
 
     noise: typing.Optional[float] = 0.1
 
@@ -89,24 +85,17 @@ class BGMM_EM(typing.NamedTuple):
         data = self.data.access(state)
         mu = self.mu.access(state)
         cov = self.cov.access(state)
-        probs = self.probs.access(state)
-
-        # probs = probs + small
-        # probs = probs / probs.sum()
+        # probs = self.probs.access(state)
 
         cov = jax.numpy.matmul(
             jax.numpy.transpose(cov, (0, 2, 1)),
             cov,
         )
-        # cov = jax.numpy.stack([
-        #     jax.numpy.eye(mu.shape[1])
-        #     for _ in range(mu.shape[0])
-        # ])
         
         if self.noise:
             assert site.loc is not None
             key = site.loc.as_random().access(
-                state, into=jax.numpy.array
+                state, into=jax.numpy.ndarray
             )
             noise = ((
                 jax.random.normal(key, shape=cov.shape[:-1])
@@ -120,8 +109,6 @@ class BGMM_EM(typing.NamedTuple):
                 xf.expand_dims(noise, 1, 1), 
             )
             cov = cov + jax.numpy.abs(diag_noise)
-
-        X = data
 
         mu_ = xf.expand_dims(mu, 1, data.shape[0])
         data_ = xf.expand_dims(data, 0, mu.shape[0])
@@ -168,18 +155,6 @@ class BGMM_EM(typing.NamedTuple):
             xf.expand_dims(norm, 0, data.shape[0])
         )
 
-        # w_scale = jax.numpy.multiply(
-        #     w, xf.expand_dims(cluster_prob, 0, w.shape[0])
-        # )
-
-        w_scale = jax.numpy.divide(
-            w,
-            xf.expand_dims(
-               w.sum(axis=1), 1, w.shape[1]
-            )
-        )
-        # [0 .. 1] proportional score of belonging to each class
-
         log_likelihood = jax.numpy.log(w.sum(axis=1)).mean()
 
         max_w = w.T[jax.numpy.argmax(w, axis = 1)]
@@ -189,53 +164,6 @@ class BGMM_EM(typing.NamedTuple):
 
         data_probs = w
 
-        cluster_weights = w_scale.sum(axis=0)
-        cluster_prob = cluster_weights / w.shape[0]
-
-        cluster_inv = 1 / (cluster_prob + 0.01)
-        cluster_inv = cluster_inv / cluster_inv.sum()
-        # this woudl be if averaging over individual points
-
-        r = jax.numpy.divide(
-            w,
-            xf.expand_dims(
-                w.sum(axis=0), 0, w.shape[0]
-            )
-        )
-        # w = now responsibility
-
-        r_data = xf.expand_dims(r, -1, mu.shape[1])
-        # n_data, n_cluster, n_col
-
-        data_ = jax.numpy.transpose(data_, (1, 0, 2))
-
-        mu_new = jax.numpy.multiply(r_data, data_).sum(axis=0)
-
-        r_data = jax.numpy.transpose(r_data, (1, 0, 2))
-        r_data = xf.expand_dims(r_data, -1, mu.shape[1])
-
-        cov_num = jax.numpy.multiply(
-            r_data,
-            jax.numpy.matmul(
-                mu_diff_T, mu_diff, 
-            ),
-        ).sum(axis=1)
-        
-        cov_new = cov_num
-
-        # pivot = jax.numpy.multiply(
-        #     mu,
-        #     xf.expand_dims(cluster_inv, 1, mu.shape[1])
-        # ).sum(axis = 0)
-        pivot = data.mean(axis = 0)
-        # # sum out clusters
-
-        # residual = jax.numpy.subtract(
-        #     mu_new,
-        #     xf.expand_dims(pivot, 0, mu_new.shape[0]),
-        # )
-
-        return mu_new, cov_new, data_probs, log_likelihood, separability
-        # , cluster_prob, log_likelihood
+        return data_probs, log_likelihood, separability
 
 # ---------------------------------------------------------------

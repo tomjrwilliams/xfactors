@@ -47,11 +47,14 @@ RANDOM = 3
 
 # as we can follow paths through the model
 def follow_path(path, acc):
-    return xt.iTuple(path).fold(
-        lambda acc, i: acc[i], initial=acc
-    )
+    try:
+        return xt.iTuple(path).fold(
+            lambda acc, i: acc[i], initial=acc
+        )
+    except:
+        assert False, path
 
-
+import inspect
 def get_location(
     loc: typing.Optional[Location], 
     acc: typing.Union[State, Model],
@@ -62,13 +65,14 @@ def get_location(
         res = follow_path(loc.path, acc[(
             RESULT if loc.domain is None else loc.domain
         )])
-        if into is not None:
-            if issubclass(into, xt.iTuple):
-                res = xt.iTuple(res)
-            assert isinstance(res, into)
-        return res
     except:
         assert False, loc
+    if into is not None:
+        if inspect.isclass(into):
+            if issubclass(into, xt.iTuple):
+                res = into(res)
+            assert isinstance(res, into)
+    return res
 
 def f_follow_path(acc):
     def f(obj):
@@ -361,6 +365,10 @@ def add_constraint(model: Model, node: Node, **kws) -> Model:
 def init_model(model: Model, data: tuple) -> Model:
 
     def f_acc(model: Model, params, stage, data):
+        if not stage.len():
+            return model._replace(
+                stages=model.stages.append(xt.iTuple()), 
+            ), params.append(xt.iTuple())
         stage, stage_params = stage.map(
             operator.methodcaller("init", model, data)
         ).zip().map(xt.iTuple)
@@ -412,7 +420,7 @@ def apply_flags(model: Model, **flags):
 def init_objective(
     model: Model,
     data,
-    rand_keys,
+    init_rand_keys,
     jit = True,
 ):
     init_params = model.params
@@ -420,14 +428,14 @@ def init_objective(
         model.stages[0].map(
             operator.methodcaller(
                 "apply", State(
-                    init_params, data, (), rand_keys, stage=0
+                    init_params, data, (), init_rand_keys, stage=0
                 ), model._replace(params=xt.iTuple())
             )
         )
     )
-    n_static = model.stages[1:].len_range().last_where(
-        lambda i: model.stages[1 + i].all(lambda o: o.static),
-    )
+    n_static = model.stages[1:].len_range().first_where(
+        lambda i: not model.stages[1 + i].all(lambda o: o.static),
+    ) - 1
     n_static = 0 if n_static is None else n_static + 1
     # TODO: raise warning if in stage, some static but not all 
     # or static found in stage after last all static stage
@@ -435,7 +443,7 @@ def init_objective(
         lambda res, stage: res.append(stage.map(
             operator.methodcaller(
                 "apply", State(
-                    init_params, res, (), rand_keys,
+                    init_params, res, (), init_rand_keys,
                 ), model._replace(params=xt.iTuple())
             )
         )),
@@ -557,7 +565,7 @@ def init_optimisation(
     objective = init_objective(
         score_model,
         data,
-        rand_keys=rand_keys,
+        init_rand_keys=rand_keys,
         jit = jit,
     )
     f_grad = jax.value_and_grad(objective)
@@ -625,7 +633,7 @@ def optimise_model(
     objective = init_objective(
         train_model,
         data,
-        rand_keys=rand_keys,
+        init_rand_keys=rand_keys,
         jit = jit,
     )
 

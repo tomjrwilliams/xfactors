@@ -8,3 +8,4 @@ from . import inputs
 from . import params
 from . import pca
 from . import reg
+from . import scaling

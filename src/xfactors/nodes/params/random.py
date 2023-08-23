@@ -64,6 +64,91 @@ class RandomCovariance(typing.NamedTuple):
 
 
 @xt.nTuple.decorate()
+class Uniform(typing.NamedTuple):
+
+    shape: tuple
+
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[Uniform, tuple, xf.SiteValue]:
+        return self,self.shape,  utils.rand.uniform(self.shape)
+
+    def apply(
+        self,
+        site: xf.Site,
+        state: xf.State,
+        model: xf.Model,
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
+        assert site.loc is not None
+        
+        v = site.loc.as_param().access(state)
+        if site.masked:
+            return jax.lax.stop_gradient(v)
+        return v
+
+@xt.nTuple.decorate()
+class VUniform(typing.NamedTuple):
+
+    data: xf.Location
+    shape: tuple
+
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[VUniform, tuple, xf.SiteValue]:
+        shape = xt.iTuple(self.data.access(model, into=xf.Site))
+        return self, (
+            shape.map(lambda _: self.shape)
+        ), (
+            shape.map(lambda _: utils.rand.uniform(self.shape))
+        )
+
+    def apply(
+        self,
+        site: xf.Site,
+        state: xf.State,
+        model: xf.Model,
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
+        assert site.loc is not None
+        
+        v = site.loc.as_param().access(state)
+        if site.masked:
+            return v.map(jax.lax.stop_gradient)
+        return v
+        
+# ---------------------------------------------------------------
+
+
+@xt.nTuple.decorate()
+class Orthogonal(typing.NamedTuple):
+
+    shape: tuple
+
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[Orthogonal, tuple, xf.SiteValue]:
+        s = self.shape
+        return self, self.shape, utils.rand.orthogonal(s[0])[..., :s[1]]
+
+    def apply(
+        self,
+        site: xf.Site,
+        state: xf.State,
+        model: xf.Model,
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
+        assert site.loc is not None
+        
+        v = site.loc.as_param().access(state)
+        if site.masked:
+            return jax.lax.stop_gradient(v)
+        return v
+
+# TODO: we use the param not the result 
+# so no need for return?
+
+# ---------------------------------------------------------------
+
+
+@xt.nTuple.decorate()
 class Gaussian(typing.NamedTuple):
 
     shape: tuple
@@ -114,6 +199,9 @@ class VGaussian(typing.NamedTuple):
         if site.masked:
             return v.map(jax.lax.stop_gradient)
         return v
+
+# ---------------------------------------------------------------
+
 
 @xt.nTuple.decorate()
 class GaussianSoftmax(typing.NamedTuple):

@@ -56,13 +56,9 @@ def test_kmeans() -> bool:
         .add_node(PARAMS, xf.nodes.params.random.Gaussian(
             shape=(N_CLUSTERS, N_COLS, N_COLS,),
         ))
-        # .add_node(PARAMS, xf.nodes.params.scalar.RandomCovariance(
-        #     n=N_CLUSTERS,
-        #     d=N_COLS,
+        # .add_node(PARAMS, xf.nodes.params.random.GaussianSoftmax(
+        #     shape=(data[0].shape[0], N_CLUSTERS,),
         # ))
-        .add_node(PARAMS, xf.nodes.params.random.GaussianSoftmax(
-            shape=(data[0].shape[0], N_CLUSTERS,),
-        ))
         .add_node(PARAMS, xf.nodes.params.random.GaussianSoftmax(
             shape=(N_CLUSTERS,),
         ))
@@ -71,80 +67,19 @@ def test_kmeans() -> bool:
             data=xf.Loc.result(INPUT, 0),
             mu=xf.Loc.param(PARAMS, 0),
             cov=xf.Loc.param(PARAMS, 1),
-            probs=xf.Loc.param(PARAMS, 3),
         ), random = True)
-        # .add_constraint(xf.nodes.constraints.loss.Constraint_MinimiseSquare(
-        #     data=xt.iTuple.one(
-        #         xf.Loc.result(EM, 0, 3)
-        #     ),
-        # ))
-        # .add_constraint(xf.nodes.constraints.Constraint_Orthogonal(
-        #     data=xt.iTuple.one(
-        #         xf.Loc.result(EM, 0, 0)
-        #     ),
-        # ))
         .add_constraint(xf.nodes.constraints.loss.Constraint_Maximise(
-            data=xf.Loc.result(EM, 0, 3),
+            data=xf.Loc.result(EM, 0, 1),
         ))
         .add_constraint(xf.nodes.constraints.loss.Constraint_Maximise(
-            data=xf.Loc.result(EM, 0, 4),
+            data=xf.Loc.result(EM, 0, 2),
         ))
-        # .add_constraint(xf.nodes.constraints.loss.Constraint_MinimiseSquare(
-        #     data=xt.iTuple.one(
-        #         xf.Loc.result(EM, 0)
-        #     ),
-        # ))
-        # .add_constraint(xf.nodes.constraints.Constraint_Orthogonal(
-        #     data=xf.xt.iTuple.one(
-        #         xf.Loc.param(PARAMS, 0)
-        #     ),
-        # ))
         .add_constraint(xf.nodes.constraints.linalg.Constraint_VOrthogonal(
             data=xf.Loc.param(PARAMS, 1),
         ))
-        # .add_constraint(xf.nodes.constraints.loss.Constraint_MinimiseMMSpread(
-        #     data=xt.iTuple.one(
-        #         xf.Loc.param(PARAMS, 1)
-        #     ),
-        # ))
         .add_constraint(xf.nodes.constraints.linalg.Constraint_L1_MM_Diag(
             raw=xf.Loc.param(PARAMS, 1),
         ))
-        # .add_constraint(xf.nodes.constraints.Constraint_Orthogonal(
-        #     data=xf.xt.iTuple.one(
-        #         xf.Loc.param(PARAMS, 0)
-        #     ),
-        # ))
-        # .add_constraint(xf.nodes.constraints.em.Constraint_EM(
-        #     param=xt.iTuple.one(
-        #         xf.Loc.param(PARAMS, 0)
-        #     ),
-        #     optimal=xt.iTuple.one(
-        #         xf.Loc.result(EM, 0, 0)
-        #         #mu
-        #     ),
-        #     cut_tree=True,
-        # ))
-        # .add_constraint(xf.nodes.constraints.em.Constraint_EM_MatMul(
-        #     param=xt.iTuple.one(
-        #         xf.Loc.param(PARAMS, 1)
-        #     ),
-        #     optimal=xt.iTuple.one(
-        #         xf.Loc.result(EM, 0, 1)
-        #         #a
-        #     ),
-        #     cut_tree=True,
-        # ))
-        # .add_constraint(xf.nodes.constraints.em.Constraint_EM(
-        #     param=xt.iTuple.one(
-        #         xf.Loc.param(PARAMS, 2)
-        #     ),
-        #     optimal=xt.iTuple.one(
-        #         xf.Loc.result(EM, 0, 3)
-        #         # b
-        #     ),
-        #     cut_tree=True,
-        # ))
         .init(data)
     )
 
@@ -166,7 +101,7 @@ def test_kmeans() -> bool:
     clusters = params[0]
     cov_ = params[1]
     # probs = params[2]
-    probs = results[EM][0][2]
+    probs = results[EM][0][0]
     
     cov_ = numpy.round(numpy.matmul(
         numpy.transpose(cov_, (0, 2, 1)),

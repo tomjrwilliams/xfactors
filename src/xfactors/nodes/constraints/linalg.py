@@ -27,6 +27,8 @@ from . import funcs
 
 # ---------------------------------------------------------------
 
+
+
 @xt.nTuple.decorate(init=xf.init_null)
 class Constraint_Eigenvec(typing.NamedTuple):
     
@@ -211,7 +213,7 @@ class Constraint_VDiagonal(typing.NamedTuple):
 @xt.nTuple.decorate(init=xf.init_null)
 class Constraint_XXt_Cov(typing.NamedTuple):
     
-    data: xf.Location
+    X: xf.Location
     cov: xf.Location
 
     def init(
@@ -225,13 +227,42 @@ class Constraint_XXt_Cov(typing.NamedTuple):
         model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         
-        X = self.data.access(state)
+        X = self.X.access(state)
         cov = self.cov.access(state)
 
         XXt = jax.numpy.matmul(X, X.T)
 
         return funcs.loss_mse(XXt, cov)
 
+@xt.nTuple.decorate(init=xf.init_null)
+class Constraint_XD2Xt_Cov(typing.NamedTuple):
+    
+    X: xf.Location
+    D: xf.Location
+    cov: xf.Location
+
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[Constraint_XXt_Cov, tuple, xf.SiteValue]: ...
+
+    def apply(
+        self,
+        site: xf.Site,
+        state: xf.State,
+        model: xf.Model,
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
+        
+        X = self.X.access(state)
+        D = self.D.access(state)
+        cov = self.cov.access(state)
+
+        D_sq = jax.numpy.square(D)
+
+        XXt = jax.numpy.matmul(
+            jax.numpy.multiply(X, D_sq), X.T
+        )
+
+        return funcs.loss_mse(XXt, cov)
 
 @xt.nTuple.decorate(init=xf.init_null)
 class Constraint_EigenVLike(typing.NamedTuple):

@@ -28,6 +28,13 @@ def reset_keys(seed=69):
 
 # ---------------------------------------------------------------
 
+def uniform(shape, seed = 69):
+    return jax.random.uniform(
+        next_key(seed=seed), 
+        shape = tuple(shape),
+        #
+    )
+    
 def beta(a, b, shape=None, seed = 69):
     return jax.random.beta(
         a, b,
