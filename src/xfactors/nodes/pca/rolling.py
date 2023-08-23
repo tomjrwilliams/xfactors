@@ -41,7 +41,7 @@ class PCA_Rolling(typing.NamedTuple):
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[PCA_Rolling, tuple, xf.SiteValue]: ...
-    
+
     def apply(
         self,
         site: xf.Site,
@@ -49,10 +49,15 @@ class PCA_Rolling(typing.NamedTuple):
         model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         data = self.data.access(state)
-        eigvals, weights = jax.numpy.linalg.eig(jax.numpy.cov(
-            jax.numpy.transpose(data)
-        ))
-        return eigvals, weights
+        res = data.map(
+            lambda _data: vanilla.PCA.f(
+                jax.numpy.transpose(_data), self.n
+            )
+        )
+        return (
+            res.map(lambda v: v[0]), # eigvals
+            res.map(lambda v: v[1]), # eigvecs
+        )
 
 # ---------------------------------------------------------------
 

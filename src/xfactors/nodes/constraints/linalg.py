@@ -39,7 +39,7 @@ class Constraint_Eigenvec(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Constraint_Orthonormal, tuple, xf.SiteValue]: ...
+    ) -> tuple[Constraint_Eigenvec, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -108,7 +108,7 @@ class Constraint_VEigenvec(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Constraint_Orthonormal, tuple, xf.SiteValue]: ...
+    ) -> tuple[Constraint_VEigenvec, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -209,6 +209,31 @@ class Constraint_VDiagonal(typing.NamedTuple):
             X = X.T
         return jax.vmap(funcs.loss_diag)(X).sum()
 
+@xt.nTuple.decorate(init=xf.init_null)
+class Constraint_WtSW(typing.NamedTuple):
+    
+    W: xf.Loc # eigvec
+    S: xf.Loc # cov
+
+    def init(
+        self, site: xf.Site, model: xf.Model, data: tuple
+    ) -> tuple[Constraint_WtSW, tuple, xf.SiteValue]: ...
+
+    def apply(
+        self,
+        site: xf.Site,
+        state: xf.State,
+        model: xf.Model,
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
+        
+        W = self.W.access(state)
+        S = self.S.access(state)
+
+        res = jax.numpy.matmul(jax.numpy.matmul(W.T, S), W)
+
+        return res.sum() + jax.numpy.square(jax.numpy.clip(
+            res, a_max=0.
+        )).sum()
 
 @xt.nTuple.decorate(init=xf.init_null)
 class Constraint_XXt_Cov(typing.NamedTuple):
@@ -243,7 +268,7 @@ class Constraint_XD2Xt_Cov(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Constraint_XXt_Cov, tuple, xf.SiteValue]: ...
+    ) -> tuple[Constraint_XD2Xt_Cov, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -322,7 +347,7 @@ class Constraint_VEigenVLike(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Constraint_EigenVLike, tuple, xf.SiteValue]: ...
+    ) -> tuple[Constraint_VEigenVLike, tuple, xf.SiteValue]: ...
 
     def apply(
         self,

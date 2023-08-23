@@ -46,7 +46,7 @@ def test_kmeans() -> bool:
     )
     
     model, STAGES = xf.Model().init_stages(2)
-    INPUT, PARAMS, EM = STAGES
+    INPUT, PARAMS, GMM = STAGES
 
     model = (
         model.add_input(xf.nodes.inputs.dfs.Input_DataFrame_Wide())
@@ -62,17 +62,17 @@ def test_kmeans() -> bool:
         .add_node(PARAMS, xf.nodes.params.random.GaussianSoftmax(
             shape=(N_CLUSTERS,),
         ))
-        .add_node(EM, xf.nodes.clustering.gmm.BGMM_EM(
+        .add_node(GMM, xf.nodes.clustering.gmm.BGMM_EM(
             k=N_CLUSTERS,
             data=xf.Loc.result(INPUT, 0),
             mu=xf.Loc.param(PARAMS, 0),
             cov=xf.Loc.param(PARAMS, 1),
         ), random = True)
         .add_constraint(xf.nodes.constraints.loss.Constraint_Maximise(
-            data=xf.Loc.result(EM, 0, 1),
+            data=xf.Loc.result(GMM, 0, 1),
         ))
         .add_constraint(xf.nodes.constraints.loss.Constraint_Maximise(
-            data=xf.Loc.result(EM, 0, 2),
+            data=xf.Loc.result(GMM, 0, 2),
         ))
         .add_constraint(xf.nodes.constraints.linalg.Constraint_VOrthogonal(
             data=xf.Loc.param(PARAMS, 1),
@@ -98,10 +98,10 @@ def test_kmeans() -> bool:
 
     params = model.params[PARAMS]
 
-    clusters = params[0]
+    mu_ = params[0]
     cov_ = params[1]
     # probs = params[2]
-    probs = results[EM][0][0]
+    probs = results[GMM][0][0]
     
     cov_ = numpy.round(numpy.matmul(
         numpy.transpose(cov_, (0, 2, 1)),
@@ -113,7 +113,7 @@ def test_kmeans() -> bool:
 
     print(cov_)
     print(labels)
-    print(clusters)
+    print(mu_)
     print(mu)
     
     # print(results[EM][0][3])
@@ -123,14 +123,14 @@ def test_kmeans() -> bool:
         xt.iTuple([int(l) for l in labels])
         .pipe(xf.nodes.clustering.kmeans.reindex_labels)
     )
-    clusters = [clusters[i] for i in order]
+    mu_ = [mu_[i] for i in order]
 
     k_means = KMeans(n_clusters=3, random_state=69).fit(vs)
     sk_labels, sk_order = xt.iTuple(k_means.labels_).pipe(
         xf.nodes.clustering.kmeans.reindex_labels
     )
 
-    clusters = numpy.round(clusters, 3)
+    mu_ = numpy.round(mu_, 3)
     mu = numpy.round(mu, 3)
     
     assert labels == sk_labels, {
@@ -140,7 +140,7 @@ def test_kmeans() -> bool:
     }
 
     utils.assert_is_close(
-        clusters,
+        mu_,
         mu,
         True,
         atol=0.2,

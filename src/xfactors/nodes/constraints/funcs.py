@@ -15,6 +15,9 @@ def loss_mabse(l, r):
 def loss_mse(l, r):
     return jax.numpy.square(jax.numpy.subtract(l, r)).mean()
 
+def loss_sumse(l, r):
+    return jax.numpy.square(jax.numpy.subtract(l, r)).sum()
+
 def loss_mse_zero(X1):
     return jax.numpy.square(X1).mean()
 
@@ -40,7 +43,12 @@ def loss_diag(X):
     )
     return loss_mse(X, diag)
 
+# can be zero by col1 = col2 * -1
+# so we first set all to have same sign (+) in col[0]
 def loss_orthonormal(X):
+    X = jax.numpy.multiply(
+        X, xf.expand_dims(jax.numpy.sign(X[0]), 0, X.shape[0])
+    )
     eye = jax.numpy.eye(X.shape[0])
     XXt = jax.numpy.matmul(X, X.T)
     return loss_mse(XXt, eye)
@@ -51,7 +59,20 @@ def loss_orthogonal(X):
 
 def loss_eigenvec(cov, w, eigvals):
     cov_w = jax.numpy.matmul(cov, w)
-    w_scale = jax.numpy.multiply(w, xf.expand_dims(eigvals, 0, 1))
-    return loss_mse(cov_w, w_scale)
+    w_scale = jax.numpy.multiply(xf.expand_dims(eigvals, 0, 1), w)
+
+    norm = jax.numpy.square(jax.numpy.matmul(w.T, w))
+
+    mul = jax.numpy.clip(jax.numpy.multiply(
+        norm, 
+        1 + (
+            jax.numpy.eye(norm.shape[0]) * -2
+        ),
+    ), a_max = 1., a_min = -1.)
+
+    return (
+        loss_mse(cov_w, w_scale)
+        + jax.numpy.matmul(mul, eigvals).sum()
+    )
 
 # ---------------------------------------------------------------

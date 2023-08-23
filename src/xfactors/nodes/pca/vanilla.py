@@ -94,7 +94,7 @@ class PCA_Encoder(typing.NamedTuple):
             assert site.loc is not None
             return self._replace(
                 weights=site.loc.as_param()
-            ), shape, utils.rand.gaussian(shape)
+            ), shape, utils.rand.orthogonal(shape[0])[..., :shape[1]]
         else:
             # TODO: weight shape check
             pass

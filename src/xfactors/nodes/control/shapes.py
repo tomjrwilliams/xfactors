@@ -125,7 +125,8 @@ class UnFlatten(typing.NamedTuple):
 @xt.nTuple.decorate(init=xf.init_null)
 class Concatenate(typing.NamedTuple):
     
-    locs: xt.iTuple
+    axis: int
+    loc: xf.Loc
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
@@ -137,7 +138,8 @@ class Concatenate(typing.NamedTuple):
         state: xf.State,
         model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
-        assert False, self
+        data = self.locs.map(lambda l: l.access(state))
+        return jax.numpy.concatenate(data.pipe(list), axis=self.axis)
 
 
 # given shape definitions, can slice back out into tuple
