@@ -69,31 +69,10 @@ class KMeans_Labels(typing.NamedTuple):
 
         data = self.data.access(state)
 
-        # ignore var for now?
-
-        # mu = ncluster, ncol
-        # data = npoint, ncol
-
         diffs = jax.numpy.subtract(
             xf.expand_dims(data, -1, mu.shape[0]),
             xf.expand_dims(mu.T, 0, data.shape[0]),
         )
-        # n_point, n_cols, n_cluster
-
-        # cluster_av_diff = (
-        #     jax.numpy.abs(diffs).sum(axis=1).mean(axis=0)
-        # )
-
-        # diffs = jax.numpy.divide(
-        #     diffs,
-        #     xf.expand_dims(
-        #         xf.expand_dims(cluster_av_diff, 0, data.shape[1]),
-        #         0, data.shape[0]
-        #     )
-        # )
-
-        # don't need square root, as will be applied to all anyway
-
         return jax.numpy.argmin(
             jax.numpy.square(diffs).sum(axis=1), axis=1
         )

@@ -58,6 +58,10 @@ class Kernel_Sum(typing.NamedTuple):
         if len(self.kernels):
             kernels = self.kernels.map(
                 lambda k: k.access(state)
+            ).map(
+                lambda v: (
+                    v if isinstance(v, xt.iTuple) else xt.iTuple((v,))
+                )
             ).flatten()
         else:
             kernels = xt.iTuple()
@@ -121,6 +125,8 @@ class Kernel_Linear(typing.NamedTuple):
     sigma: xf.Loc
     data: xf.Loc
 
+    sigma_sq: bool = True
+
     # assumed 1D
 
     def init(
@@ -128,7 +134,7 @@ class Kernel_Linear(typing.NamedTuple):
     ) -> tuple[Kernel_Linear, tuple, xf.SiteValue]: ...
     
     @classmethod
-    def f(cls, data, a, c, sigma):
+    def f(cls, data, a, c, sigma, sigma_sq = True):
 
         diffs = data - c
         diffs_ = xf.expand_dims(diffs, 0, 1)
@@ -137,7 +143,11 @@ class Kernel_Linear(typing.NamedTuple):
         # scale
 
         return (
-            (diffs_ * diffs_.T) * jax.numpy.square(sigma)
+            (diffs_ * diffs_.T) * (
+                jax.numpy.square(sigma)
+                if sigma_sq
+                else sigma
+            )
         ) + jax.numpy.square(a)
 
     def apply(
@@ -150,7 +160,7 @@ class Kernel_Linear(typing.NamedTuple):
         c = self.c.access(state)
         sigma = self.sigma.access(state)
         data = self.data.access(state)
-        return self.f(data, a, c, sigma)
+        return self.f(data, a, c, sigma, sigma_sq=self.sigma_sq)
 
 
 @xt.nTuple.decorate(init=xf.init_null)
@@ -161,9 +171,11 @@ class VKernel_Linear(typing.NamedTuple):
     sigma: xf.Loc
     data: xf.Loc
 
+    sigma_sq: bool = True
+
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Kernel_Linear, tuple, xf.SiteValue]: ...
+    ) -> tuple[VKernel_Linear, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -176,7 +188,7 @@ class VKernel_Linear(typing.NamedTuple):
         sigma = self.sigma.access(state)
         data = self.data.access(state)
         return xt.iTuple(a).zip(c, sigma).mapstar(
-            lambda _a, _c, _sigma: Kernel_Linear.f(data, _a, _c, _sigma)
+            lambda _a, _c, _sigma: Kernel_Linear.f(data, _a, _c, _sigma, sigma_sq= self.sigma_sq)
         )
 
 
@@ -188,14 +200,16 @@ class Kernel_VLinear(typing.NamedTuple):
     sigma: xf.Loc
     data: xf.Loc
 
+    sigma_sq: bool = True
+
     # assumed 1D
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Kernel_Linear, tuple, xf.SiteValue]: ...
+    ) -> tuple[Kernel_VLinear, tuple, xf.SiteValue]: ...
     
     @classmethod
-    def f(cls, data, a, c, sigma):
+    def f(cls, data, a, c, sigma, sigma_sq = True):
 
         diffs = (xf.expand_dims(data, 0, 1) - (
             xf.expand_dims(c, 0, 1).T
@@ -210,13 +224,15 @@ class Kernel_VLinear(typing.NamedTuple):
             )
         )
 
-        # diff_soft = jax.nn.softmax(diff_prod, axis = 2)
-        # diff_weights = 1 - diff_soft
+        diff_soft = jax.nn.softmax(diff_prod, axis = 2)
+        diff_weights = 1 - diff_soft
 
         return (
-            diff_prod.mean(axis=-1) * (
-            # (diff_weights * diff_prod).sum(axis=-1) * (
+            # diff_prod.mean(axis=-1) * (
+            (diff_weights * diff_prod).sum(axis=-1) * (
                 jax.numpy.square(sigma)
+                if sigma_sq
+                else sigma
             )
         ) + jax.numpy.square(a)
 
@@ -230,7 +246,7 @@ class Kernel_VLinear(typing.NamedTuple):
         c = self.c.access(state)
         sigma = self.sigma.access(state)
         data = self.data.access(state)
-        return self.f(data, a, c, sigma)
+        return self.f(data, a, c, sigma, sigma_sq=self.sigma_sq)
 
 
 @xt.nTuple.decorate(init=xf.init_null)
@@ -241,9 +257,11 @@ class VKernel_VLinear(typing.NamedTuple):
     sigma: xf.Loc
     data: xf.Loc
 
+    sigma_sq: bool = True
+
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Kernel_Linear, tuple, xf.SiteValue]: ...
+    ) -> tuple[VKernel_VLinear, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -256,7 +274,7 @@ class VKernel_VLinear(typing.NamedTuple):
         sigma = self.sigma.access(state)
         data = self.data.access(state)
         return xt.iTuple(a).zip(c, sigma).mapstar(
-            lambda _a, _c, _sigma: Kernel_VLinear.f(data, _a, _c, _sigma)
+            lambda _a, _c, _sigma: Kernel_VLinear.f(data, _a, _c, _sigma, sigma_sq = self.sigma_sq)
         )
 # ---------------------------------------------------------------
 
@@ -282,14 +300,15 @@ class Kernel_Gaussian(typing.NamedTuple):
        
 # ---------------------------------------------------------------
 
+small = 10 ** -4
 
 
 @xt.nTuple.decorate(init=xf.init_null)
 class Kernel_RBF(typing.NamedTuple):
 
-    sigma: float
-    # or variance?
-    sites: xt.iTuple
+    sigma: xf.Loc
+    l: xf.Loc
+    data: xf.Loc
 
     # TODO: optional transform callable field
     # that can take params itself
@@ -302,12 +321,29 @@ class Kernel_RBF(typing.NamedTuple):
     ) -> tuple[Kernel_RBF, tuple, xf.SiteValue]: ...
     
     @classmethod
-    def f(cls, features_l, features_r, sigma, l):
+    def f_flat(cls, features_l, features_r, sigma, l):
         sigma_sq = jax.numpy.square(sigma)
         l_2_sq = 2 * jax.numpy.square(l)
         norms = euclidean_distance(features_l, features_r)
         return jax.numpy.exp(
             -1 * (jax.numpy.square(norms) / l_2_sq)
+        ) * sigma_sq
+
+    @classmethod
+    def f(cls, data, sigma, l):
+
+        sigma_sq = jax.numpy.square(sigma)
+        l_2_sq = 2 * jax.numpy.square(l)
+
+        data_ = xf.expand_dims(data, 0, 1)
+        diffs = data_ - data_.T
+        diffs_sq = jax.numpy.square(diffs)
+
+        # prevent div 0
+        euclidean = jax.numpy.sqrt(diffs_sq + small)
+
+        return jax.numpy.exp(
+            -1 * (jax.numpy.square(euclidean) / l_2_sq)
         ) * sigma_sq
 
     def apply(
@@ -316,7 +352,10 @@ class Kernel_RBF(typing.NamedTuple):
         state: xf.State,
         model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
-        assert False, self
+        sigma = self.sigma.access(state)
+        data = self.data.access(state)
+        l = self.l.access(state)
+        return self.f(data, sigma, l)
 
 
 # ---------------------------------------------------------------
