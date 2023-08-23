@@ -57,6 +57,13 @@ def loss_orthogonal(X):
     XXt = jax.numpy.matmul(X, X.T)
     return loss_diag(XXt)
 
+# the problem with straight eigval max
+# - the eigval term dominates the orthogonality unit norm, especially for larger
+# - two can be orthogonal by *-1 so duplicate the largest (again, dominating orth norm)
+# fix for 1: scale by unit norm (and maximise)
+# fix for 2: minimise the cross term
+# by clamping norm, pushes eigval to be bigger, rather than w to be beyond unit
+# https://proceedings.neurips.cc/paper_files/paper/2019/file/7dd0240cd412efde8bc165e864d3644f-Paper.pdf
 def loss_eigenvec(cov, w, eigvals):
     cov_w = jax.numpy.matmul(cov, w)
     w_scale = jax.numpy.multiply(xf.expand_dims(eigvals, 0, 1), w)

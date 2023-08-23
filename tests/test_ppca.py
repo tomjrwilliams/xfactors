@@ -33,7 +33,7 @@ def test_ppca() -> bool:
     model, STAGES = xf.Model().init_stages(5)
     INPUT, COV, PARAMS, SCALING, ENCODE, DECODE = STAGES
 
-    NOISE = 2
+    NOISE = 0
 
     model = (
         model.add_input(xf.nodes.inputs.dfs.Input_DataFrame_Wide())
