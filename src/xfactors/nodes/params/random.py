@@ -35,7 +35,7 @@ class RandomCovariance(typing.NamedTuple):
     d: int
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[RandomCovariance, tuple, xf.SiteValue]:
         shape = (self.d, self.d)
         gaussians = [
@@ -69,7 +69,7 @@ class Uniform(typing.NamedTuple):
     shape: tuple
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Uniform, tuple, xf.SiteValue]:
         return self,self.shape,  utils.rand.uniform(self.shape)
 
@@ -93,7 +93,7 @@ class VUniform(typing.NamedTuple):
     shape: tuple
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[VUniform, tuple, xf.SiteValue]:
         shape = xt.iTuple(self.data.access(model, into=xf.Site))
         return self, (
@@ -124,7 +124,7 @@ class Orthogonal(typing.NamedTuple):
     shape: tuple
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Orthogonal, tuple, xf.SiteValue]:
         s = self.shape
         return self, self.shape, utils.rand.orthogonal(s[0])[..., :s[1]]
@@ -154,7 +154,7 @@ class Gaussian(typing.NamedTuple):
     shape: tuple
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Gaussian, tuple, xf.SiteValue]:
         return self,self.shape,  utils.rand.gaussian(self.shape)
 
@@ -178,7 +178,7 @@ class VGaussian(typing.NamedTuple):
     shape: tuple
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[VGaussian, tuple, xf.SiteValue]:
         shape = xt.iTuple(self.data.access(model, into=xf.Site))
         return self, (
@@ -209,7 +209,7 @@ class GaussianSoftmax(typing.NamedTuple):
     shape: tuple
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[GaussianSoftmax, tuple, xf.SiteValue]:
         return self, self.shape, jax.nn.softmax(
             utils.rand.gaussian(self.shape),
@@ -240,7 +240,7 @@ class Beta(typing.NamedTuple):
     shape: tuple
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Beta, tuple, xf.SiteValue]:
         return self, self.shape, utils.rand.beta(self.a, self.b, self.shape)
 

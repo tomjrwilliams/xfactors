@@ -38,7 +38,7 @@ class Constraint_Eigenvec(typing.NamedTuple):
     T: bool = False
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Constraint_Eigenvec, tuple, xf.SiteValue]: ...
 
     def apply(
@@ -61,7 +61,7 @@ class Constraint_Orthonormal(typing.NamedTuple):
     T: bool = False
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Constraint_Orthonormal, tuple, xf.SiteValue]: ...
 
     def apply(
@@ -83,7 +83,7 @@ class Constraint_Orthogonal(typing.NamedTuple):
     T: bool = False
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Constraint_Orthogonal, tuple, xf.SiteValue]: ...
 
     def apply(
@@ -107,7 +107,7 @@ class Constraint_VEigenvec(typing.NamedTuple):
     T: bool = False
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Constraint_VEigenvec, tuple, xf.SiteValue]: ...
 
     def apply(
@@ -142,7 +142,7 @@ class Constraint_VOrthogonal(typing.NamedTuple):
     T: bool = False
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Constraint_VOrthogonal, tuple, xf.SiteValue]: ...
 
     def apply(
@@ -168,7 +168,7 @@ class Constraint_VOrthonormal(typing.NamedTuple):
     T: bool = False
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Constraint_VOrthonormal, tuple, xf.SiteValue]: ...
 
     def apply(
@@ -195,7 +195,7 @@ class Constraint_VDiagonal(typing.NamedTuple):
     T: bool = False
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Constraint_VDiagonal, tuple, xf.SiteValue]: ...
 
     def apply(
@@ -216,7 +216,7 @@ class Constraint_WtSW(typing.NamedTuple):
     S: xf.Loc # cov
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Constraint_WtSW, tuple, xf.SiteValue]: ...
 
     def apply(
@@ -242,7 +242,7 @@ class Constraint_XXt_Cov(typing.NamedTuple):
     cov: xf.Location
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Constraint_XXt_Cov, tuple, xf.SiteValue]: ...
 
     def apply(
@@ -267,7 +267,7 @@ class Constraint_XD2Xt_Cov(typing.NamedTuple):
     cov: xf.Location
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Constraint_XD2Xt_Cov, tuple, xf.SiteValue]: ...
 
     def apply(
@@ -300,7 +300,7 @@ class Constraint_EigenVLike(typing.NamedTuple):
     n_check: typing.Optional[int] = None
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Constraint_EigenVLike, tuple, xf.SiteValue]: ...
 
     @classmethod
@@ -346,7 +346,7 @@ class Constraint_VEigenVLike(typing.NamedTuple):
     n_check: typing.Optional[int] = None
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Constraint_VEigenVLike, tuple, xf.SiteValue]: ...
 
     def apply(
@@ -376,7 +376,7 @@ class Constraint_L1_MM_Diag(typing.NamedTuple):
     raw: xf.Location
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Constraint_L1_MM_Diag, tuple, xf.SiteValue]: ...
 
     def apply(
@@ -402,7 +402,7 @@ class Constraint_KernelVsCov(typing.NamedTuple):
     data: xf.Location
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Constraint_KernelVsCov, tuple, xf.SiteValue]: ...
 
     def apply(
@@ -431,7 +431,7 @@ class Constraint_MinimiseMMSpread(typing.NamedTuple):
     T: bool = False
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Constraint_MinimiseMMSpread, tuple, xf.SiteValue]: ...
 
     def apply(
@@ -463,7 +463,7 @@ class Constraint_MinimiseVariance(typing.NamedTuple):
     T: bool = False
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Constraint_MinimiseVariance, tuple, xf.SiteValue]: ...
 
     def apply(
@@ -486,7 +486,7 @@ class Constraint_MinimiseZSpread(typing.NamedTuple):
     T: bool = False
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Constraint_MinimiseZSpread, tuple, xf.SiteValue]: ...
 
     def apply(
@@ -512,7 +512,7 @@ class Constraint_MaxSpread(typing.NamedTuple):
     T: bool = False
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Constraint_MaxSpread, tuple, xf.SiteValue]: ...
 
     def apply(

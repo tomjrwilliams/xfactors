@@ -51,7 +51,7 @@ class Kernel_Sum(typing.NamedTuple):
     kernel: typing.Optional[xf.Loc] = None
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Kernel_Sum, tuple, xf.SiteValue]: ...
     
     def apply(
@@ -86,7 +86,7 @@ class Kernel_Product(typing.NamedTuple):
     c: float
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Kernel_Product, tuple, xf.SiteValue]: ...
     
     def apply(
@@ -107,7 +107,7 @@ class Kernel_Constant(typing.NamedTuple):
     c: float
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Kernel_Constant, tuple, xf.SiteValue]: ...
     
     def apply(
@@ -135,7 +135,7 @@ class Kernel_Linear(typing.NamedTuple):
     # assumed 1D
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Kernel_Linear, tuple, xf.SiteValue]: ...
     
     @classmethod
@@ -179,7 +179,7 @@ class VKernel_Linear(typing.NamedTuple):
     sigma_sq: bool = True
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[VKernel_Linear, tuple, xf.SiteValue]: ...
 
     def apply(
@@ -210,7 +210,7 @@ class Kernel_VLinear(typing.NamedTuple):
     # assumed 1D
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Kernel_VLinear, tuple, xf.SiteValue]: ...
     
     @classmethod
@@ -265,7 +265,7 @@ class VKernel_VLinear(typing.NamedTuple):
     sigma_sq: bool = True
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[VKernel_VLinear, tuple, xf.SiteValue]: ...
 
     def apply(
@@ -297,7 +297,7 @@ class Kernel_RadialBasisFunction(typing.NamedTuple):
     data: xf.Loc
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Kernel_RadialBasisFunction, tuple, xf.SiteValue]: ...
 
     @classmethod
@@ -337,7 +337,7 @@ class Kernel_RationalQuadratic(typing.NamedTuple):
     data: xf.Loc
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Kernel_RationalQuadratic, tuple, xf.SiteValue]: ...
 
     @classmethod
@@ -377,7 +377,7 @@ class Kernel_Gaussian(typing.NamedTuple):
     data: xf.Loc
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Kernel_Gaussian, tuple, xf.SiteValue]: ...
 
     @classmethod
@@ -408,7 +408,7 @@ class Kernel_Exponential(typing.NamedTuple):
     data: xf.Loc
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Kernel_Exponential, tuple, xf.SiteValue]: ...
 
     @classmethod
@@ -437,7 +437,7 @@ class Kernel_Laplacian(typing.NamedTuple):
     data: xf.Loc
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Kernel_Exponential, tuple, xf.SiteValue]: ...
 
     @classmethod
@@ -468,7 +468,7 @@ class Kernel_Cauchy(typing.NamedTuple):
     data: xf.Loc
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Kernel_Cauchy, tuple, xf.SiteValue]: ...
 
     @classmethod
@@ -499,7 +499,7 @@ class Kernel_Triangular(typing.NamedTuple):
     data: xf.Loc
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Kernel_Triangular, tuple, xf.SiteValue]: ...
 
     @classmethod
@@ -530,7 +530,7 @@ class Kernel_Sigmoid(typing.NamedTuple):
     data: xf.Loc
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Kernel_Sigmoid, tuple, xf.SiteValue]: ...
 
     @classmethod
@@ -561,7 +561,7 @@ class Kernel_Logistic(typing.NamedTuple):
     data: xf.Loc
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Kernel_Logistic, tuple, xf.SiteValue]: ...
 
     @classmethod
@@ -595,7 +595,7 @@ class Kernel_OrnsteinUhlenbeck(typing.NamedTuple):
     data: xf.Loc
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Kernel_Logistic, tuple, xf.SiteValue]: ...
 
     @classmethod

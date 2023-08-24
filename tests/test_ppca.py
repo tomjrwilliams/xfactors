@@ -29,18 +29,18 @@ def test_ppca() -> bool:
             for f, fvs in enumerate(numpy.array(vs).T)
         }),
     )
-
-    model, STAGES = xf.Model().init_stages(5)
-    INPUT, COV, PARAMS, SCALING, ENCODE, DECODE = STAGES
-
     NOISE = 0
 
+    model, loc_data = xf.Model().add_node(
+        xf.nodes.inputs.dfs.Input_DataFrame_Wide(),
+        input=True,
+    )
+    model, loc_cov = model.add_node(xf.nodes.cov.vanilla.Cov(
+        data=loc_data.result()
+    ), static=True)
+
     model = (
-        model.add_input(xf.nodes.inputs.dfs.Input_DataFrame_Wide())
-        .add_node(COV, xf.nodes.cov.vanilla.Cov(
-            data=xf.Loc.result(INPUT, 0), static=True,
-        ))
-        .add_node(PARAMS, xf.nodes.params.random.Gaussian(
+        model.add_node(PARAMS, xf.nodes.params.random.Gaussian(
             (N + NOISE,),
         ))
         .add_node(SCALING, xf.nodes.scaling.scalar.Scale_Sq(

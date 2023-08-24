@@ -36,7 +36,7 @@ class Weights_Constant(typing.NamedTuple):
     shape: tuple
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Weights_Constant, tuple, xf.SiteValue]: ...
     
     def init_params(self, model, params):
@@ -51,7 +51,7 @@ class Weights_Normal(typing.NamedTuple):
     shape: tuple
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Weights_Normal, tuple, xf.SiteValue]: ...
     
     def init_params(self, model, params):
@@ -66,7 +66,7 @@ class Weights_Orthogonal(typing.NamedTuple):
     shape: tuple
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Weights_Orthogonal, tuple, xf.SiteValue]: ...
     
     def init_params(self, model, params):
@@ -88,7 +88,7 @@ class Latent(typing.NamedTuple):
     # kwargs for specifying the init - orthogonal, gaussian, etc.
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Latent, tuple, xf.SiteValue]:
         axis = self.axis
         obj = self.data.site().access(model)

@@ -33,7 +33,7 @@ class Constraint_Positive(typing.NamedTuple):
     data: xf.Location
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Constraint_Positive, tuple, xf.SiteValue]: ...
 
     def apply(

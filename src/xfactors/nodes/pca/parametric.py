@@ -37,7 +37,7 @@ class Parametric_Factor(typing.NamedTuple):
     # or an operator for the function, which can have its own params site? probably that
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Parametric_Factor, tuple, xf.SiteValue]: ...
     
     def apply(

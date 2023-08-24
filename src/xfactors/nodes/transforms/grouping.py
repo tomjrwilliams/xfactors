@@ -40,7 +40,7 @@ class Group_By(typing.NamedTuple):
     keys: xt.iTuple
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Group_By, tuple, xf.SiteValue]: ...
     
     # return tuple of values vmapped over indices

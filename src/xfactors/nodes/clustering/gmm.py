@@ -41,7 +41,7 @@ class GMM(typing.NamedTuple):
     data: xf.Location
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[GMM, tuple, xf.SiteValue]: ...
     
     def apply(
@@ -70,7 +70,7 @@ class BGMM_EM(typing.NamedTuple):
     noise: typing.Optional[float] = 0.1
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[BGMM_EM, tuple, xf.SiteValue]: ...
     
     def apply(

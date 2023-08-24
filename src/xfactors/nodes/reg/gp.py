@@ -48,7 +48,7 @@ class GP_RBF(typing.NamedTuple):
     # if mean provided, assert mean.shape == n
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[GP_RBF, tuple, xf.SiteValue]:
         return self, (), (
             jax.numpy.ones(1),
@@ -94,8 +94,7 @@ class GP_RBF(typing.NamedTuple):
         )
         # right = blocks of same variable's latents
         kernel = cov.kernels.Kernel_RBF.f(
-            features_r,
-            features_l,
+            features_r - features_l,
             l,
             sigma,
         )
@@ -119,7 +118,7 @@ class GP_Kernel_Sigmoid(typing.NamedTuple):
     data: xf.Location
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[GP_Kernel_Sigmoid, tuple, xf.SiteValue]: ...
     
     def apply(
@@ -140,7 +139,7 @@ class GP_Kernel_SquaredExp(typing.NamedTuple):
     data: xf.Location
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[GP_Kernel_SquaredExp, tuple, xf.SiteValue]: ...
     
     def apply(
@@ -159,7 +158,7 @@ class GP_Kernel_OU(typing.NamedTuple):
     data: xf.Location
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[GP_Kernel_OU, tuple, xf.SiteValue]: ...
     
     @classmethod
@@ -189,7 +188,7 @@ class GP_Kernel_RationalQuadratic(typing.NamedTuple):
     data: xf.Location
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[GP_Kernel_RationalQuadratic, tuple, xf.SiteValue]: ...
     
     def apply(

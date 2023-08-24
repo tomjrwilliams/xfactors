@@ -38,7 +38,7 @@ class Cov(typing.NamedTuple):
     static: bool = False
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Cov, tuple, xf.SiteValue]:
         vs = self.data.site().access(model)
         n = vs.shape[1]
@@ -67,7 +67,7 @@ class VCov(typing.NamedTuple):
     static: bool = False
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[VCov, tuple, xf.SiteValue]:
         vs = self.data.site().access(model)
         shape = vs.map(lambda v: v.shape[1]).map(lambda n: (n, n,))

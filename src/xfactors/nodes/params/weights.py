@@ -35,7 +35,7 @@ class Gaussian(typing.NamedTuple):
     data: xf.Location
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Gaussian, tuple, xf.SiteValue]:
         shape = (
             self.data.access(model, into=xf.Site).shape[1],
@@ -62,7 +62,7 @@ class VGaussian(typing.NamedTuple):
     data: xf.Location
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[VGaussian, tuple, xf.SiteValue]:
         shape = (
             self.data.site().access(model).shape.map(
@@ -90,7 +90,7 @@ class VOrthogonal(typing.NamedTuple):
     data: xf.Location
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[VOrthogonal, tuple, xf.SiteValue]:
         shape = xt.iTuple(
             self.data.access(model, into=xf.Site).shape
@@ -120,7 +120,7 @@ class ConcatenateGaussian(typing.NamedTuple):
     data: xt.iTuple
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[ConcatenateGaussian, tuple, xf.SiteValue]:
         data = self.data.map(
             lambda s: s.access(model, into=xf.Site).shape

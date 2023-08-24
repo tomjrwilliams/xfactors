@@ -29,26 +29,13 @@ from .. import params
 
 # ---------------------------------------------------------------
 
-def fold_f_into(obj, fs: xt.iTuple):
-    assert isinstance(obj, typing.NamedTuple), obj
-    f = obj.f
-    def f_new(self, *args, **kwargs):
-        res = f(*args, **kwargs)
-        return fs.fold(
-            lambda acc, _f: _f(acc), initial=res
-        )
-    setattr(obj, "f", f_new)
-    return obj
-
-# ---------------------------------------------------------------
-
 @xt.nTuple.decorate(init=xf.init_null)
 class Scale_Expit(typing.NamedTuple):
 
     data: xf.Loc
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Scale_Expit, tuple, xf.SiteValue]: ...
 
     @classmethod
@@ -70,7 +57,7 @@ class Scale_Exp(typing.NamedTuple):
     data: xf.Loc
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Scale_Exp, tuple, xf.SiteValue]: ...
 
     def apply(
@@ -88,7 +75,7 @@ class Scale_Sq(typing.NamedTuple):
     data: xf.Loc
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Scale_Sq, tuple, xf.SiteValue]: ...
 
     def apply(
@@ -110,39 +97,28 @@ class Scale_Linear1D(typing.NamedTuple):
     data: xf.Loc
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Scale_Linear1D, tuple, xf.SiteValue]: ...
 
     @classmethod
     def add_to_model(
         cls,
         model,
-        stage,
-        PARAMS = None,
         data: xf.OptionalLoc = None,
         a: xf.OptionalLoc = None,
         b: xf.OptionalLoc = None,
-        pipe_into: typing.Optional[xt.iTuple]=None,
     ):
-        assert "data" is not None
+        assert data is not None
         if a is None:
-            model = model.add_node(
-                PARAMS, params.random.Gaussian((1,))
-            )
-            a = model.last_added.param()
+            model, a = model.add_node(params.random.Gaussian((1,)))
         if b is None:
-            model = model.add_node(
-                PARAMS, params.random.Gaussian((1,))
-            )
-            b = model.last_added.param()
+            model, b = model.add_node(params.random.Gaussian((1,)))
         obj = cls(a=a, b=b, data=data)
-        if pipe_into is not None:
-            obj = fold_f_into(obj, pipe_into)
-        return model.add_node(stage, obj)
+        return model.add_node(obj)
 
     @classmethod
     def f(cls, data, a, b):
-        return utils.funcs.expit(data, a, b)
+        return utils.funcs.linear(data, a, b)
 
     def apply(
         self,
@@ -163,7 +139,7 @@ class Scale_Logistic(typing.NamedTuple):
     data: xf.Loc
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Scale_Logistic, tuple, xf.SiteValue]: ...
 
     @classmethod
@@ -185,7 +161,7 @@ class Scale_Sigmoid(typing.NamedTuple):
     data: xf.Loc
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Scale_Sigmoid, tuple, xf.SiteValue]: ...
 
     @classmethod
@@ -207,7 +183,7 @@ class Scale_CosineKernel(typing.NamedTuple):
     data: xf.Loc
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Scale_Sigmoid, tuple, xf.SiteValue]: ...
 
     @classmethod
@@ -230,7 +206,7 @@ class Scale_RBFKernel(typing.NamedTuple):
     data: xf.Loc
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Scale_Sigmoid, tuple, xf.SiteValue]: ...
 
     @classmethod
@@ -252,7 +228,7 @@ class Scale_GaussianKernel(typing.NamedTuple):
     data: xf.Loc
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Scale_Sigmoid, tuple, xf.SiteValue]: ...
 
     @classmethod

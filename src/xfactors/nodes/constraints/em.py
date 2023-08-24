@@ -37,7 +37,7 @@ class Constraint_EM(typing.NamedTuple):
     cut_tree: bool = False
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Constraint_EM, tuple, xf.SiteValue]: ...
     
     def apply(
@@ -67,7 +67,7 @@ class Constraint_EM_MatMul(typing.NamedTuple):
     cut_tree: bool = False
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Constraint_EM_MatMul, tuple, xf.SiteValue]: ...
     
     def apply(

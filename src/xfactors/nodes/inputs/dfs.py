@@ -52,12 +52,13 @@ class Input_DataFrame_Wide(typing.NamedTuple):
     drop_na_rows: bool = True
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Input_DataFrame_Wide, tuple, xf.SiteValue]:
         assert site.loc is not None
         # path[0] = stage, so path[1] = index of data element
 
         df = data
+        assert isinstance(df, pandas.DataFrame), df
 
         if self.drop_na_columns:
             df = df.dropna(axis=1, how = "all")
@@ -78,6 +79,7 @@ class Input_DataFrame_Wide(typing.NamedTuple):
         assert site.loc is not None
 
         df = data
+        assert isinstance(df, pandas.DataFrame), df
 
         if self.drop_na_columns:
             df = df.dropna(axis=1, how = "all")
@@ -165,12 +167,13 @@ class Input_DataFrame_Wide_Rolling(typing.NamedTuple):
     drop_na_rows: bool = True
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Input_DataFrame_Wide_Rolling, tuple, xf.SiteValue]:
         assert site.loc is not None
         # path[0] = stage, so path[1] = index of data element
 
         df = data
+        assert isinstance(df, pandas.DataFrame), df
 
         if self.drop_na_columns:
             df = df.dropna(axis=1, how = "all")
@@ -208,6 +211,7 @@ class Input_DataFrame_Wide_Rolling(typing.NamedTuple):
         assert site.loc is not None
 
         df = data
+        assert isinstance(df, pandas.DataFrame), df
 
         if self.drop_na_columns:
             df = df.dropna(axis=1, how = "all")
@@ -257,7 +261,7 @@ class Slice_DataFrame_Wide_Rolling_Columns(typing.NamedTuple):
     scale: typing.Optional[typing.Callable] = None
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Input_DataFrame_Tall, tuple, xf.SiteValue]: ... 
     
     def apply(
@@ -271,12 +275,12 @@ class Slice_DataFrame_Wide_Rolling_Columns(typing.NamedTuple):
 
         rolling_columns = (
             self.rolling.site()
-            .access(model)
+            .access(state)
             .node.given_columns
         )
         slicing_columns = (
             self.slicing.site()
-            .access(model)
+            .access(state)
             .node.given_columns
         )
 
@@ -303,7 +307,7 @@ class Input_DataFrame_Tall(typing.NamedTuple):
     # fields to specify if keep index and ticker map
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Input_DataFrame_Tall, tuple, xf.SiteValue]:
         assert site.loc is not None
         # path[0] = stage, so path[1] = index of data element
@@ -317,6 +321,7 @@ class Input_DataFrame_Tall(typing.NamedTuple):
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
         df = data
+        assert isinstance(df, pandas.DataFrame), df
         return jax.numpy.array(df.values)
 
 # ---------------------------------------------------------------

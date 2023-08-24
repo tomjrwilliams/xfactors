@@ -33,7 +33,7 @@ class Scalar(typing.NamedTuple):
     v: numpy.ndarray
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Scalar, tuple, xf.SiteValue]:
         # TODO
         return self, (), jax.numpy.array(self.v)
@@ -58,7 +58,7 @@ class VScalar(typing.NamedTuple):
     v: numpy.ndarray
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[VScalar, tuple, xf.SiteValue]:
         target: xf.Site = self.data.access(model, into=xf.Site)
         assert target.shape is not None # sigh, oh mypy

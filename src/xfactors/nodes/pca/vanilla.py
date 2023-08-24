@@ -50,7 +50,7 @@ class PCA(typing.NamedTuple):
     data: xf.Location
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[PCA, tuple, xf.SiteValue]:
         return self, (
             self.data.site().access(model).shape[1],
@@ -84,7 +84,7 @@ class PCA_Encoder(typing.NamedTuple):
     weights: xf.OptionalLocation = None
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[PCA_Encoder, tuple, xf.SiteValue]:
         shape = (
             self.data.site().access(model).shape[1],
@@ -120,7 +120,7 @@ class PCA_Decoder(typing.NamedTuple):
     weights: xf.OptionalLocation = None
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[PCA_Decoder, tuple, xf.SiteValue]:
         # TODO
         return self, (), ()
@@ -157,7 +157,7 @@ class PPCA_NegLikelihood(typing.NamedTuple):
     # so can be re-used in rolling
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[PPCA_NegLikelihood, tuple, xf.SiteValue]: ...
 
     @classmethod
@@ -207,7 +207,7 @@ class PPCA_NegLikelihood(typing.NamedTuple):
         weights = self.weights.access(state)
         cov = self.cov.access(state) # of obs
     
-        # N = xf.get_location(self.site_encoder, state).shape[0]
+        # N = self.site_encoder.access(state).shape[0]
 
         # feature * feature
         S = cov
@@ -247,7 +247,7 @@ class PPCA_EM(typing.NamedTuple):
     # if we want
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[PPCA_EM, tuple, xf.SiteValue]: ...
 
     def apply(
@@ -266,9 +266,7 @@ class PPCA_EM(typing.NamedTuple):
 
         # use noisy_sgd instead of random
         # if self.random:
-        #     key = xf.get_location(
-        #         self.loc.random(), state
-        #     )
+        #     key = self.loc.random().access(state)
         #     weights = weights + ((
         #         jax.random.normal(key, shape=weights.shape)
         #     ) * self.random)
@@ -320,7 +318,7 @@ class PPCA_Marginal_Observations(typing.NamedTuple):
     random: float = 0
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[PPCA_Marginal_Observations, tuple, xf.SiteValue]: ...
 
     def apply(
@@ -339,7 +337,7 @@ class PPCA_Marginal_Observations(typing.NamedTuple):
 
         data = self.data.access(state)
     
-        # N = xf.get_location(self.site_encoder, state).shape[0]
+        # N = self.site_encoder.access(state).shape[0]
 
         # feature * feature
         S = cov
@@ -370,7 +368,7 @@ class PPCA_Conditional_Latents(typing.NamedTuple):
     random: float = 0
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[PPCA_Conditional_Latents, tuple, xf.SiteValue]: ...
 
     def apply(
@@ -389,12 +387,12 @@ class PPCA_Conditional_Latents(typing.NamedTuple):
 
         data = self.data.access(state)
     
-        # N = xf.get_location(self.site_encoder, state).shape[0]
+        # N = self.site_encoder.access(state).shape[0]
 
         # feature * feature
         S = cov
         # d = weights.shape[0] # n_features
-        factors = xf.get_location(self.encoder, state)
+        factors = self.encoder.access(state)
         
         mu = jax.numpy.zeros(weights.shape[0]) # obs mu
 

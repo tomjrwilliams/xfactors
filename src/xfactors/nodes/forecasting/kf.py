@@ -95,7 +95,7 @@ class KF_State_Predicted(typing.NamedTuple):
     
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[KF_State_Predicted, tuple, xf.SiteValue]: ...
     
     # Fx + Bu
@@ -114,7 +114,7 @@ class KF_Cov_Predicted(typing.NamedTuple):
     
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[KF_Cov_Predicted, tuple, xf.SiteValue]: ...
     
     # FPFt + Q
@@ -135,7 +135,7 @@ class KF_State_Innovation(typing.NamedTuple):
     
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[KF_State_Innovation, tuple, xf.SiteValue]: ...
     
     # z - Hx
@@ -154,7 +154,7 @@ class KF_Cov_Innovation(typing.NamedTuple):
     
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[KF_Cov_Innovation, tuple, xf.SiteValue]: ...
     
     # HPHt + R
@@ -175,7 +175,7 @@ class KF_Kalman_Gain(typing.NamedTuple):
     
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[KF_Kalman_Gain, tuple, xf.SiteValue]: ...
     
     # PHtS-1
@@ -196,7 +196,7 @@ class KF_State_Updated(typing.NamedTuple):
     
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[KF_State_Updated, tuple, xf.SiteValue]: ...
     
     # x + Ky
@@ -215,7 +215,7 @@ class KF_Cov_Updated(typing.NamedTuple):
     
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[KF_Cov_Updated, tuple, xf.SiteValue]: ...
     
     # (I - KH)P
@@ -234,7 +234,7 @@ class KF_Residual(typing.NamedTuple):
     
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[KF_Residual, tuple, xf.SiteValue]: ...
     
     # z - Hx

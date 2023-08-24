@@ -39,7 +39,7 @@ class Input_NDArray(typing.NamedTuple):
     nd: numpy.ndarray
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Input_NDArray, tuple, xf.SiteValue]:
         return self, self.nd.shape, ()
     

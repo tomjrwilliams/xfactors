@@ -41,7 +41,7 @@ class Structured_PCA_Mask(typing.NamedTuple):
     
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Structured_PCA_Mask, tuple, xf.SiteValue]: ...
     
     def apply(
@@ -62,7 +62,7 @@ class Structured_PCA_Convex(typing.NamedTuple):
     
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Structured_PCA_Convex, tuple, xf.SiteValue]: ...
     
     def apply(
@@ -82,7 +82,7 @@ class Structured_PCA_Concave(typing.NamedTuple):
     
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Structured_PCA_Concave, tuple, xf.SiteValue]: ...
     
     def apply(
@@ -106,7 +106,7 @@ class Structured_PCA_Sign(typing.NamedTuple):
     
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Structured_PCA_Sign, tuple, xf.SiteValue]: ...
     
     def apply(
@@ -127,7 +127,7 @@ class Structured_PCA_TiedSign(typing.NamedTuple):
     
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Structured_PCA_TiedSign, tuple, xf.SiteValue]: ...
     
     def apply(
