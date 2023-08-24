@@ -97,8 +97,8 @@ class PCA_Rolling_LatentWeightedMean_MSE(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
 
         latents = self.latents.access(state)

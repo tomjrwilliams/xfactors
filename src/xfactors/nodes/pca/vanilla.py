@@ -53,7 +53,7 @@ class PCA(typing.NamedTuple):
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[PCA, tuple, xf.SiteValue]:
         return self, (
-            self.data.access(model).shape[1],
+            self.data.site().access(model).shape[1],
             self.n,
         ), ()
 
@@ -66,8 +66,8 @@ class PCA(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         data = self.data.access(state)
         return self.f(jax.numpy.transpose(data), self.n)
@@ -87,13 +87,13 @@ class PCA_Encoder(typing.NamedTuple):
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[PCA_Encoder, tuple, xf.SiteValue]:
         shape = (
-            self.data.access(model).shape[1],
+            self.data.site().access(model).shape[1],
             self.n,
         )
         if self.weights is None:
             assert site.loc is not None
             return self._replace(
-                weights=site.loc.as_param()
+                weights=site.loc.param()
             ), shape, utils.rand.orthogonal(shape[0])[..., :shape[1]]
         else:
             # TODO: weight shape check
@@ -103,8 +103,8 @@ class PCA_Encoder(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert self.weights is not None
         weights = self.weights.access(state)
@@ -128,8 +128,8 @@ class PCA_Decoder(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert self.weights is not None
         data = self.factors.access(state)
@@ -197,8 +197,8 @@ class PPCA_NegLikelihood(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         # https://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.pdf
 
@@ -215,7 +215,7 @@ class PPCA_NegLikelihood(typing.NamedTuple):
 
         if self.noise:
             assert site.loc is not None
-            key = site.loc.as_random().access(
+            key = site.loc.random().access(
                 state, into=jax.numpy.ndarray
             )
             weights = weights + ((
@@ -253,8 +253,8 @@ class PPCA_EM(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         # https://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.pdf
 
@@ -267,7 +267,7 @@ class PPCA_EM(typing.NamedTuple):
         # use noisy_sgd instead of random
         # if self.random:
         #     key = xf.get_location(
-        #         self.loc.as_random(), state
+        #         self.loc.random(), state
         #     )
         #     weights = weights + ((
         #         jax.random.normal(key, shape=weights.shape)
@@ -323,7 +323,12 @@ class PPCA_Marginal_Observations(typing.NamedTuple):
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[PPCA_Marginal_Observations, tuple, xf.SiteValue]: ...
 
-    def apply(self, site: xf.Site, state: xf.State):
+    def apply(
+        self,
+        site: xf.Site,
+        state: xf.Model,
+        data = None,
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         # https://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.pdf
 
         sigma = self.sigma.access(state)
@@ -368,7 +373,12 @@ class PPCA_Conditional_Latents(typing.NamedTuple):
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[PPCA_Conditional_Latents, tuple, xf.SiteValue]: ...
 
-    def apply(self, site: xf.Site, state: xf.State):
+    def apply(
+        self,
+        site: xf.Site,
+        state: xf.Model,
+        data = None,
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
         # https://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.pdf
 
         sigma = self.sigma.access(state)

@@ -58,8 +58,8 @@ class KMeans_Labels(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         # https://theory.stanford.edu/~sergei/papers/kMeansPP-soda.pdf
         # https://theory.stanford.edu/~sergei/papers/kMeans-socg.pdf
@@ -98,8 +98,8 @@ class KMeans_EM_MeanDiff(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         # https://theory.stanford.edu/~sergei/papers/kMeansPP-soda.pdf
         # https://theory.stanford.edu/~sergei/papers/kMeans-socg.pdf
@@ -164,8 +164,8 @@ class KMeans_EM_Naive(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         # https://theory.stanford.edu/~sergei/papers/kMeansPP-soda.pdf
         # https://theory.stanford.edu/~sergei/papers/kMeans-socg.pdf

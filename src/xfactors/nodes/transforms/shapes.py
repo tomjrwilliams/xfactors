@@ -48,8 +48,8 @@ class Stack(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
@@ -69,8 +69,8 @@ class UnStack(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
@@ -92,8 +92,8 @@ class Flatten(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
@@ -110,8 +110,8 @@ class UnFlatten(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
@@ -135,8 +135,8 @@ class Concatenate(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         data = self.locs.map(lambda l: l.access(state))
         return jax.numpy.concatenate(data.pipe(list), axis=self.axis)
@@ -156,8 +156,8 @@ class UnConcatenate(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 

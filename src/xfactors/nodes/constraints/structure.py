@@ -39,8 +39,8 @@ class Constraint_Positive(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         data = self.data.access(state)
         return jax.numpy.square(jax.numpy.clip(data, a_max = 0)).mean()

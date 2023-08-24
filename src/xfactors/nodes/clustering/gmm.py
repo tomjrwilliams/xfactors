@@ -47,8 +47,8 @@ class GMM(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         # https://en.wikipedia.org/wiki/EM_algorithm_and_GMM_model
         assert False
@@ -76,8 +76,8 @@ class BGMM_EM(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
 
         # https://en.wikipedia.org/wiki/EM_algorithm_and_GMM_model
@@ -94,7 +94,7 @@ class BGMM_EM(typing.NamedTuple):
         
         if self.noise:
             assert site.loc is not None
-            key = site.loc.as_random().access(
+            key = site.loc.random().access(
                 state, into=jax.numpy.ndarray
             )
             noise = ((

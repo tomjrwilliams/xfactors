@@ -43,8 +43,8 @@ class Constraint_EM(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         param = self.param.access(state)
         optimal = self.optimal.access(state)
@@ -73,8 +73,8 @@ class Constraint_EM_MatMul(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         raw = self.raw.access(state)
         optimal = self.optimal.access(state)

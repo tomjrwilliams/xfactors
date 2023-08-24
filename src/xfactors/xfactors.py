@@ -35,14 +35,14 @@ expand_dims_like = utils.shapes.expand_dims_like
 
 # ---------------------------------------------------------------
 
-NODE = 0
+SITE = 0
 PARAM = 1
 RESULT = 2
 RANDOM = 3
 
 def check_location(loc: Location):
     assert loc.domain in [
-        NODE,
+        SITE,
         PARAM,
         RESULT,
         RANDOM,
@@ -54,7 +54,8 @@ def check_location(loc: Location):
 @xt.nTuple.decorate()
 class Model(typing.NamedTuple):
 
-    nodes: xt.iTuple = xt.iTuple()
+    # TODO: should we rename sites?
+    sites: xt.iTuple = xt.iTuple()
     params: xt.iTuple = xt.iTuple()
     results: xt.iTuple = xt.iTuple()
     random: xt.iTuple = xt.iTuple()
@@ -114,7 +115,7 @@ class Model_w_Location(typing.NamedTuple):
         return self.model.add_node(node, **kws)
 
     def init(self: Model_w_Location, data: tuple) -> Model:
-        return self.model.init(self, data)
+        return self.model.init(data)
 
 # ---------------------------------------------------------------
 
@@ -135,8 +136,8 @@ class Location(typing.NamedTuple):
 
     # ---
 
-    def node(self, *path):
-        return Location(NODE, self.i, self.path.extend(path))
+    def site(self, *path):
+        return Location(SITE, self.i, self.path.extend(path))
 
     def param(self, *path):
         return Location(PARAM, self.i, self.path.extend(path))
@@ -147,15 +148,19 @@ class Location(typing.NamedTuple):
     def random(self, *path):
         return Location(RANDOM, self.i, self.path.extend(path))
 
-    def NODE(cls, i, *path):
-        return cls(NODE, i, xt.iTuple(path))
+    @classmethod
+    def SITE(cls, i, *path):
+        return cls(SITE, i, xt.iTuple(path))
 
+    @classmethod
     def PARAM(cls, i, *path):
         return cls(PARAM, i, xt.iTuple(path))
 
+    @classmethod
     def RESULT(cls, i, *path):
         return cls(RESULT, i, xt.iTuple(path))
 
+    @classmethod
     def RANDOM(cls, i, *path):
         return cls(RANDOM, i, xt.iTuple(path))
 
@@ -213,7 +218,7 @@ class Node(typing.Protocol):
     def apply(
         self: NodeClass,
         site: Site,
-        model: Model,
+        state: Model,
         data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         ...
@@ -270,8 +275,8 @@ class Site(typing.NamedTuple):
             masked=True
         ) if not self.should_run(flags) else self
 
-    def init(self, model: Model, data: tuple):
-        res = self.node.init(self, model, data)
+    def init(self, model: Model, data=None):
+        res = self.node.init(self, model, data=data)
         assert res is not None, self.node # need to implement init
         # TODO: proper error message
         node, shape, params = res
@@ -282,12 +287,12 @@ class Site(typing.NamedTuple):
 
     def apply(
         self,
-        model: Model,
+        state: Model,
         data=None,
     ) -> typing.Union[SiteValue, float]:
         if self.masked:
             return self.if_not
-        return self.node.apply(self, model, data=data)
+        return self.node.apply(self, state, data=data)
 
     # state or Model?
     def access(
@@ -307,6 +312,8 @@ LocationValue = typing.Union[Site, SiteValue]
 # ---
     
 def is_loc_field(annotation):
+    if isinstance(annotation, typing.ForwardRef):
+        return "Loc" in str(annotation)
     if isinstance(annotation, type):
         cls = annotation
         return cls is Location or issubclass(cls, Location)
@@ -318,11 +325,19 @@ def loc_fields(node: Node):
         if is_loc_field(ann)
     }
 
-def access_locs(node: Node, model: Model):
-    return dict(
-        getattr(node, k).access(model)
+def access_sites(node: Node, model: Model):
+    return {
+        k: getattr(node, k).site().access(model)
         for k, _ in loc_fields(node).items()
-    )
+        if getattr(node, k) is not None
+    }
+
+def access_locs(node: Node, model: Model):
+    return {
+        k: getattr(node, k).access(model)
+        for k, _ in loc_fields(node).items()
+        if getattr(node, k) is not None
+    }
 
 # ---------------------------------------------------------------
 
@@ -333,11 +348,11 @@ def check_node(node: Node, model: Model) -> bool:
 
 def add_node(model: Model, node: Node, **kws) -> Model_w_Location:
     assert check_node(node, model)
-    i = len(model.nodes)
-    loc = Location.MODEL(i)
+    i = len(model.sites)
+    loc = Location.SITE(i)
     return Model_w_Location(
         model._replace(
-            nodes=model.nodes.append(Site(
+            sites=model.sites.append(Site(
                 node,
                 loc=loc,
                 **kws
@@ -350,18 +365,21 @@ def add_node(model: Model, node: Node, **kws) -> Model_w_Location:
 # ---------------------------------------------------------------
 
 def sweep_nodes(stages, ready, remaining, f_ready):
-    ready_sites, ready_i = remaining.filterstar(
+    ready_ = remaining.filterstar(
         lambda i, site: f_ready(site, ready)
     ).zip().map(xt.iTuple)
+    if not len(ready_):
+        return stages, ready, remaining, 0
+    ready_i, ready_sites = ready_
     remaining = remaining.filterstar(
         lambda i, site: i not in ready_i
     )
-    ready = ready.extend(ready_sites)
+    ready = ready.extend(ready_sites.map(lambda s: s.loc))
     stages = stages.append(ready_i)
     return stages, ready, remaining, ready_i.len()
 
 def children_ready(children, site, ready):
-    return children[site].all(lambda s: s in ready)
+    return children[site.loc].all(lambda loc: loc in ready)
 
 def inputs_ready(children):
     def f_ready(site, ready):
@@ -400,22 +418,24 @@ def constraint_ready(children):
     return f_ready
 
 def order_nodes(model: Model) -> Model:
-    # order: position in .results, sorted by position in .nodes
-    # groups: ordered groups of position in .nodes
+    # order: position in .results, sorted by position in .sites
+    # groups: ordered groups of position in .sites
 
     children = {
-        site: xt.iTuple.from_values(
-            loc_fields(site.node)
-        ) for site in model.nodes
-        # TODO: should we rename sites?
+        site.loc: xt.iTuple.from_values(
+            access_sites(site.node, model)
+        ).map(lambda s: s.loc) for site in model.sites
     }
 
-    remaining = model.nodes.enumerate()
+    remaining = model.sites.enumerate()
+
+    stages = xt.iTuple()
+    ready = xt.iTuple()
 
     stages, ready, remaining, _ = sweep_nodes(
         stages, ready, remaining, inputs_ready(children)
     )
-    assert not remaining.any(lambda site: site.input)
+    assert not remaining.any(lambda i_site: i_site[1].input)
 
     for f in [
         static_ready(children),
@@ -430,7 +450,7 @@ def order_nodes(model: Model) -> Model:
 
     assert remaining.len() == 0
 
-    order = model.nodes.len_range().sort(
+    order = model.sites.len_range().sort(
         lambda i: stages.flatten().index_of(i)
     )
     
@@ -441,32 +461,64 @@ def order_nodes(model: Model) -> Model:
 
 # ---------------------------------------------------------------
 
+def i_replace(model, sites, indices):
+    i_sites = {
+        i: site for i, site 
+        in indices.zip(sites)
+        #
+    }
+    return model._replace(
+        sites=model.sites.enumerate().mapstar(
+            lambda i, s: s if i not in i_sites else i_sites[i]
+        )
+    )
+
+
 def init_model(model: Model, data: tuple) -> Model:
 
     model = order_nodes(model)
 
-    def f_acc(model: Model, stage: xt.iTuple, data: tuple):
-        call_init = operator.methodcaller("init", model, data)
-        stage, params = stage.map(
-            lambda i: call_init(model.nodes[i])
-        ).zip().map(xt.iTuple)
-        return model._replace(
-            params = model.params.extend(params)
-        )
+    def f_acc(
+        model: Model,
+        i: int,
+        stage: xt.iTuple,
+        data: tuple,
+        #
+    ) -> Model:
+        if i == 0:
+            if any(stage.map(lambda i: model.sites[i].input)):
+                sites, params = stage.enumerate().mapstar(
+                    lambda _i, s: model.sites[s].init(
+                        model, data=data[_i]
+                    )
+                ).zip().map(xt.iTuple)
+                return i_replace(model._replace(
+                    params = model.params.extend(params)
+                ), sites, stage)
 
-    # stage = iTuple of indices in original model.nodes
-    return model.stages.fold(
-        lambda model_params, stage: f_acc(
-            model_params[0], model_params[1], stage, data
+        call_init = operator.methodcaller("init", model)
+        sites, params = stage.map(
+            lambda i: call_init(model.sites[i])
+        ).zip().map(xt.iTuple)
+
+        return i_replace(model._replace(
+            params = model.params.extend(params)
+        ), sites, stage)
+
+    # stage = iTuple of indices in original model.sites
+    model = model.stages.enumerate().foldstar(
+        lambda acc, i, stage: f_acc(
+            acc, i, stage, data
         ),
         initial=model._replace(params = xt.iTuple())
     )
+    return model
        
 # ---------------------------------------------------------------
  
 def apply_flags(model: Model, **flags):
     return model._replace(
-        nodes=model.nodes.map(
+        sites=model.sites.map(
             lambda site: site.apply_flags(flags)
         )
     )
@@ -474,7 +526,7 @@ def apply_flags(model: Model, **flags):
 def n_stages_where_all(model, stages, f, offset = 0):
     n = stages[offset:].len_range().first_where(
         lambda s: not stages[offset + s].all(
-            lambda i: f(model.nodes[i])
+            lambda i: f(model.sites[i])
         ),
     )
     n = 0 if n is None else n
@@ -512,11 +564,11 @@ def init_objective(
 
     if n_inputs == 1:
         i_inputs = model.stages[0]
-        assert i_inputs.map(lambda i: model.nodes[i]).all(
+        assert i_inputs.map(lambda i: model.sites[i]).all(
             lambda site: site.input
         )
         init_results = i_inputs.enumerate().mapstar(
-            lambda i, i_site: model.nodes[i_site].apply(
+            lambda i, i_site: model.sites[i_site].apply(
                 model, data=data[i]
             )
         )
@@ -524,7 +576,7 @@ def init_objective(
 
     def f_stage(res, i_stage):
         call_apply = operator.methodcaller("apply", res)
-        return i_stage.map(lambda i: call_apply(res.nodes[i]))
+        return i_stage.map(lambda i: call_apply(res.sites[i]))
 
     model = model.stages[n_inputs: n_inputs + n_static].fold(
         lambda res, i_stage: res._replace(
@@ -534,20 +586,20 @@ def init_objective(
     )
 
     def f(params, rand_keys, **flags):
-        model_ = model.stages[n_inputs + n_static:].fold(
-            lambda res, i_stage: res._replace(
-                results=res.results.extend(f_stage(res, i_stage))
+        res = model.stages[n_inputs + n_static:].fold(
+            lambda acc, i_stage: acc._replace(
+                results=acc.results.extend(f_stage(acc, i_stage))
             ),
             initial=model._replace(
                 params = params,
                 random=rand_keys,
             ),
         )
-        loss = model.stages[-n_constraints:].map(
+        loss = jax.numpy.stack(model.stages[-n_constraints:].map(
             lambda stage: stage.map(
-                lambda i: model.nodes[i].result().access(model_)
+                lambda i: model.sites[i].loc.result().access(res)
             )
-        ).flatten().pipe(list).sum()
+        ).flatten().pipe(list)).sum()
 
         return loss
 
@@ -560,7 +612,6 @@ def apply_model(
     data,
     rand_keys=None,
     params = None,
-    sites = None,
     **flags,
 ):
     if params is None:
@@ -582,11 +633,11 @@ def apply_model(
 
     if n_inputs == 1:
         i_inputs = model.stages[0]
-        assert i_inputs.map(lambda i: model.nodes[i]).all(
+        assert i_inputs.map(lambda i: model.sites[i]).all(
             lambda site: site.input
         )
         init_results = i_inputs.enumerate().mapstar(
-            lambda i, i_site: model.nodes[i_site].apply(
+            lambda i, i_site: model.sites[i_site].apply(
                 model, data=data[i]
             )
         )
@@ -594,7 +645,7 @@ def apply_model(
 
     def f_stage(res, i_stage):
         call_apply = operator.methodcaller("apply", res)
-        return i_stage.map(lambda i: call_apply(res.nodes[i]))
+        return i_stage.map(lambda i: call_apply(res.sites[i]))
 
     model = model.stages[n_inputs:].fold(
         lambda res, i_stage: res._replace(
@@ -602,12 +653,7 @@ def apply_model(
         ),
         initial=model,
     )
-    if sites is None:
-        return model.results
-    return {
-        k: site.access(model)
-        for k, site in sites.items()
-    }
+    return model
 
 # ---------------------------------------------------------------
 
@@ -616,7 +662,7 @@ def gen_rand_keys(model: Model):
         lambda stage: stage.map(
             lambda i: (
                 utils.rand.next_key()
-                if model.nodes[i].random
+                if model.sites[i].random
                 else None
             )
         )
@@ -629,7 +675,7 @@ def gen_rand_keys(model: Model):
 # ---------------------------------------------------------------
 
 def to_tuple_rec(v):
-    if isinstance(v, (xt.iTuple, Stage)):
+    if isinstance(v, xt.iTuple):
         return v.map(to_tuple_rec).pipe(tuple)
     return v
 
@@ -707,7 +753,7 @@ def optimise_model(
     if max_error_unchanged is not None and max_error_unchanged < 1:
         max_error_unchanged *= iters
 
-    if not model.constraints.len():
+    if not model.sites.filter(lambda s: s.constraint).len():
         return model
     
     params = init_optimisation(

@@ -41,11 +41,11 @@ class Scalar(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
-        v = site.loc.as_param().access(state)
+        v = site.loc.param().access(state)
         if site.masked:
             return jax.lax.stop_gradient(v)
         return v
@@ -72,11 +72,11 @@ class VScalar(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
-        v = site.loc.as_param().access(state)
+        v = site.loc.param().access(state)
         if site.masked:
             return v.map(jax.lax.stop_gradient)
         return v

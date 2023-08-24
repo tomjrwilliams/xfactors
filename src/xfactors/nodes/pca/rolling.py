@@ -45,8 +45,8 @@ class PCA_Rolling(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         data = self.data.access(state)
         res = data.map(
@@ -79,8 +79,8 @@ class PCA_Rolling_Encoder_Trimmed(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert self.weights is not None
         assert self.loadings is not None
@@ -119,8 +119,8 @@ class PCA_Rolling_Encoder(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert self.weights is not None
         weights = self.weights.access(state)
@@ -146,8 +146,8 @@ class PCA_Rolling_Decoder(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         weights = xt.ituple(self.weights.access(state))
         factors = self.factors.access(state).map(lambda nd: nd.T)
@@ -183,8 +183,8 @@ class PPCA_Rolling_NegLikelihood(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         sigma = self.sigma.access(state)
         weights = self.weights.access(state)
@@ -224,8 +224,8 @@ class PPCA_Rolling_EM(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         # https://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.pdf
 
@@ -238,7 +238,7 @@ class PPCA_Rolling_EM(typing.NamedTuple):
         # use noisy_sgd instead of random
         # if self.random:
         #     key = xf.get_location(
-        #         self.loc.as_random(), state
+        #         self.loc.random(), state
         #     )
         #     weights = weights + ((
         #         jax.random.normal(key, shape=weights.shape)
@@ -299,8 +299,8 @@ class PPCA_Rolling_Marginal_Observations(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         # https://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.pdf
 
@@ -349,8 +349,8 @@ class PPCA_Rolling_Conditional_Latents(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         # https://www.robots.ox.ac.uk/~cvrg/hilary2006/ppca.pdf
 

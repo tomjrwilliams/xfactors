@@ -40,15 +40,15 @@ class Cov(typing.NamedTuple):
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[Cov, tuple, xf.SiteValue]:
-        vs = self.data.access(model)
+        vs = self.data.site().access(model)
         n = vs.shape[1]
         return self, (n, n,), ()
 
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         data = self.data.access(state)
         res = jax.numpy.cov(
@@ -69,15 +69,15 @@ class VCov(typing.NamedTuple):
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[VCov, tuple, xf.SiteValue]:
-        vs = self.data.access(model)
+        vs = self.data.site().access(model)
         shape = vs.map(lambda v: v.shape[1]).map(lambda n: (n, n,))
         return self, shape, ()
 
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         data = self.data.access(state)
         res = data.map(lambda vs: jax.numpy.cov(

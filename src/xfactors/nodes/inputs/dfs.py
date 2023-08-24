@@ -57,7 +57,7 @@ class Input_DataFrame_Wide(typing.NamedTuple):
         assert site.loc is not None
         # path[0] = stage, so path[1] = index of data element
 
-        df = data[site.loc.path[1]]
+        df = data
 
         if self.drop_na_columns:
             df = df.dropna(axis=1, how = "all")
@@ -72,13 +72,12 @@ class Input_DataFrame_Wide(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
 
-        data = state.data
-        df = data[site.loc.path[-1]]
+        df = data
 
         if self.drop_na_columns:
             df = df.dropna(axis=1, how = "all")
@@ -171,7 +170,7 @@ class Input_DataFrame_Wide_Rolling(typing.NamedTuple):
         assert site.loc is not None
         # path[0] = stage, so path[1] = index of data element
 
-        df = data[site.loc.path[1]]
+        df = data
 
         if self.drop_na_columns:
             df = df.dropna(axis=1, how = "all")
@@ -203,13 +202,12 @@ class Input_DataFrame_Wide_Rolling(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
 
-        data = state.data
-        df = data[site.loc.path[-1]]
+        df = data
 
         if self.drop_na_columns:
             df = df.dropna(axis=1, how = "all")
@@ -265,19 +263,19 @@ class Slice_DataFrame_Wide_Rolling_Columns(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
     
         slicing = self.slicing.access(state)
 
         rolling_columns = (
-            self.rolling.as_model()
+            self.rolling.site()
             .access(model)
             .node.given_columns
         )
         slicing_columns = (
-            self.slicing.as_model()
+            self.slicing.site()
             .access(model)
             .node.given_columns
         )
@@ -314,12 +312,11 @@ class Input_DataFrame_Tall(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
-        data = state.data
-        df = data[site.loc.path[-1]]
+        df = data
         return jax.numpy.array(df.values)
 
 # ---------------------------------------------------------------

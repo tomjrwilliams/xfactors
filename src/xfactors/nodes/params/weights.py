@@ -46,11 +46,11 @@ class Gaussian(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
-        v = site.loc.as_param().access(state)
+        v = site.loc.param().access(state)
         if site.masked:
             return jax.lax.stop_gradient(v)
         return v
@@ -65,7 +65,7 @@ class VGaussian(typing.NamedTuple):
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[VGaussian, tuple, xf.SiteValue]:
         shape = (
-            self.data.access(model).shape.map(
+            self.data.site().access(model).shape.map(
                 lambda s: (s[1], self.n,)
             )
         )
@@ -74,11 +74,11 @@ class VGaussian(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
-        v = site.loc.as_param().access(state, into=xt.iTuple)
+        v = site.loc.param().access(state, into=xt.iTuple)
         if site.masked:
             return v.map(jax.lax.stop_gradient)
         return v
@@ -104,11 +104,11 @@ class VOrthogonal(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
-        v = site.loc.as_param().access(state)
+        v = site.loc.param().access(state)
         if site.masked:
             return v.map(jax.lax.stop_gradient)
         return v
@@ -131,11 +131,11 @@ class ConcatenateGaussian(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
-        v = site.loc.as_param().access(state)
+        v = site.loc.param().access(state)
         if site.masked:
             return jax.lax.stop_gradient(v)
         return v

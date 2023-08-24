@@ -58,12 +58,12 @@ class GP_RBF(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
 
         assert site.loc is not None
-        l, sigma = site.loc.as_param().access(state)
+        l, sigma = site.loc.param().access(state)
         
         # = n_variables, n_latents
         features = self.features.access(state)
@@ -125,8 +125,8 @@ class GP_Kernel_Sigmoid(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 
@@ -146,8 +146,8 @@ class GP_Kernel_SquaredExp(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
         
@@ -174,8 +174,8 @@ class GP_Kernel_OU(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
      
@@ -195,8 +195,8 @@ class GP_Kernel_RationalQuadratic(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
 

@@ -50,12 +50,12 @@ class RandomCovariance(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
         
-        v = site.loc.as_param().access(state)
+        v = site.loc.param().access(state)
         if site.masked:
             return jax.lax.stop_gradient(v)
         return v
@@ -76,12 +76,12 @@ class Uniform(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
         
-        v = site.loc.as_param().access(state)
+        v = site.loc.param().access(state)
         if site.masked:
             return jax.lax.stop_gradient(v)
         return v
@@ -105,12 +105,12 @@ class VUniform(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
         
-        v = site.loc.as_param().access(state)
+        v = site.loc.param().access(state)
         if site.masked:
             return v.map(jax.lax.stop_gradient)
         return v
@@ -132,12 +132,12 @@ class Orthogonal(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
         
-        v = site.loc.as_param().access(state)
+        v = site.loc.param().access(state)
         if site.masked:
             return jax.lax.stop_gradient(v)
         return v
@@ -161,12 +161,12 @@ class Gaussian(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
         
-        v = site.loc.as_param().access(state)
+        v = site.loc.param().access(state)
         if site.masked:
             return jax.lax.stop_gradient(v)
         return v
@@ -190,12 +190,12 @@ class VGaussian(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
         
-        v = site.loc.as_param().access(state)
+        v = site.loc.param().access(state)
         if site.masked:
             return v.map(jax.lax.stop_gradient)
         return v
@@ -219,12 +219,12 @@ class GaussianSoftmax(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
         
-        v = site.loc.as_param().access(state)
+        v = site.loc.param().access(state)
         if site.masked:
             return jax.lax.stop_gradient(v)
         return v
@@ -247,12 +247,12 @@ class Beta(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
         
-        v = site.loc.as_param().access(state)
+        v = site.loc.param().access(state)
         if site.masked:
             return jax.lax.stop_gradient(v)
         return v

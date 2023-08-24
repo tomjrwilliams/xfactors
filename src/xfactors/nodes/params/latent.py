@@ -91,7 +91,7 @@ class Latent(typing.NamedTuple):
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[Latent, tuple, xf.SiteValue]:
         axis = self.axis
-        obj = self.data.access(model)
+        obj = self.data.site().access(model)
         shape_latent = (
             (self.n,)
             if axis is None
@@ -104,11 +104,11 @@ class Latent(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
-        v = site.loc.as_param().access(state)
+        v = site.loc.param().access(state)
         if site.masked:
             return jax.lax.stop_gradient(v)
         return v

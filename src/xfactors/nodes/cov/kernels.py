@@ -57,8 +57,8 @@ class Kernel_Sum(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         if len(self.kernels):
             kernels = self.kernels.map(
@@ -92,8 +92,8 @@ class Kernel_Product(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
     
@@ -113,8 +113,8 @@ class Kernel_Constant(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert False, self
     
@@ -158,8 +158,8 @@ class Kernel_Linear(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         a = self.a.access(state)
         c = self.c.access(state)
@@ -185,8 +185,8 @@ class VKernel_Linear(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         a = self.a.access(state)
         c = self.c.access(state)
@@ -244,8 +244,8 @@ class Kernel_VLinear(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         a = self.a.access(state)
         c = self.c.access(state)
@@ -271,8 +271,8 @@ class VKernel_VLinear(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         a = self.a.access(state)
         c = self.c.access(state)
@@ -309,8 +309,8 @@ class Kernel_RadialBasisFunction(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         sigma = self.sigma.access(state)
         data = self.data.access(state)
@@ -352,8 +352,8 @@ class Kernel_RationalQuadratic(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         sigma = self.sigma.access(state)
         data = self.data.access(state)
@@ -389,8 +389,8 @@ class Kernel_Gaussian(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         sigma = self.sigma.access(state)
         data = self.data.access(state)
@@ -420,8 +420,8 @@ class Kernel_Exponential(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         sigma = self.sigma.access(state)
         data = self.data.access(state)
@@ -449,8 +449,8 @@ class Kernel_Laplacian(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         sigma = self.sigma.access(state)
         data = self.data.access(state)
@@ -480,8 +480,8 @@ class Kernel_Cauchy(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         sigma = self.sigma.access(state)
         data = self.data.access(state)
@@ -511,8 +511,8 @@ class Kernel_Triangular(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         sigma = self.sigma.access(state)
         data = self.data.access(state)
@@ -543,8 +543,8 @@ class Kernel_Sigmoid(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         sigma = self.sigma.access(state)
         data = self.data.access(state)
@@ -574,8 +574,8 @@ class Kernel_Logistic(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         sigma = self.sigma.access(state)
         data = self.data.access(state)
@@ -608,8 +608,8 @@ class Kernel_OrnsteinUhlenbeck(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         sigma = self.sigma.access(state)
         data = self.data.access(state)

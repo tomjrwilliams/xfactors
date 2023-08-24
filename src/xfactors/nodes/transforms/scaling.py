@@ -58,8 +58,8 @@ class Scale_Expit(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
         return self.f(self.data.access(state))
@@ -76,8 +76,8 @@ class Scale_Exp(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
         return jax.numpy.exp(self.data.access(state))
@@ -94,8 +94,8 @@ class Scale_Sq(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
         return jax.numpy.square(self.data.access(state))
@@ -129,12 +129,12 @@ class Scale_Linear1D(typing.NamedTuple):
             model = model.add_node(
                 PARAMS, params.random.Gaussian((1,))
             )
-            a = model.last_added.as_param()
+            a = model.last_added.param()
         if b is None:
             model = model.add_node(
                 PARAMS, params.random.Gaussian((1,))
             )
-            b = model.last_added.as_param()
+            b = model.last_added.param()
         obj = cls(a=a, b=b, data=data)
         if pipe_into is not None:
             obj = fold_f_into(obj, pipe_into)
@@ -147,8 +147,8 @@ class Scale_Linear1D(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
         return self.f(
@@ -173,8 +173,8 @@ class Scale_Logistic(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
         return self.f(self.data.access(state))
@@ -195,8 +195,8 @@ class Scale_Sigmoid(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
         return self.f(self.data.access(state))
@@ -217,8 +217,8 @@ class Scale_CosineKernel(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
         return self.f(self.data.access(state))
@@ -240,8 +240,8 @@ class Scale_RBFKernel(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
         return self.f(self.data.access(state))
@@ -262,8 +262,8 @@ class Scale_GaussianKernel(typing.NamedTuple):
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
         return self.f(self.data.access(state))

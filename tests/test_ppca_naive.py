@@ -28,51 +28,41 @@ def test_ppca_naive() -> bool:
         }),
     )
 
-    model, STAGES = xf.Model().init_stages(3)
-    INPUT, COV, ENCODE, DECODE = STAGES
-
-    model, loc_data = model.add_input(
-        xf.nodes.inputs.dfs.Input_DataFrame_Wide()
-    )
-    model, loc_cov = model.add_node(
-        COV, xf.nodes.cov.vanilla.Cov(
-            data=loc_data.as_result(), 
-        ),
-        static=True,
+    model, loc_data = xf.Model().add_node(
+        xf.nodes.inputs.dfs.Input_DataFrame_Wide(),
+        input=True,
     )
     model, loc_encode = model.add_node(
-        ENCODE, xf.nodes.pca.vanilla.PCA_Encoder(
-            data=loc_data.as_result(),
+        xf.nodes.pca.vanilla.PCA_Encoder(
+            data=loc_data.result(),
             n=N + 1,
             #
         )
     )
     model, loc_decode = model.add_node(
-        DECODE, xf.nodes.pca.vanilla.PCA_Decoder(
-            weights=loc_encode.as_param(),
-            factors=loc_encode.as_result(),
+        xf.nodes.pca.vanilla.PCA_Decoder(
+            weights=loc_encode.param(),
+            factors=loc_encode.result(),
             #
         )
     )
     model = (
-        model.add_constraint(xf.nodes.constraints.loss.Constraint_MSE(
-            l=loc_data.as_result(),
-            r=loc_decode.as_result(),
-        ))
-        .add_constraint(xf.nodes.constraints.linalg.Constraint_EigenVLike(
-            weights=loc_encode.as_param(),
-            factors=loc_encode.as_result(),
+        model.add_node(xf.nodes.constraints.loss.Constraint_MSE(
+            l=loc_data.result(),
+            r=loc_decode.result(),
+        ), constraint=True)
+        .add_node(xf.nodes.constraints.linalg.Constraint_EigenVLike(
+            weights=loc_encode.param(),
+            factors=loc_encode.result(),
             n_check=N + 1,
-        ))
+        ), constraint=True)
         .init(data)
     )
 
-    model = model.optimise(data)
-    results = model.apply(data)
-    params = model.params
-
-    eigen_vec = params[ENCODE][0]
-    factors = results[ENCODE][0]
+    model = model.optimise(data).apply(data)
+    
+    eigen_vec = loc_encode.param().access(model)
+    factors = loc_encode.result().access(model)
 
     cov = jax.numpy.cov(factors.T)
     eigen_vals = jax.numpy.diag(cov)
