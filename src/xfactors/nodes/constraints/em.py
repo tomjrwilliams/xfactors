@@ -21,9 +21,9 @@ import jaxopt
 import optax
 
 import xtuples as xt
-from ... import xfactors as xf
 
-from . import funcs
+from ... import xfactors as xf
+from ... import utils
 
 # ---------------------------------------------------------------
 
@@ -48,7 +48,7 @@ class Constraint_EM(typing.NamedTuple):
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         param = self.param.access(state)
         optimal = self.optimal.access(state)
-        return funcs.loss_mse(
+        return utils.funcs.loss_mse(
             param,
             ( 
                 jax.lax.stop_gradient(optimal)
@@ -82,7 +82,7 @@ class Constraint_EM_MatMul(typing.NamedTuple):
             jax.numpy.transpose(raw, (0, 2, 1)),
             raw,
         )
-        return funcs.loss_mse(
+        return utils.funcs.loss_mse(
             param,
             ( 
                 jax.lax.stop_gradient(optimal)

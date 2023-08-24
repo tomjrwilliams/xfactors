@@ -21,9 +21,9 @@ import jaxopt
 import optax
 
 import xtuples as xt
-from ... import xfactors as xf
 
-from . import funcs
+from ... import xfactors as xf
+from ... import utils
 
 # ---------------------------------------------------------------
 
@@ -218,7 +218,7 @@ class Constraint_MAbsE(typing.NamedTuple):
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         l = self.l.access(state)
         r = self.r.access(state)
-        return funcs.loss_mabse(l, r)
+        return utils.funcs.loss_mabse(l, r)
 
 @xt.nTuple.decorate(init=xf.init_null)
 class Constraint_VMAbsE(typing.NamedTuple):
@@ -239,7 +239,7 @@ class Constraint_VMAbsE(typing.NamedTuple):
         l = self.l.access(state)
         r = self.r.access(state)
         return jax.numpy.vstack(
-            xt.ituple(l).map(funcs.loss_mabse, r).pipe(list)
+            xt.ituple(l).map(utils.funcs.loss_mabse, r).pipe(list)
         ).mean()
 # ---------------------------------------------------------------
 
@@ -261,7 +261,7 @@ class Constraint_MSE(typing.NamedTuple):
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         l = self.l.access(state)
         r = self.r.access(state)
-        return funcs.loss_mse(l, r)
+        return utils.funcs.loss_mse(l, r)
 
 @xt.nTuple.decorate(init=xf.init_null)
 class Constraint_VMSE(typing.NamedTuple):
@@ -282,7 +282,7 @@ class Constraint_VMSE(typing.NamedTuple):
         l = self.l.access(state)
         r = self.r.access(state)
         return jax.numpy.vstack(
-            xt.ituple(l).map(funcs.loss_mse, r).pipe(list)
+            xt.ituple(l).map(utils.funcs.loss_mse, r).pipe(list)
         ).mean()
 
 # ---------------------------------------------------------------

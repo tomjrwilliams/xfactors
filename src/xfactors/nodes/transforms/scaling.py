@@ -24,6 +24,21 @@ import xtuples as xt
 
 from ... import xfactors as xf
 from ... import utils
+from .. import params
+
+
+# ---------------------------------------------------------------
+
+def fold_f_into(obj, fs: xt.iTuple):
+    assert isinstance(obj, typing.NamedTuple), obj
+    f = obj.f
+    def f_new(self, *args, **kwargs):
+        res = f(*args, **kwargs)
+        return fs.fold(
+            lambda acc, _f: _f(acc), initial=res
+        )
+    setattr(obj, "f", f_new)
+    return obj
 
 # ---------------------------------------------------------------
 
@@ -38,7 +53,7 @@ class Scale_Expit(typing.NamedTuple):
 
     @classmethod
     def f(cls, data):
-        return jax.scipy.special.expit(data)
+        return utils.funcs.expit(data)
 
     def apply(
         self,
@@ -99,8 +114,35 @@ class Scale_Linear1D(typing.NamedTuple):
     ) -> tuple[Scale_Linear1D, tuple, xf.SiteValue]: ...
 
     @classmethod
+    def add_to_model(
+        cls,
+        model,
+        stage,
+        PARAMS = None,
+        data: xf.OptionalLoc = None,
+        a: xf.OptionalLoc = None,
+        b: xf.OptionalLoc = None,
+        pipe_into: typing.Optional[xt.iTuple]=None,
+    ):
+        assert "data" is not None
+        if a is None:
+            model = model.add_node(
+                PARAMS, params.random.Gaussian((1,))
+            )
+            a = model.last_added.as_param()
+        if b is None:
+            model = model.add_node(
+                PARAMS, params.random.Gaussian((1,))
+            )
+            b = model.last_added.as_param()
+        obj = cls(a=a, b=b, data=data)
+        if pipe_into is not None:
+            obj = fold_f_into(obj, pipe_into)
+        return model.add_node(stage, obj)
+
+    @classmethod
     def f(cls, data, a, b):
-        return (data * b) + a
+        return utils.funcs.expit(data, a, b)
 
     def apply(
         self,
@@ -126,9 +168,7 @@ class Scale_Logistic(typing.NamedTuple):
 
     @classmethod
     def f(cls, data):
-        return 1 / (
-            jax.numpy.exp(data) + 2 + jax.numpy.exp(-data)
-        )
+        return utils.funcs.logistic(data)
 
     def apply(
         self,
@@ -150,9 +190,7 @@ class Scale_Sigmoid(typing.NamedTuple):
 
     @classmethod
     def f(cls, data):
-        return (2 / numpy.pi) * (
-            1 / (jax.numpy.exp(data) + jax.numpy.exp(-data))
-        )
+        return utils.funcs.sigmoid(data)
 
     def apply(
         self,
@@ -174,12 +212,7 @@ class Scale_CosineKernel(typing.NamedTuple):
 
     @classmethod
     def f(cls, data):
-        data = Scale_Expit.f(data)
-        return (numpy.pi / 4) * (
-            jax.numpy.cos(
-                (numpy.pi / 2) * data
-            )
-        )
+        return utils.funcs.kernel_cosine(data)
 
     def apply(
         self,
@@ -190,18 +223,19 @@ class Scale_CosineKernel(typing.NamedTuple):
         assert site.loc is not None
         return self.f(self.data.access(state))
 
-# ---------------------------------------------------------------
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Scale_Expit_Linear1D(typing.NamedTuple):
+class Scale_RBFKernel(typing.NamedTuple):
 
     data: xf.Loc
-    a: xf.Loc
-    b: xf.Loc
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Scale_Expit_Linear1D, tuple, xf.SiteValue]: ...
+    ) -> tuple[Scale_Sigmoid, tuple, xf.SiteValue]: ...
+
+    @classmethod
+    def f(cls, data):
+        return utils.funcs.kernel_rbf(data)
 
     def apply(
         self,
@@ -209,23 +243,21 @@ class Scale_Expit_Linear1D(typing.NamedTuple):
         state: xf.State,
         model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
-        data = self.data.access(state)
-        a = self.a.access(state)
-        b = self.b.access(state)
-        return Scale_Linear1D.f(
-            data=Scale_Expit.f(data), a=a, b=b,
-        )
+        assert site.loc is not None
+        return self.f(self.data.access(state))
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Scale_Sigmoid_Linear1D(typing.NamedTuple):
+class Scale_GaussianKernel(typing.NamedTuple):
 
     data: xf.Loc
-    a: xf.Loc
-    b: xf.Loc
 
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Scale_Sigmoid_Linear1D, tuple, xf.SiteValue]: ...
+    ) -> tuple[Scale_Sigmoid, tuple, xf.SiteValue]: ...
+
+    @classmethod
+    def f(cls, data):
+        return utils.funcs.kernel_gaussian(data)
 
     def apply(
         self,
@@ -233,59 +265,7 @@ class Scale_Sigmoid_Linear1D(typing.NamedTuple):
         state: xf.State,
         model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
-        data = self.data.access(state)
-        a = self.a.access(state)
-        b = self.b.access(state)
-        return Scale_Linear1D.f(
-            data=Scale_Sigmoid.f(data), a=a, b=b,
-        )
-
-@xt.nTuple.decorate(init=xf.init_null)
-class Scale_Logistic_Linear1D(typing.NamedTuple):
-
-    data: xf.Loc
-    a: xf.Loc
-    b: xf.Loc
-
-    def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Scale_Logistic_Linear1D, tuple, xf.SiteValue]: ...
-
-    def apply(
-        self,
-        site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
-    ) -> typing.Union[tuple, jax.numpy.ndarray]:
-        data = self.data.access(state)
-        a = self.a.access(state)
-        b = self.b.access(state)
-        return Scale_Linear1D.f(
-            data=Scale_Logistic.f(data), a=a, b=b,
-        )
-
-@xt.nTuple.decorate(init=xf.init_null)
-class Scale_CosineKernel_Linear1D(typing.NamedTuple):
-
-    data: xf.Loc
-    a: xf.Loc
-    b: xf.Loc
-
-    def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[Scale_CosineKernel_Linear1D, tuple, xf.SiteValue]: ...
-
-    def apply(
-        self,
-        site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
-    ) -> typing.Union[tuple, jax.numpy.ndarray]:
-        data = self.data.access(state)
-        a = self.a.access(state)
-        b = self.b.access(state)
-        return Scale_Linear1D.f(
-            data=Scale_CosineKernel.f(data), a=a, b=b,
-        )
+        assert site.loc is not None
+        return self.f(self.data.access(state))
 
 # ---------------------------------------------------------------

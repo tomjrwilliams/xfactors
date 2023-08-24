@@ -21,7 +21,9 @@ import jaxopt
 import optax
 
 import xtuples as xt
+
 from ... import xfactors as xf
+from ... import utils
 
 # ---------------------------------------------------------------
 
@@ -297,29 +299,12 @@ class Kernel_RadialBasisFunction(typing.NamedTuple):
     def init(
         self, site: xf.Site, model: xf.Model, data: tuple
     ) -> tuple[Kernel_RadialBasisFunction, tuple, xf.SiteValue]: ...
-    
-    @classmethod
-    def f_flat(cls, features_l, features_r, sigma, l):
-        sigma_sq = jax.numpy.square(sigma)
-        l_sq_2 = 2 * jax.numpy.square(l)
-        norms = euclidean_distance(features_l, features_r)
-        return jax.numpy.exp(
-            -1 * (jax.numpy.square(norms) / l_sq_2)
-        ) * sigma_sq
 
     @classmethod
     def f(cls, data, sigma, l):
-
-        sigma_sq = jax.numpy.square(sigma)
-        l_sq_2 = 2 * jax.numpy.square(l)
-
-        data_ = xf.expand_dims(data, 0, 1)
-        diffs = data_ - data_.T
-        diffs_sq = jax.numpy.square(diffs)
-
-        return jax.numpy.exp(
-            -1 * (diffs_sq / l_sq_2)
-        ) * sigma_sq
+        return utils.funcs.kernel_rbf(
+            utils.funcs.diffs_1d(data), sigma=sigma, l=l
+        )
 
     def apply(
         self,
@@ -357,18 +342,12 @@ class Kernel_RationalQuadratic(typing.NamedTuple):
 
     @classmethod
     def f(cls, data, sigma, l, a):
-
-        sigma_sq = jax.numpy.square(sigma)
-        a_2_ls_sq = 2 * jax.numpy.square(l) * a
-
-        data_ = xf.expand_dims(data, 0, 1)
-        diffs = data_ - data_.T
-        diffs_sq = jax.numpy.square(diffs)
-
-        return jax.numpy.power(
-            1 + (diffs_sq / a_2_ls_sq),
-            -a
-        ) * sigma_sq
+        return utils.funcs.kernel_rq(
+            utils.funcs.diffs_1d(data),
+            sigma=sigma,
+            l = l,
+            a = a,
+        )
 
     def apply(
         self,
@@ -403,17 +382,8 @@ class Kernel_Gaussian(typing.NamedTuple):
 
     @classmethod
     def f(cls, data, sigma):
-
-        sigma_sq = jax.numpy.square(sigma)
-
-        data_ = xf.expand_dims(data, 0, 1)
-        diffs = data_ - data_.T
-        diffs_sq = jax.numpy.square(diffs)
-
-        norm = 1 / (2 * sigma_sq)
-
-        return jax.numpy.exp(
-            1 - (norm * diffs_sq)
+        return utils.funcs.kernel_gaussian(
+            utils.funcs.diffs_1d(data), sigma=sigma
         )
 
     def apply(
@@ -443,15 +413,8 @@ class Kernel_Exponential(typing.NamedTuple):
 
     @classmethod
     def f(cls, data, sigma):
-
-        data_ = xf.expand_dims(data, 0, 1)
-        diffs = data_ - data_.T
-        diffs_abs = jax.numpy.abs(diffs)
-
-        norm = 1 / sigma
-
-        return jax.numpy.exp(
-            1 - (norm * diffs_abs)
+        return utils.funcs.kernel_exponential(
+            utils.funcs.diffs_1d(data), sigma = sigma
         )
 
     def apply(
@@ -479,16 +442,8 @@ class Kernel_Laplacian(typing.NamedTuple):
 
     @classmethod
     def f(cls, data, sigma):
-
-        # because has to be positive
-        sigma_sq = jax.numpy.square(sigma)
-
-        data_ = xf.expand_dims(data, 0, 1)
-        diffs = data_ - data_.T
-        diffs_sq = jax.numpy.square(diffs)
-
-        return jax.numpy.exp(
-            - sigma_sq * diffs_sq
+        return utils.funcs.kernel_laplacian(
+            utils.funcs.diffs_1d(data), sigma=sigma
         )
 
     def apply(
@@ -500,6 +455,7 @@ class Kernel_Laplacian(typing.NamedTuple):
         sigma = self.sigma.access(state)
         data = self.data.access(state)
         return self.f(data, sigma)
+
 # ---------------------------------------------------------------
    
 
@@ -517,15 +473,8 @@ class Kernel_Cauchy(typing.NamedTuple):
 
     @classmethod
     def f(cls, data, sigma):
-
-        sigma_sq = jax.numpy.square(sigma)
-
-        data_ = xf.expand_dims(data, 0, 1)
-        diffs = data_ - data_.T
-        diffs_sq = jax.numpy.square(diffs)
-
-        return 1 / (
-            1 + (diffs_sq / sigma_sq)
+        return utils.funcs.kernel_cauchy(
+            utils.funcs.diffs_1d(data), sigma=sigma
         )
 
     def apply(
@@ -555,14 +504,8 @@ class Kernel_Triangular(typing.NamedTuple):
 
     @classmethod
     def f(cls, data, sigma):
-
-        data_ = xf.expand_dims(data, 0, 1)
-        diffs = data_ - data_.T
-        diffs_abs = jax.numpy.abs(diffs)
-
-        return jax.numpy.clip(
-            1 - (diffs_abs / (2 * sigma)),
-            a_min=0.,
+        return utils.funcs.kernel_triangular(
+            utils.funcs.diffs_1d(data), sigma=sigma
         )
 
     def apply(
@@ -592,14 +535,9 @@ class Kernel_Sigmoid(typing.NamedTuple):
 
     @classmethod
     def f(cls, data, sigma):
-
-        data_ = xf.expand_dims(data, 0, 1)
-        diffs = data_ - data_.T
-        
-        return (2 / numpy.pi) * (
-            1 / (
-                jax.numpy.exp(diffs) + jax.numpy.exp(-diffs)
-            )
+        return utils.funcs.kernel_sigmoid(
+            utils.funcs.diffs_1d(data), 
+            # sigma=sigma
         )
 
     def apply(
@@ -628,12 +566,9 @@ class Kernel_Logistic(typing.NamedTuple):
 
     @classmethod
     def f(cls, data, sigma):
-
-        data_ = xf.expand_dims(data, 0, 1)
-        diffs = data_ - data_.T
-        
-        return 1 / (
-            jax.numpy.exp(diffs) + 2 + jax.numpy.exp(-diffs)
+        return utils.funcs.kernel_logistic(
+            utils.funcs.diffs_1d(data), 
+            # sigma=sigma
         )
 
     def apply(
@@ -656,7 +591,6 @@ class Kernel_OrnsteinUhlenbeck(typing.NamedTuple):
     # cov = σ^2 / 2θ * exp(−θ(x+y))(1−exp(2θ(x−y)))
     # theta -> sigma
 
-
     sigma: xf.Loc
     data: xf.Loc
 
@@ -666,14 +600,9 @@ class Kernel_OrnsteinUhlenbeck(typing.NamedTuple):
 
     @classmethod
     def f(cls, data, sigma):
-
-        data_ = xf.expand_dims(data, 0, 1)
-        diffs = data_ - data_.T
-
-        diffs_sq = jax.numpy.square(diffs)
-        
-        return jax.numpy.exp(
-            (- diffs_sq) / sigma
+        return utils.funcs.kernel_ou(
+            utils.funcs.diffs_1d(data), 
+            sigma=sigma,
         )
 
     def apply(

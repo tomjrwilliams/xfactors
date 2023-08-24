@@ -21,9 +21,9 @@ import jaxopt
 import optax
 
 import xtuples as xt
-from ... import xfactors as xf
 
-from . import funcs
+from ... import xfactors as xf
+from ... import utils
 
 # ---------------------------------------------------------------
 

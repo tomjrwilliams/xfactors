@@ -21,9 +21,9 @@ import jaxopt
 import optax
 
 import xtuples as xt
-from ... import xfactors as xf
 
-from . import funcs
+from ... import xfactors as xf
+from ... import utils
 
 # ---------------------------------------------------------------
 
@@ -52,7 +52,7 @@ class Constraint_Eigenvec(typing.NamedTuple):
         eigvals = self.eigvals.access(state)
         if self.T:
             weights = weights.T
-        return funcs.loss_eigenvec(cov, weights, eigvals)
+        return utils.funcs.loss_eigenvec(cov, weights, eigvals)
 
 @xt.nTuple.decorate(init=xf.init_null)
 class Constraint_Orthonormal(typing.NamedTuple):
@@ -73,7 +73,7 @@ class Constraint_Orthonormal(typing.NamedTuple):
         X = self.data.access(state)
         if self.T:
             X = X.T
-        return funcs.loss_orthonormal(X)
+        return utils.funcs.loss_orthonormal(X)
 
 
 @xt.nTuple.decorate(init=xf.init_null)
@@ -95,7 +95,7 @@ class Constraint_Orthogonal(typing.NamedTuple):
         X = self.data.access(state)
         if self.T:
             X = X.T
-        return funcs.loss_orthogonal(X)
+        return utils.funcs.loss_orthogonal(X)
 
 
 @xt.nTuple.decorate(init=xf.init_null)
@@ -122,7 +122,7 @@ class Constraint_VEigenvec(typing.NamedTuple):
         if self.T:
             return jax.numpy.vstack([
                 xt.iTuple(cov).map(
-                    funcs.loss_eigenvec, 
+                    utils.funcs.loss_eigenvec, 
                     xt.iTuple(weights).map(
                         lambda v: v.T
                     ),
@@ -131,7 +131,7 @@ class Constraint_VEigenvec(typing.NamedTuple):
             ]).sum()    
         return jax.numpy.vstack([
             xt.iTuple(cov).map(
-                funcs.loss_eigenvec, weights, eigvals
+                utils.funcs.loss_eigenvec, weights, eigvals
             ).pipe(list)
         ]).sum()
 
@@ -154,10 +154,10 @@ class Constraint_VOrthogonal(typing.NamedTuple):
         X = self.data.access(state)
         if self.T:
             return jax.numpy.vstack([
-                funcs.loss_orthogonal(x.T) for x in X
+                utils.funcs.loss_orthogonal(x.T) for x in X
             ]).sum()    
         return jax.numpy.vstack([
-            funcs.loss_orthogonal(x) for x in X
+            utils.funcs.loss_orthogonal(x) for x in X
         ]).sum()
 
 
@@ -180,12 +180,12 @@ class Constraint_VOrthonormal(typing.NamedTuple):
         X = self.data.access(state)
         if self.T:
             return jax.numpy.vstack([
-                funcs.loss_orthonormal(x.T) for x in X
+                utils.funcs.loss_orthonormal(x.T) for x in X
             ]).sum()    
         return jax.numpy.vstack([
-            funcs.loss_orthonormal(x) for x in X
+            utils.funcs.loss_orthonormal(x) for x in X
         ]).sum()
-        # return jax.vmap(funcs.loss_orthonormal)(X).sum()
+        # return jax.vmap(utils.funcs.loss_orthonormal)(X).sum()
 
 
 @xt.nTuple.decorate(init=xf.init_null)
@@ -207,7 +207,7 @@ class Constraint_VDiagonal(typing.NamedTuple):
         X = self.data.access(state)
         if self.T:
             X = X.T
-        return jax.vmap(funcs.loss_diag)(X).sum()
+        return jax.vmap(utils.funcs.loss_diag)(X).sum()
 
 @xt.nTuple.decorate(init=xf.init_null)
 class Constraint_WtSW(typing.NamedTuple):
@@ -257,7 +257,7 @@ class Constraint_XXt_Cov(typing.NamedTuple):
 
         XXt = jax.numpy.matmul(X, X.T)
 
-        return funcs.loss_mse(XXt, cov)
+        return utils.funcs.loss_mse(XXt, cov)
 
 @xt.nTuple.decorate(init=xf.init_null)
 class Constraint_XD2Xt_Cov(typing.NamedTuple):
@@ -287,7 +287,7 @@ class Constraint_XD2Xt_Cov(typing.NamedTuple):
             jax.numpy.multiply(X, D_sq), X.T
         )
 
-        return funcs.loss_mse(XXt, cov)
+        return utils.funcs.loss_mse(XXt, cov)
 
 @xt.nTuple.decorate(init=xf.init_null)
 class Constraint_EigenVLike(typing.NamedTuple):
@@ -310,10 +310,10 @@ class Constraint_EigenVLike(typing.NamedTuple):
         eigvals = jax.numpy.diag(cov)
 
         res = (
-            + funcs.loss_descending(eigvals)
-            + funcs.loss_orthonormal(w.T)
-            + funcs.loss_mean_zero(0)(f)
-            + funcs.loss_diag(cov)
+            + utils.funcs.loss_descending(eigvals)
+            + utils.funcs.loss_orthonormal(w.T)
+            + utils.funcs.loss_mean_zero(0)(f)
+            + utils.funcs.loss_diag(cov)
         )
         if eigval_max:
             return res + (

@@ -10,7 +10,7 @@ import xfactors as xf
 
 from tests import utils
 
-def test_ppca() -> bool:
+def test_ppca_naive() -> bool:
     xf.utils.rand.reset_keys()
 
     N = 3
@@ -31,28 +31,37 @@ def test_ppca() -> bool:
     model, STAGES = xf.Model().init_stages(3)
     INPUT, COV, ENCODE, DECODE = STAGES
 
-    model = (
-        model.add_input(xf.nodes.inputs.dfs.Input_DataFrame_Wide())
-        .add_node(COV, xf.nodes.cov.vanilla.Cov(
-            data=xf.Loc.result(INPUT, 0), static=True,
-        ))
-        .add_node(ENCODE, xf.nodes.pca.vanilla.PCA_Encoder(
-            data=xf.Loc.result(INPUT, 0),
+    model, loc_data = model.add_input(
+        xf.nodes.inputs.dfs.Input_DataFrame_Wide()
+    )
+    model, loc_cov = model.add_node(
+        COV, xf.nodes.cov.vanilla.Cov(
+            data=loc_data.as_result(), 
+        ),
+        static=True,
+    )
+    model, loc_encode = model.add_node(
+        ENCODE, xf.nodes.pca.vanilla.PCA_Encoder(
+            data=loc_data.as_result(),
             n=N + 1,
             #
-        ))
-        .add_node(DECODE, xf.nodes.pca.vanilla.PCA_Decoder(
-            weights=xf.Loc.param(ENCODE, 0),
-            factors=xf.Loc.result(ENCODE, 0),
+        )
+    )
+    model, loc_decode = model.add_node(
+        DECODE, xf.nodes.pca.vanilla.PCA_Decoder(
+            weights=loc_encode.as_param(),
+            factors=loc_encode.as_result(),
             #
-        ))
-        .add_constraint(xf.nodes.constraints.loss.Constraint_MSE(
-            l=xf.Loc.result(INPUT, 0),
-            r=xf.Loc.result(DECODE, 0),
+        )
+    )
+    model = (
+        model.add_constraint(xf.nodes.constraints.loss.Constraint_MSE(
+            l=loc_data.as_result(),
+            r=loc_decode.as_result(),
         ))
         .add_constraint(xf.nodes.constraints.linalg.Constraint_EigenVLike(
-            weights=xf.Loc.param(ENCODE, 0),
-            factors=xf.Loc.result(ENCODE, 0),
+            weights=loc_encode.as_param(),
+            factors=loc_encode.as_result(),
             n_check=N + 1,
         ))
         .init(data)

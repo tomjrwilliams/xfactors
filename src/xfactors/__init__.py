@@ -22,4 +22,5 @@ from . import nodes
 from . import utils
 from . import visuals
 
+from .nodes import *
 from .xfactors import *

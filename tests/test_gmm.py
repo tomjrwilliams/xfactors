@@ -17,7 +17,7 @@ import optax
 
 from sklearn.cluster import KMeans
 
-def test_kmeans() -> bool:
+def test_gmm() -> bool:
     xf.utils.rand.reset_keys()
 
     N_COLS = 5
@@ -111,10 +111,10 @@ def test_kmeans() -> bool:
     labels = probs.argmax(axis=1)
     # n_data
 
-    print(cov_)
-    print(labels)
-    print(mu_)
-    print(mu)
+    # print(cov_)
+    # print(labels)
+    # print(mu_)
+    # print(mu)
     
     # print(results[EM][0][3])
     # print(results[EM][0][0])
