@@ -164,7 +164,7 @@ class GP_Kernel_OU(typing.NamedTuple):
     def f(cls, features_l, features_r, sigma, l):
         sigma_sq = jax.numpy.square(sigma)
         # l_2_sq = 2 * jax.numpy.square(l)
-        norms = cov.kernels.euclidean_distance(features_l, features_r)
+        norms = utils.funcs.diff_euclidean(features_l, features_r)
         return jax.numpy.exp(
             -1 * (jax.numpy.square(norms) / l)
         ) * sigma_sq
