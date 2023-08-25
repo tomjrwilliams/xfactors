@@ -21,7 +21,7 @@ pip install xfactors
 
 ## Overview
 
-xf (xfactors - name to be reconsidered) is a work-in-progress library for practical machine learning research built on [JAX](https://jax.readthedocs.io/en/latest/index.html).
+xf (xfactors - name to be reconsidered) is a work-in-progress library for machine learning research built on [JAX](https://jax.readthedocs.io/en/latest/index.html).
 
 ### Pipelines
 
