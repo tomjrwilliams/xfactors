@@ -33,16 +33,16 @@ def test_ppca_naive() -> bool:
     )
 
     model, loc_data = xf.Model().add_node(
-        xf.nodes.inputs.dfs.Input_DataFrame_Wide(),
+        xf.inputs.dfs.DataFrame_Wide(),
         input=True,
     )
     model, loc_weights = model.add_node(
-        xf.nodes.params.random.Orthogonal(
+        xf.params.random.Orthogonal(
             shape=(N_COLS, N + NOISE,)
         )
     )
     model, loc_encode = model.add_node(
-        xf.nodes.pca.vanilla.PCA_Encoder(
+        xf.pca.vanilla.PCA_Encoder(
             data=loc_data.result(),
             weights = loc_weights.param(),
             n=N + NOISE,
@@ -50,18 +50,18 @@ def test_ppca_naive() -> bool:
         )
     )
     model, loc_decode = model.add_node(
-        xf.nodes.pca.vanilla.PCA_Decoder(
+        xf.pca.vanilla.PCA_Decoder(
             weights = loc_weights.param(),
             factors=loc_encode.result(),
             #
         )
     )
     model = (
-        model.add_node(xf.nodes.constraints.loss.Constraint_MSE(
+        model.add_node(xf.constraints.loss.MSE(
             l=loc_data.result(),
             r=loc_decode.result(),
         ), constraint=True)
-        .add_node(xf.nodes.constraints.linalg.Constraint_EigenVLike(
+        .add_node(xf.constraints.linalg.EigenVLike(
             weights = loc_weights.param(),
             factors=loc_encode.result(),
             n_check=N + NOISE,

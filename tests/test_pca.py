@@ -29,11 +29,11 @@ def test_pca() -> bool:
     )
 
     model, loc_data = xf.Model().add_node(
-        xf.nodes.inputs.dfs.Input_DataFrame_Wide(),
+        xf.inputs.dfs.DataFrame_Wide(),
         input=True,
     )
     model, loc_pca = model.add_node(
-        xf.nodes.pca.vanilla.PCA(n=3, data = loc_data.result())
+        xf.pca.vanilla.PCA(n=3, data = loc_data.result())
     )
     model = model.init(data)
 

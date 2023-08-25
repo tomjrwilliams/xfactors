@@ -29,7 +29,7 @@ from ... import utils
 
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Constraint_EM(typing.NamedTuple):
+class EM(typing.NamedTuple):
     
     param: xf.Location
     optimal: xf.Location # optimal at this step from em algo
@@ -38,7 +38,7 @@ class Constraint_EM(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Constraint_EM, tuple, xf.SiteValue]: ...
+    ) -> tuple[EM, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -59,7 +59,7 @@ class Constraint_EM(typing.NamedTuple):
 
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Constraint_EM_MatMul(typing.NamedTuple):
+class EM_MatMul(typing.NamedTuple):
     
     raw: xf.Location
     optimal: xf.Location # optimal at this step from em algo
@@ -68,7 +68,7 @@ class Constraint_EM_MatMul(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Constraint_EM_MatMul, tuple, xf.SiteValue]: ...
+    ) -> tuple[EM_MatMul, tuple, xf.SiteValue]: ...
     
     def apply(
         self,

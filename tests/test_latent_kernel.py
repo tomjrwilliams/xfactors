@@ -92,28 +92,28 @@ def test_latent_kernel() -> bool:
     model = xf.Model()
 
     model, loc_data = model.add_node(
-        xf.nodes.inputs.dfs.Input_DataFrame_Wide(),
+        xf.inputs.dfs.DataFrame_Wide(),
         input=True,
     )
     model, loc_cov = model.add_node(
-        xf.nodes.cov.vanilla.Cov(data=loc_data.result()),
+        xf.cov.vanilla.Cov(data=loc_data.result()),
         static=True,
     )
     model, loc_latent = model.add_node(
-        xf.nodes.params.latent.Latent(
+        xf.params.latent.Latent(
             n=2,
             axis=1,
             data=loc_data.result(),
         )
     )
     model, loc_kernel = model.add_node(
-        xf.nodes.reg.gp.GP_RBF(
+        xf.reg.gp.GP_RBF(
             # sigma=1.,
             features=loc_latent.param(),
         )
     )
     model = model.add_node(
-        xf.nodes.constraints.loss.Constraint_MSE(
+        xf.constraints.loss.MSE(
             l=loc_cov.result(),
             r=loc_kernel.result(),
         ),

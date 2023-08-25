@@ -37,27 +37,27 @@ def test_ppca() -> bool:
     model = xf.Model()
 
     model, loc_data = model.add_node(
-        xf.nodes.inputs.dfs.Input_DataFrame_Wide(),
+        xf.inputs.dfs.DataFrame_Wide(),
         input=True,
     )
     model, loc_cov = model.add_node(
-        xf.nodes.cov.vanilla.Cov(data=loc_data.result()), static=True
+        xf.cov.vanilla.Cov(data=loc_data.result()), static=True
     )
     model, loc_weights = model.add_node(
-        xf.nodes.params.random.Orthogonal(
+        xf.params.random.Orthogonal(
             shape=(N_COLS, N + NOISE,)
         )
     )
     model, loc_eigval = model.add_node(
-        xf.nodes.params.random.Gaussian(shape=(N + NOISE,))
+        xf.params.random.Gaussian(shape=(N + NOISE,))
     )
     model, loc_eigval_sq = model.add_node(
-        xf.nodes.transforms.scaling.Scale_Sq(
+        xf.transforms.scaling.Scale_Sq(
             data=loc_eigval.param()
         ),
     )
     model, loc_encode = model.add_node(
-        xf.nodes.pca.vanilla.PCA_Encoder(
+        xf.pca.vanilla.PCA_Encoder(
             data=loc_data.result(),
             weights=loc_weights.param(),
             n=N + NOISE,
@@ -65,14 +65,14 @@ def test_ppca() -> bool:
         )
     )
     model, loc_decode = model.add_node(
-        xf.nodes.pca.vanilla.PCA_Decoder(
+        xf.pca.vanilla.PCA_Decoder(
             weights=loc_weights.param(),
             factors=loc_encode.result(),
             #
         )
     )
     model = model.add_node(
-        xf.nodes.constraints.linalg.Constraint_Eigenvec(
+        xf.constraints.linalg.Eigenvec(
             cov=loc_cov.result(),
             weights=loc_weights.param(),
             eigvals=loc_eigval_sq.result(),

@@ -34,7 +34,7 @@ from ... import utils
 
 
 @xt.nTuple.decorate()
-class Input_DataFrame_Wide(typing.NamedTuple):
+class DataFrame_Wide(typing.NamedTuple):
 
     allow_missing_columns: bool = True
     allow_missing_indices: bool = True
@@ -53,7 +53,7 @@ class Input_DataFrame_Wide(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Input_DataFrame_Wide, tuple, xf.SiteValue]:
+    ) -> tuple[DataFrame_Wide, tuple, xf.SiteValue]:
         assert site.loc is not None
         # path[0] = stage, so path[1] = index of data element
 
@@ -145,7 +145,7 @@ def rolling_dataframes(df, step, window, unit):
     return dfs
 
 @xt.nTuple.decorate()
-class Input_DataFrame_Wide_Rolling(typing.NamedTuple):
+class DataFrame_Wide_Rolling(typing.NamedTuple):
 
     step: int
     window: int
@@ -168,7 +168,7 @@ class Input_DataFrame_Wide_Rolling(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Input_DataFrame_Wide_Rolling, tuple, xf.SiteValue]:
+    ) -> tuple[DataFrame_Wide_Rolling, tuple, xf.SiteValue]:
         assert site.loc is not None
         # path[0] = stage, so path[1] = index of data element
 
@@ -262,7 +262,7 @@ class Slice_DataFrame_Wide_Rolling_Columns(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Input_DataFrame_Tall, tuple, xf.SiteValue]: ... 
+    ) -> tuple[DataFrame_Tall, tuple, xf.SiteValue]: ... 
     
     def apply(
         self,
@@ -302,13 +302,13 @@ class Slice_DataFrame_Wide_Rolling_Columns(typing.NamedTuple):
 # ---------------------------------------------------------------
 
 @xt.nTuple.decorate()
-class Input_DataFrame_Tall(typing.NamedTuple):
+class DataFrame_Tall(typing.NamedTuple):
 
     # fields to specify if keep index and ticker map
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Input_DataFrame_Tall, tuple, xf.SiteValue]:
+    ) -> tuple[DataFrame_Tall, tuple, xf.SiteValue]:
         assert site.loc is not None
         # path[0] = stage, so path[1] = index of data element
         return self, data[site.loc.path[1]].values.shape, ()

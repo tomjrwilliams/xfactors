@@ -58,7 +58,7 @@ class GMM(typing.NamedTuple):
 small = 10 ** -4
 
 @xt.nTuple.decorate(init=xf.init_null)
-class BGMM_EM(typing.NamedTuple):
+class GMM_Likelihood_Separability(typing.NamedTuple):
     
     k: int
     data: xf.Location
@@ -71,7 +71,7 @@ class BGMM_EM(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[BGMM_EM, tuple, xf.SiteValue]: ...
+    ) -> tuple[GMM_Likelihood_Separability, tuple, xf.SiteValue]: ...
     
     def apply(
         self,

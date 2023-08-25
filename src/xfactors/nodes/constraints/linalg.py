@@ -30,7 +30,7 @@ from ... import utils
 
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Constraint_Eigenvec(typing.NamedTuple):
+class Eigenvec(typing.NamedTuple):
     
     cov: xf.Location
     weights: xf.Location
@@ -39,7 +39,7 @@ class Constraint_Eigenvec(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Constraint_Eigenvec, tuple, xf.SiteValue]: ...
+    ) -> tuple[Eigenvec, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -55,14 +55,14 @@ class Constraint_Eigenvec(typing.NamedTuple):
         return utils.funcs.loss_eigenvec(cov, weights, eigvals)
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Constraint_Orthonormal(typing.NamedTuple):
+class Orthonormal(typing.NamedTuple):
     
     data: xf.Location
     T: bool = False
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Constraint_Orthonormal, tuple, xf.SiteValue]: ...
+    ) -> tuple[Orthonormal, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -77,14 +77,14 @@ class Constraint_Orthonormal(typing.NamedTuple):
 
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Constraint_Orthogonal(typing.NamedTuple):
+class Orthogonal(typing.NamedTuple):
     
     data: xf.Location
     T: bool = False
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Constraint_Orthogonal, tuple, xf.SiteValue]: ...
+    ) -> tuple[Orthogonal, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -99,7 +99,7 @@ class Constraint_Orthogonal(typing.NamedTuple):
 
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Constraint_VEigenvec(typing.NamedTuple):
+class VEigenvec(typing.NamedTuple):
     
     cov: xf.Location
     weights: xf.Location
@@ -108,7 +108,7 @@ class Constraint_VEigenvec(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Constraint_VEigenvec, tuple, xf.SiteValue]: ...
+    ) -> tuple[VEigenvec, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -136,14 +136,14 @@ class Constraint_VEigenvec(typing.NamedTuple):
         ]).sum()
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Constraint_VOrthogonal(typing.NamedTuple):
+class VOrthogonal(typing.NamedTuple):
     
     data: xf.Location
     T: bool = False
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Constraint_VOrthogonal, tuple, xf.SiteValue]: ...
+    ) -> tuple[VOrthogonal, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -162,14 +162,14 @@ class Constraint_VOrthogonal(typing.NamedTuple):
 
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Constraint_VOrthonormal(typing.NamedTuple):
+class VOrthonormal(typing.NamedTuple):
     
     data: xf.Location
     T: bool = False
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Constraint_VOrthonormal, tuple, xf.SiteValue]: ...
+    ) -> tuple[VOrthonormal, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -189,14 +189,14 @@ class Constraint_VOrthonormal(typing.NamedTuple):
 
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Constraint_VDiagonal(typing.NamedTuple):
+class VDiagonal(typing.NamedTuple):
     
     data: xf.Location
     T: bool = False
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Constraint_VDiagonal, tuple, xf.SiteValue]: ...
+    ) -> tuple[VDiagonal, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -210,14 +210,14 @@ class Constraint_VDiagonal(typing.NamedTuple):
         return jax.vmap(utils.funcs.loss_diag)(X).sum()
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Constraint_WtSW(typing.NamedTuple):
+class WtSW(typing.NamedTuple):
     
     W: xf.Loc # eigvec
     S: xf.Loc # cov
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Constraint_WtSW, tuple, xf.SiteValue]: ...
+    ) -> tuple[WtSW, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -236,14 +236,14 @@ class Constraint_WtSW(typing.NamedTuple):
         )).sum()
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Constraint_XXt_Cov(typing.NamedTuple):
+class XXt_Cov(typing.NamedTuple):
     
     X: xf.Location
     cov: xf.Location
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Constraint_XXt_Cov, tuple, xf.SiteValue]: ...
+    ) -> tuple[XXt_Cov, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -260,7 +260,7 @@ class Constraint_XXt_Cov(typing.NamedTuple):
         return utils.funcs.loss_mse(XXt, cov)
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Constraint_XD2Xt_Cov(typing.NamedTuple):
+class XD2Xt_Cov(typing.NamedTuple):
     
     X: xf.Location
     D: xf.Location
@@ -268,7 +268,7 @@ class Constraint_XD2Xt_Cov(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Constraint_XD2Xt_Cov, tuple, xf.SiteValue]: ...
+    ) -> tuple[XD2Xt_Cov, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -290,7 +290,7 @@ class Constraint_XD2Xt_Cov(typing.NamedTuple):
         return utils.funcs.loss_mse(XXt, cov)
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Constraint_EigenVLike(typing.NamedTuple):
+class EigenVLike(typing.NamedTuple):
     
     weights: xf.Location
     factors: xf.Location
@@ -301,7 +301,7 @@ class Constraint_EigenVLike(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Constraint_EigenVLike, tuple, xf.SiteValue]: ...
+    ) -> tuple[EigenVLike, tuple, xf.SiteValue]: ...
 
     @classmethod
     def f_apply(cls, w, f, eigval_max=True):
@@ -336,7 +336,7 @@ class Constraint_EigenVLike(typing.NamedTuple):
 
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Constraint_VEigenVLike(typing.NamedTuple):
+class VEigenVLike(typing.NamedTuple):
     
     weights: xf.Location
     factors: xf.Location
@@ -347,7 +347,7 @@ class Constraint_VEigenVLike(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Constraint_VEigenVLike, tuple, xf.SiteValue]: ...
+    ) -> tuple[VEigenVLike, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -361,7 +361,7 @@ class Constraint_VEigenVLike(typing.NamedTuple):
 
         return jax.numpy.stack(w.map(
             functools.partial(
-                Constraint_EigenVLike.f_apply,
+                EigenVLike.f_apply,
                 eigval_max=self.eigval_max
             ),
             f,
@@ -371,13 +371,13 @@ def l1_diag_loss(v):
     return jax.numpy.abs(jax.numpy.diag(v)).mean()
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Constraint_L1_MM_Diag(typing.NamedTuple):
+class L1_MM_Diag(typing.NamedTuple):
     
     raw: xf.Location
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Constraint_L1_MM_Diag, tuple, xf.SiteValue]: ...
+    ) -> tuple[L1_MM_Diag, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -397,13 +397,13 @@ class Constraint_L1_MM_Diag(typing.NamedTuple):
 
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Constraint_KernelVsCov(typing.NamedTuple):
+class KernelVsCov(typing.NamedTuple):
     
     data: xf.Location
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Constraint_KernelVsCov, tuple, xf.SiteValue]: ...
+    ) -> tuple[KernelVsCov, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -425,14 +425,14 @@ class Constraint_KernelVsCov(typing.NamedTuple):
 
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Constraint_MinimiseMMSpread(typing.NamedTuple):
+class MinimiseMMSpread(typing.NamedTuple):
     
     data: xf.Location
     T: bool = False
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Constraint_MinimiseMMSpread, tuple, xf.SiteValue]: ...
+    ) -> tuple[MinimiseMMSpread, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -457,14 +457,14 @@ class Constraint_MinimiseMMSpread(typing.NamedTuple):
 
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Constraint_MinimiseVariance(typing.NamedTuple):
+class MinimiseVariance(typing.NamedTuple):
     
     data: xf.Location
     T: bool = False
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Constraint_MinimiseVariance, tuple, xf.SiteValue]: ...
+    ) -> tuple[MinimiseVariance, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -480,14 +480,14 @@ class Constraint_MinimiseVariance(typing.NamedTuple):
 
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Constraint_MinimiseZSpread(typing.NamedTuple):
+class MinimiseZSpread(typing.NamedTuple):
     
     data: xf.Location
     T: bool = False
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Constraint_MinimiseZSpread, tuple, xf.SiteValue]: ...
+    ) -> tuple[MinimiseZSpread, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -506,14 +506,14 @@ class Constraint_MinimiseZSpread(typing.NamedTuple):
 
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Constraint_MaxSpread(typing.NamedTuple):
+class MaxSpread(typing.NamedTuple):
     
     data: xf.Location
     T: bool = False
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Constraint_MaxSpread, tuple, xf.SiteValue]: ...
+    ) -> tuple[MaxSpread, tuple, xf.SiteValue]: ...
 
     def apply(
         self,

@@ -28,13 +28,13 @@ from ... import utils
 # ---------------------------------------------------------------
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Constraint_Maximise(typing.NamedTuple):
+class Maximise(typing.NamedTuple):
     
     data: xf.Location
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Constraint_Maximise, tuple, xf.SiteValue]: ...
+    ) -> tuple[Maximise, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -47,13 +47,13 @@ class Constraint_Maximise(typing.NamedTuple):
 
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Constraint_Minimise(typing.NamedTuple):
+class Minimise(typing.NamedTuple):
     
     data: xf.Location
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Constraint_Minimise, tuple, xf.SiteValue]: ...
+    ) -> tuple[Minimise, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -66,13 +66,13 @@ class Constraint_Minimise(typing.NamedTuple):
 
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Constraint_MinimiseSquare(typing.NamedTuple):
+class MinimiseSquare(typing.NamedTuple):
     
     data: xf.Location
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Constraint_MinimiseSquare, tuple, xf.SiteValue]: ...
+    ) -> tuple[MinimiseSquare, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -86,13 +86,13 @@ class Constraint_MinimiseSquare(typing.NamedTuple):
 # ---------------------------------------------------------------
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Constraint_L0(typing.NamedTuple):
+class L0(typing.NamedTuple):
     
     data: xf.Location
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Constraint_L0, tuple, xf.SiteValue]: ...
+    ) -> tuple[L0, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -104,13 +104,13 @@ class Constraint_L0(typing.NamedTuple):
 
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Constraint_L1(typing.NamedTuple):
+class L1(typing.NamedTuple):
     
     data: xf.Location
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Constraint_L1, tuple, xf.SiteValue]: ...
+    ) -> tuple[L1, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -122,13 +122,13 @@ class Constraint_L1(typing.NamedTuple):
         return jax.numpy.abs(data).mean()
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Constraint_VL1(typing.NamedTuple):
+class VL1(typing.NamedTuple):
     
     data: xf.Location
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Constraint_L1, tuple, xf.SiteValue]: ...
+    ) -> tuple[L1, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -143,13 +143,13 @@ class Constraint_VL1(typing.NamedTuple):
 
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Constraint_L2(typing.NamedTuple):
+class L2(typing.NamedTuple):
     
     data: xf.Location
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Constraint_L2, tuple, xf.SiteValue]: ...
+    ) -> tuple[L2, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -161,13 +161,13 @@ class Constraint_L2(typing.NamedTuple):
         return jax.numpy.square(data).mean()
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Constraint_VL2(typing.NamedTuple):
+class VL2(typing.NamedTuple):
     
     data: xf.Location
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Constraint_L2, tuple, xf.SiteValue]: ...
+    ) -> tuple[L2, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -182,13 +182,13 @@ class Constraint_VL2(typing.NamedTuple):
 
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Constraint_ElasticNet(typing.NamedTuple):
+class ElasticNet(typing.NamedTuple):
     
     data: xf.Location
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Constraint_ElasticNet, tuple, xf.SiteValue]: ...
+    ) -> tuple[ElasticNet, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -201,14 +201,14 @@ class Constraint_ElasticNet(typing.NamedTuple):
 # ---------------------------------------------------------------
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Constraint_MAbsE(typing.NamedTuple):
+class MAbsE(typing.NamedTuple):
     
     l: xf.Location
     r: xf.Location
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Constraint_MSE, tuple, xf.SiteValue]: ...
+    ) -> tuple[MSE, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -221,14 +221,14 @@ class Constraint_MAbsE(typing.NamedTuple):
         return utils.funcs.loss_mabse(l, r)
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Constraint_VMAbsE(typing.NamedTuple):
+class VMAbsE(typing.NamedTuple):
     
     l: xf.Location
     r: xf.Location
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Constraint_MSE, tuple, xf.SiteValue]: ...
+    ) -> tuple[MSE, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -244,14 +244,14 @@ class Constraint_VMAbsE(typing.NamedTuple):
 # ---------------------------------------------------------------
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Constraint_MSE(typing.NamedTuple):
+class MSE(typing.NamedTuple):
     
     l: xf.Location
     r: xf.Location
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Constraint_MSE, tuple, xf.SiteValue]: ...
+    ) -> tuple[MSE, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -264,14 +264,14 @@ class Constraint_MSE(typing.NamedTuple):
         return utils.funcs.loss_mse(l, r)
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Constraint_VMSE(typing.NamedTuple):
+class VMSE(typing.NamedTuple):
     
     l: xf.Location
     r: xf.Location
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Constraint_MSE, tuple, xf.SiteValue]: ...
+    ) -> tuple[MSE, tuple, xf.SiteValue]: ...
 
     def apply(
         self,

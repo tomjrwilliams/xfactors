@@ -34,13 +34,13 @@ from ... import utils
 
 
 @xt.nTuple.decorate()
-class Input_NDArray(typing.NamedTuple):
+class NDArray(typing.NamedTuple):
 
     nd: numpy.ndarray
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Input_NDArray, tuple, xf.SiteValue]:
+    ) -> tuple[NDArray, tuple, xf.SiteValue]:
         return self, self.nd.shape, ()
     
     def apply(

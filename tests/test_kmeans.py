@@ -51,21 +51,21 @@ def test_kmeans() -> bool:
     model = xf.Model()
 
     model, loc_data = model.add_node(
-        xf.nodes.inputs.dfs.Input_DataFrame_Wide(),
+        xf.inputs.dfs.DataFrame_Wide(),
         input=True,
     )
     model, loc_mu = model.add_node(
-        xf.nodes.params.random.Gaussian(
+        xf.params.random.Gaussian(
             shape=(N_CLUSTERS, N_COLS,),
         )
     )
     model, loc_var = model.add_node(
-        xf.nodes.params.random.Gaussian(
+        xf.params.random.Gaussian(
             shape=(N_CLUSTERS, N_COLS,),
         )
     )
     model, loc_label = model.add_node(
-        xf.nodes.clustering.kmeans.KMeans_Labels(
+        xf.clustering.kmeans.KMeans_Labels(
             k=3,
             mu=loc_mu.param(),
             var=loc_var.param(),
@@ -73,19 +73,19 @@ def test_kmeans() -> bool:
         )
     )
     model, loc_EM = model.add_node(
-        xf.nodes.clustering.kmeans.KMeans_EM_Naive(
+        xf.clustering.kmeans.KMeans_EM_Naive(
             k=3,
             data=loc_data.result(),
             labels=loc_label.result(),
         )
     )
     model = (
-        model.add_node(xf.nodes.constraints.em.Constraint_EM(
+        model.add_node(xf.constraints.em.EM(
             param=loc_mu.param(),
             optimal=loc_EM.result(0),
             cut_tree=True,
         ), constraint=True)
-        .add_node(xf.nodes.constraints.em.Constraint_EM(
+        .add_node(xf.constraints.em.EM(
             param=loc_var.param(),
             optimal=loc_EM.result(1),
             cut_tree=True,
@@ -107,13 +107,13 @@ def test_kmeans() -> bool:
     
     labels, order = (
         xt.iTuple([int(l) for l in labels])
-        .pipe(xf.nodes.clustering.kmeans.reindex_labels)
+        .pipe(xf.clustering.kmeans.reindex_labels)
     )
     clusters = [clusters[i] for i in order]
 
     k_means = KMeans(n_clusters=3, random_state=69).fit(vs)
     sk_labels, sk_order = xt.iTuple(k_means.labels_).pipe(
-        xf.nodes.clustering.kmeans.reindex_labels
+        xf.clustering.kmeans.reindex_labels
     )
 
     clusters = numpy.round(clusters, 3)

@@ -52,21 +52,21 @@ def test_gmm() -> bool:
     model = xf.Model()
     
     model, loc_data = model.add_node(
-        xf.nodes.inputs.dfs.Input_DataFrame_Wide(),
+        xf.inputs.dfs.DataFrame_Wide(),
         input=True,
     )
     model, loc_mu = model.add_node(
-        xf.nodes.params.random.Gaussian(
+        xf.params.random.Gaussian(
             shape=(N_CLUSTERS, N_COLS,),
         )
     )
     model, loc_cov = model.add_node(
-        xf.nodes.params.random.Orthogonal(
+        xf.params.random.Orthogonal(
             shape=(N_CLUSTERS, N_COLS, N_COLS,),
         )
     )
     model, loc_gmm = model.add_node(
-        xf.nodes.clustering.gmm.BGMM_EM(
+        xf.clustering.gmm.GMM_Likelihood_Separability(
             k=N_CLUSTERS,
             data=loc_data.result(),
             mu=loc_mu.param(),
@@ -76,25 +76,25 @@ def test_gmm() -> bool:
     )
     model = (
         model.add_node(
-            xf.nodes.constraints.loss.Constraint_Maximise(
+            xf.constraints.loss.Maximise(
                 data=loc_gmm.result(1),
             ),
             constraint=True,
         )
         .add_node(
-            xf.nodes.constraints.loss.Constraint_Maximise(
+            xf.constraints.loss.Maximise(
                 data=loc_gmm.result(2),
             ),
             constraint=True,
         )
         .add_node(
-            xf.nodes.constraints.linalg.Constraint_VOrthogonal(
+            xf.constraints.linalg.VOrthogonal(
                 data=loc_cov.param()
             ),
             constraint=True,
         )
         .add_node(
-            xf.nodes.constraints.linalg.Constraint_L1_MM_Diag(
+            xf.constraints.linalg.L1_MM_Diag(
                 raw=loc_cov.param()
             ),
             constraint=True,
@@ -137,13 +137,13 @@ def test_gmm() -> bool:
     
     labels, order = (
         xt.iTuple([int(l) for l in labels])
-        .pipe(xf.nodes.clustering.kmeans.reindex_labels)
+        .pipe(xf.clustering.kmeans.reindex_labels)
     )
     mu_ = [mu_[i] for i in order]
 
     k_means = KMeans(n_clusters=3, random_state=69).fit(vs)
     sk_labels, sk_order = xt.iTuple(k_means.labels_).pipe(
-        xf.nodes.clustering.kmeans.reindex_labels
+        xf.clustering.kmeans.reindex_labels
     )
 
     mu_ = numpy.round(mu_, 3)

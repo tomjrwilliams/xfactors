@@ -36,25 +36,25 @@ def test_linreg() -> bool:
     )
 
     model, loc_input = xf.Model().add_node(
-        xf.nodes.inputs.dfs.Input_DataFrame_Wide(),
+        xf.inputs.dfs.DataFrame_Wide(),
         input=True,
     )
     model, loc_output = model.add_node(
-        xf.nodes.inputs.dfs.Input_DataFrame_Wide(),
+        xf.inputs.dfs.DataFrame_Wide(),
         input=True,
     )
     model, loc_weights = model.add_node(
-        xf.nodes.params.random.Gaussian(shape=(3, 1,),)
+        xf.params.random.Gaussian(shape=(3, 1,),)
     )
     model, loc_reg = model.add_node(
-        xf.nodes.reg.lin.Lin_Reg(
+        xf.reg.lin.Lin_Reg(
             n=1, 
             data=loc_input.result(),
             weights=loc_weights.param(),
         ),
     )
     model = (
-        model.add_node(xf.nodes.constraints.loss.Constraint_MSE(
+        model.add_node(xf.constraints.loss.MSE(
             l=loc_output.result(),
             r=loc_reg.result()
         ), constraint=True)
