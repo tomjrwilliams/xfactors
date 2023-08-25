@@ -23,6 +23,18 @@ pip install xfactors
 
 xf (xfactors - name to be reconsidered) is a work-in-progress library for practical machine learning research in finance built on [JAX](https://jax.readthedocs.io/en/latest/index.html).
 
+### Pipelines
+
+xf is not designed to help one design *individual* machine learning model (components): that's what JAX is for.
+
+xf is one level up: it's for designing *pipelines* of such models, in such a way as to promote composability and re-use.
+
+For instance, let's say that we want to compose a PCA-like embedding model with a GMM.
+
+We would write the PCA-like embedding and the GMM as separate JAX model components, and then compose them together with xf (specifying how data and parameters should flow from one to the other).
+
+### Module
+
 xf provides:
 
 - base classes / interfaces for defining re-useable JAX model components (as nodes in directed acyclic computation graphs).
@@ -32,6 +44,8 @@ xf provides:
 - a simple API for model training and application.
 
 Where we obey, as much as possible, the maxim that 'code that is read together should be written together'.
+
+### Tuples
 
 Everything in xf - models, params, results - is a tuple (or ndarray), which means:
 
@@ -47,9 +61,11 @@ This last point, in particular, allows us to:
 
 - semantically diff two related models (forthcoming).
 
+### Work in progress
+
 As mentioned above, this is still a very much work-in-progress project, that I'm in the process of refactoring out (and rewriting) from our main code base at [Haven Cove](https://havencove.com/).
 
-The unit tests are likely the best place to start for an idea of how the project works in pactice.
+The test folder is likely the best place to start for an idea of how everything works.
 
 Note, the package for now also includes some other convenience utilities from my day job (until I can find a more appropriate long term home for them).
 
