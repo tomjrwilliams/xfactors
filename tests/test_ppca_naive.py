@@ -17,9 +17,13 @@ def test_ppca_naive() -> bool:
 
     ds = xf.utils.dates.starting(datetime.date(2020, 1, 1), 100)
 
+    N_COLS = 5
+
     vs_norm = xf.utils.rand.gaussian((100, N,))
-    betas = xf.utils.rand.gaussian((N, 5,))
+    betas = xf.utils.rand.gaussian((N, N_COLS,))
     vs = numpy.matmul(vs_norm, betas)
+
+    NOISE = 1
 
     data = (
         pandas.DataFrame({
@@ -32,16 +36,22 @@ def test_ppca_naive() -> bool:
         xf.nodes.inputs.dfs.Input_DataFrame_Wide(),
         input=True,
     )
+    model, loc_weights = model.add_node(
+        xf.nodes.params.random.Orthogonal(
+            shape=(N_COLS, N + NOISE,)
+        )
+    )
     model, loc_encode = model.add_node(
         xf.nodes.pca.vanilla.PCA_Encoder(
             data=loc_data.result(),
-            n=N + 1,
+            weights = loc_weights.param(),
+            n=N + NOISE,
             #
         )
     )
     model, loc_decode = model.add_node(
         xf.nodes.pca.vanilla.PCA_Decoder(
-            weights=loc_encode.param(),
+            weights = loc_weights.param(),
             factors=loc_encode.result(),
             #
         )
@@ -52,16 +62,16 @@ def test_ppca_naive() -> bool:
             r=loc_decode.result(),
         ), constraint=True)
         .add_node(xf.nodes.constraints.linalg.Constraint_EigenVLike(
-            weights=loc_encode.param(),
+            weights = loc_weights.param(),
             factors=loc_encode.result(),
-            n_check=N + 1,
+            n_check=N + NOISE,
         ), constraint=True)
         .init(data)
     )
 
     model = model.optimise(data).apply(data)
     
-    eigen_vec = loc_encode.param().access(model)
+    eigen_vec = weights = loc_weights.param().access(model)
     factors = loc_encode.result().access(model)
 
     cov = jax.numpy.cov(factors.T)
@@ -79,6 +89,9 @@ def test_ppca_naive() -> bool:
     _order = numpy.flip(numpy.argsort(eigvals))[:N]
     eigvecs = eigvecs[..., _order]
     # assert False, (eigvals, eigen_vals,)
+
+    eigvecs = xf.utils.funcs.match_sign_to(eigvecs, row=0)
+    eigen_vec = xf.utils.funcs.match_sign_to(eigen_vec, row=0)
 
     print(eigen_vec)
     print(eigvecs)

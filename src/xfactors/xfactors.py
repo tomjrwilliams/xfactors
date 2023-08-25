@@ -196,7 +196,7 @@ def access(
         if inspect.isclass(into):
             if issubclass(into, xt.iTuple):
                 res = into(res)
-            assert isinstance(res, into)
+            assert isinstance(res, into), type(res)
     return res
 
 # ---------------------------------------------------------------
@@ -435,7 +435,11 @@ def order_nodes(model: Model) -> Model:
     stages, ready, remaining, _ = sweep_nodes(
         stages, ready, remaining, inputs_ready(children)
     )
-    assert not remaining.any(lambda i_site: i_site[1].input)
+    
+    remaining_inputs = remaining.filter(
+        lambda i_site: i_site[1].input
+    )
+    assert not remaining_inputs.len(), remaining_inputs
 
     for f in [
         static_ready(children),
@@ -448,7 +452,7 @@ def order_nodes(model: Model) -> Model:
                 stages, ready, remaining, f
             )
 
-    assert remaining.len() == 0
+    assert remaining.len() == 0, remaining
 
     order = model.sites.len_range().sort(
         lambda i: stages.flatten().index_of(i)
@@ -666,10 +670,8 @@ def gen_rand_keys(model: Model):
                 else None
             )
         )
-    )
-    n_keys = sum(ks.map(lambda sks: sks.filter(
-        lambda v: v is not None
-    ).len()))
+    ).flatten()
+    n_keys = ks.filter(lambda v: v is not None).len()
     return ks.pipe(to_tuple_rec), n_keys
 
 # ---------------------------------------------------------------

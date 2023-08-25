@@ -138,8 +138,11 @@ class Concatenate(typing.NamedTuple):
         state: xf.Model,
         data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
-        data = self.locs.map(lambda l: l.access(state))
-        return jax.numpy.concatenate(data.pipe(list), axis=self.axis)
+        data = self.loc.access(state)
+        return jax.numpy.concatenate(
+            data.pipe(list), axis=self.axis
+            #
+        )
 
 
 # given shape definitions, can slice back out into tuple

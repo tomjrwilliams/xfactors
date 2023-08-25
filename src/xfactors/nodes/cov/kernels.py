@@ -25,13 +25,6 @@ import xtuples as xt
 from ... import xfactors as xf
 from ... import utils
 
-# ---------------------------------------------------------------
-
-def euclidean_distance(l, r, small = 10 ** -3):
-    diffs_sq = jax.numpy.square(jax.numpy.subtract(l, r))
-    return jax.numpy.sqrt(
-        jax.numpy.sum(diffs_sq, axis = -1) + small
-    )
 
 # ---------------------------------------------------------------
 

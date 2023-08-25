@@ -20,40 +20,50 @@ def test_linreg() -> bool:
 
     data = (
         pandas.DataFrame({
-            f: xf.utils.dates.dated_series({d: v for d, v in zip(ds, fvs)})
+            f: xf.utils.dates.dated_series({
+                d: v for d, v in zip(ds, fvs)
+                #
+            })
             for f, fvs in enumerate(numpy.array(vs_i).T)
         }),
         pandas.DataFrame({
-            f: xf.utils.dates.dated_series({d: v for d, v in zip(ds, fvs)})
+            f: xf.utils.dates.dated_series({
+                d: v for d, v in zip(ds, fvs)
+                #
+            })
             for f, fvs in enumerate(numpy.array(vs_o).T)
         }),
     )
 
-    model, STAGES = xf.Model().init_stages(1)
-    INPUT, REGRESS = STAGES
-
+    model, loc_input = xf.Model().add_node(
+        xf.nodes.inputs.dfs.Input_DataFrame_Wide(),
+        input=True,
+    )
+    model, loc_output = model.add_node(
+        xf.nodes.inputs.dfs.Input_DataFrame_Wide(),
+        input=True,
+    )
+    model, loc_weights = model.add_node(
+        xf.nodes.params.random.Gaussian(shape=(3, 1,),)
+    )
+    model, loc_reg = model.add_node(
+        xf.nodes.reg.lin.Lin_Reg(
+            n=1, 
+            data=loc_input.result(),
+            weights=loc_weights.param(),
+        ),
+    )
     model = (
-        model.add_input(xf.nodes.inputs.dfs.Input_DataFrame_Wide())
-        .add_input(xf.nodes.inputs.dfs.Input_DataFrame_Wide())
-        .add_node(REGRESS, xf.nodes.reg.lin.Lin_Reg(
-            n=1,
-            data=xf.Loc.result(INPUT, 0),
-            #
-        ))
-        .add_constraint(xf.nodes.constraints.loss.Constraint_MSE(
-            l=xf.Loc.result(INPUT, 1),
-            r=xf.Loc.result(REGRESS, 0),
-        ))
+        model.add_node(xf.nodes.constraints.loss.Constraint_MSE(
+            l=loc_output.result(),
+            r=loc_reg.result()
+        ), constraint=True)
         .init(data)
     )
 
-    betas_pre = model.params[REGRESS][0].T
-
-    model = model.optimise(data)
-    results = model.apply(data)
-    params = model.params
-
-    betas_post = params[REGRESS][0].T
+    betas_pre = loc_weights.param().access(model)
+    model = model.optimise(data).apply(data)
+    betas_post = loc_weights.param().access(model)
 
     results = dict(
         betas=betas.squeeze(),

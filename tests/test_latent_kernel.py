@@ -10,12 +10,12 @@ import xfactors as xf
 
 from tests import utils
 
-import jax.config
-jax.config.update("jax_debug_nans", True)
+# import jax.config
+# jax.config.update("jax_debug_nans", True)
 
 from sklearn.cluster import KMeans
 
-def test_lgp_gmm() -> bool:
+def test_latent_kernel() -> bool:
     xf.utils.rand.reset_keys()
 
     ds = xf.utils.dates.starting(datetime.date(2020, 1, 1), 100)
@@ -81,48 +81,49 @@ def test_lgp_gmm() -> bool:
 
     data = (
         pandas.DataFrame({
-            f: xf.utils.dates.dated_series({d: v for d, v in zip(ds, fvs)})
+            f: xf.utils.dates.dated_series({
+                d: v for d, v in zip(ds, fvs)
+                #
+            })
             for f, fvs in enumerate(numpy.array(vs).T)
         }),
     )
     
-    model, STAGES = xf.Model().init_stages(3)
-    INPUT, COV, LATENT, GP = STAGES
+    model = xf.Model()
 
-    model = (
-        model.add_input(xf.nodes.inputs.dfs.Input_DataFrame_Wide())
-        .add_node(COV, xf.nodes.cov.vanilla.Cov(
-            data=xf.Loc.result(INPUT, 0), static=True,
-        ))
-        .add_node(LATENT, xf.nodes.params.latent.Latent(
+    model, loc_data = model.add_node(
+        xf.nodes.inputs.dfs.Input_DataFrame_Wide(),
+        input=True,
+    )
+    model, loc_cov = model.add_node(
+        xf.nodes.cov.vanilla.Cov(data=loc_data.result()),
+        static=True,
+    )
+    model, loc_latent = model.add_node(
+        xf.nodes.params.latent.Latent(
             n=2,
             axis=1,
-            data=xf.Loc.result(INPUT, 0)
-        ))
-        .add_node(GP, xf.nodes.reg.gp.GP_RBF(
-            # sigma=1.,
-            features=xf.Loc.result(LATENT, 0),
-            data=xf.Loc.result(INPUT, 0),
-        ))
-        .add_constraint(xf.nodes.constraints.loss.Constraint_MSE(
-            l=xf.Loc.result(COV, 0),
-            r = xf.Loc.result(GP, 0),
-        ))
-        # .add_constraint(xf.nodes.constraints.loss.Constraint_MSE(
-        #     data=xt.iTuple(
-        #         xf.Loc.result(INPUT, 0),
-        #         xf.Loc.result(GP, 0, 1),
-        #     )
-        # ))
-        .init(data)
+            data=loc_data.result(),
+        )
     )
+    model, loc_kernel = model.add_node(
+        xf.nodes.reg.gp.GP_RBF(
+            # sigma=1.,
+            features=loc_latent.param(),
+        )
+    )
+    model = model.add_node(
+        xf.nodes.constraints.loss.Constraint_MSE(
+            l=loc_cov.result(),
+            r=loc_kernel.result(),
+        ),
+        constraint=True,
+    ).init(data)
 
-    model = model.optimise(data, iters = 2500)
-    results = model.apply(data)
+    model = model.optimise(data, iters = 2500).apply(data)
 
-    params = model.params
-
-    latents = params[LATENT][0]
+    latents = loc_latent.param().access(model)
+    cov_res = loc_kernel.result().access(model)
 
     k_means = KMeans(n_clusters=3, random_state=69).fit(latents)
     
@@ -140,8 +141,6 @@ def test_lgp_gmm() -> bool:
         labels=label_map,
         clusters=CLUSTER_MAP,
     )
-
-    cov_res = results[GP][0]
 
     utils.assert_is_close(
         cov,

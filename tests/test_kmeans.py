@@ -31,7 +31,10 @@ def test_kmeans() -> bool:
     ]) + (xf.utils.rand.gaussian((N_CLUSTERS, N_COLS,)) / 2)
 
     vs = numpy.concatenate([
-        mu[cluster] + (xf.utils.rand.gaussian((N_VARIABLES, N_COLS)) / 2)
+        mu[cluster] + (xf.utils.rand.gaussian(
+            (N_VARIABLES, N_COLS)
+            #
+        ) / 2)
         for cluster in range(N_CLUSTERS)
     ], axis = 0)
 
@@ -45,40 +48,48 @@ def test_kmeans() -> bool:
         }),
     )
     
-    model, STAGES = xf.Model().init_stages(3)
-    INPUT, PARAMS, LABEL, EM = STAGES
+    model = xf.Model()
 
+    model, loc_data = model.add_node(
+        xf.nodes.inputs.dfs.Input_DataFrame_Wide(),
+        input=True,
+    )
+    model, loc_mu = model.add_node(
+        xf.nodes.params.random.Gaussian(
+            shape=(N_CLUSTERS, N_COLS,),
+        )
+    )
+    model, loc_var = model.add_node(
+        xf.nodes.params.random.Gaussian(
+            shape=(N_CLUSTERS, N_COLS,),
+        )
+    )
+    model, loc_label = model.add_node(
+        xf.nodes.clustering.kmeans.KMeans_Labels(
+            k=3,
+            mu=loc_mu.param(),
+            var=loc_var.param(),
+            data=loc_data.result(),
+        )
+    )
+    model, loc_EM = model.add_node(
+        xf.nodes.clustering.kmeans.KMeans_EM_Naive(
+            k=3,
+            data=loc_data.result(),
+            labels=loc_label.result(),
+        )
+    )
     model = (
-        model.add_input(xf.nodes.inputs.dfs.Input_DataFrame_Wide())
-        .add_node(PARAMS, xf.nodes.params.random.Gaussian(
-            shape=(N_CLUSTERS, N_COLS,),
-        ))
-        .add_node(PARAMS, xf.nodes.params.random.Gaussian(
-            shape=(N_CLUSTERS, N_COLS,),
-        ))
-        .add_node(LABEL, xf.nodes.clustering.kmeans.KMeans_Labels(
-            k=3,
-            mu=xf.Loc.param(PARAMS, 0),
-            var=xf.Loc.param(PARAMS, 1),
-            data=xf.Loc.result(INPUT, 0),
-            # mu
-            # cov
-        ))
-        .add_node(EM, xf.nodes.clustering.kmeans.KMeans_EM_Naive(
-            k=3,
-            data=xf.Loc.result(INPUT, 0),
-            labels=xf.Loc.result(LABEL, 0),
-        ))
-        .add_constraint(xf.nodes.constraints.em.Constraint_EM(
-            param=xf.Loc.param(PARAMS, 0),
-            optimal=xf.Loc.result(EM, 0, 0),
+        model.add_node(xf.nodes.constraints.em.Constraint_EM(
+            param=loc_mu.param(),
+            optimal=loc_EM.result(0),
             cut_tree=True,
-        ))
-        .add_constraint(xf.nodes.constraints.em.Constraint_EM(
-            param=xf.Loc.param(PARAMS, 1),
-            optimal=xf.Loc.result(EM, 0, 1),
+        ), constraint=True)
+        .add_node(xf.nodes.constraints.em.Constraint_EM(
+            param=loc_var.param(),
+            optimal=loc_EM.result(1),
             cut_tree=True,
-        ))
+        ), constraint=True)
         .init(data)
     )
 
@@ -88,15 +99,14 @@ def test_kmeans() -> bool:
         opt=optax.noisy_sgd(.1),
         rand_init=100,
         # jit = False,
-    )
-    results = model.apply(data)
+    ).apply(data)
 
-    params = model.params
-
-    clusters = params[PARAMS][0]
+    # mu
+    clusters = loc_mu.param().access(model)
+    labels = loc_label.result().access(model)
     
     labels, order = (
-        xt.iTuple([int(l) for l in results[LABEL][0]])
+        xt.iTuple([int(l) for l in labels])
         .pipe(xf.nodes.clustering.kmeans.reindex_labels)
     )
     clusters = [clusters[i] for i in order]

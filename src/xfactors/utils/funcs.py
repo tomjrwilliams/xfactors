@@ -47,12 +47,25 @@ def loss_diag(X):
     )
     return loss_mse(X, diag)
 
-# can be zero by col1 = col2 * -1
-# so we first set all to have same sign (+) in col[0]
+def match_sign_to(X, row = None, col = None):
+    assert row is not None or col is not None
+    # assert X.shape[0] == X.shape[1] ?
+    if row is not None:
+        assert col is None
+        return jax.numpy.multiply(
+            X, shapes.expand_dims(
+                jax.numpy.sign(X[row]), 0, X.shape[0]
+            )
+        )
+    if col is not None:
+        assert row is None
+        return jax.numpy.multiply(
+            X, shapes.expand_dims(
+                jax.numpy.sign(X[..., col]), 1, X.shape[1]
+            )
+        )
+
 def loss_orthonormal(X):
-    X = jax.numpy.multiply(
-        X, shapes.expand_dims(jax.numpy.sign(X[0]), 0, X.shape[0])
-    )
     eye = jax.numpy.eye(X.shape[0])
     XXt = jax.numpy.matmul(X, X.T)
     return loss_mse(XXt, eye)
@@ -92,6 +105,12 @@ def loss_eigenvec(cov, w, eigvals):
 def diffs_1d(data):
     data_ = shapes.expand_dims(data, 0, 1)
     return data_ - data_.T
+
+def diff_euclidean(l, r, small = 10 ** -3):
+    diffs_sq = jax.numpy.square(jax.numpy.subtract(l, r))
+    return jax.numpy.sqrt(
+        jax.numpy.sum(diffs_sq, axis = -1) + small
+    )
 
 # ---------------------------------------------------------------
 

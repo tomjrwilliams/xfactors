@@ -24,20 +24,21 @@ import optax
 import xtuples as xt
 
 from ... import xfactors as xf
+from ... import utils
+
 from .. import cov
 
 # ---------------------------------------------------------------
 
-# TODO: pass the kernel as a field (s) for multiple
 
 
-
+# NOTE: this is just the kernel, so is currently a misnomer
 @xt.nTuple.decorate()
 class GP_RBF(typing.NamedTuple):
 
     # sigma: float
     features: xf.Location
-    data: xf.Location
+    # data: xf.Location
 
     # optional weights?
     # optional mean
@@ -71,17 +72,13 @@ class GP_RBF(typing.NamedTuple):
         n_variables = features.shape[0]
         n_features = features.shape[1]
 
-        data = self.data.access(state)
+        # data = self.data.access(state)
 
-        assert data.shape[1] == n_variables
+        # assert data.shape[1] == n_variables
 
         features_matrix = xf.expand_dims(
             features, axis = 0, size = features.shape[0]
         )
-
-        # features_matrix = jax.numpy.resize(jax.numpy.expand_dims(
-        #     features, axis=0
-        # ), (features.shape[0], *features.shape,))
 
         features_l = jax.numpy.reshape(
             features_matrix,
@@ -93,8 +90,10 @@ class GP_RBF(typing.NamedTuple):
             (n_variables ** 2, n_features,)
         )
         # right = blocks of same variable's latents
-        kernel = cov.kernels.Kernel_RBF.f(
-            features_r - features_l,
+        kernel = utils.funcs.kernel_rbf(
+            utils.funcs.diff_euclidean(
+                features_r, features_l
+            ),
             l,
             sigma,
         )

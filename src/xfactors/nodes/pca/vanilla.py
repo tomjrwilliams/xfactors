@@ -81,24 +81,12 @@ class PCA_Encoder(typing.NamedTuple):
     n: int
 
     data: xf.Location
-    weights: xf.OptionalLocation = None
+    weights: xf.Location
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[PCA_Encoder, tuple, xf.SiteValue]:
-        shape = (
-            self.data.site().access(model).shape[1],
-            self.n,
-        )
-        if self.weights is None:
-            assert site.loc is not None
-            return self._replace(
-                weights=site.loc.param()
-            ), shape, utils.rand.orthogonal(shape[0])[..., :shape[1]]
-        else:
-            # TODO: weight shape check
-            pass
-        return self, shape, utils.rand.gaussian(shape)
+        return self, self.weights.site().access(model).shape, ()
 
     def apply(
         self,

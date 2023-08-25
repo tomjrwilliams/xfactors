@@ -20,53 +20,65 @@ def test_ppca() -> bool:
 
     vs_norm = xf.utils.rand.gaussian((100, N,))
 
-    betas = xf.utils.rand.gaussian((N, 5,))
+    N_COLS = 5
+    betas = xf.utils.rand.gaussian((N, N_COLS,))
     vs = numpy.matmul(vs_norm, betas)
 
     data = (
         pandas.DataFrame({
-            f: xf.utils.dates.dated_series({d: v for d, v in zip(ds, fvs)})
+            f: xf.utils.dates.dated_series({
+                d: v for d, v in zip(ds, fvs) #
+            })
             for f, fvs in enumerate(numpy.array(vs).T)
         }),
     )
     NOISE = 0
 
-    model, loc_data = xf.Model().add_node(
+    model = xf.Model()
+
+    model, loc_data = model.add_node(
         xf.nodes.inputs.dfs.Input_DataFrame_Wide(),
         input=True,
     )
-    model, loc_cov = model.add_node(xf.nodes.cov.vanilla.Cov(
-        data=loc_data.result()
-    ), static=True)
-
-    model = (
-        model.add_node(PARAMS, xf.nodes.params.random.Gaussian(
-            (N + NOISE,),
-        ))
-        .add_node(SCALING, xf.nodes.scaling.scalar.Scale_Sq(
-            data=xf.Loc.param(PARAMS, 0),
-        ))
-        .add_node(ENCODE, xf.nodes.pca.vanilla.PCA_Encoder(
-            data=xf.Loc.result(INPUT, 0),
+    model, loc_cov = model.add_node(
+        xf.nodes.cov.vanilla.Cov(data=loc_data.result()), static=True
+    )
+    model, loc_weights = model.add_node(
+        xf.nodes.params.random.Orthogonal(
+            shape=(N_COLS, N + NOISE,)
+        )
+    )
+    model, loc_eigval = model.add_node(
+        xf.nodes.params.random.Gaussian(shape=(N + NOISE,))
+    )
+    model, loc_eigval_sq = model.add_node(
+        xf.nodes.transforms.scaling.Scale_Sq(
+            data=loc_eigval.param()
+        ),
+    )
+    model, loc_encode = model.add_node(
+        xf.nodes.pca.vanilla.PCA_Encoder(
+            data=loc_data.result(),
+            weights=loc_weights.param(),
             n=N + NOISE,
             #
-        ))
-        .add_node(DECODE, xf.nodes.pca.vanilla.PCA_Decoder(
-            weights=xf.Loc.param(ENCODE, 0),
-            factors=xf.Loc.result(ENCODE, 0),
-            #
-        ))
-        # .add_constraint(xf.nodes.constraints.linalg.Constraint_Orthonormal(
-        #     data=xf.Loc.param(ENCODE, 0),
-        #     T=True,
-        # ), not_if=dict(init=True))
-        .add_constraint(xf.nodes.constraints.linalg.Constraint_Eigenvec(
-            cov=xf.Loc.result(COV, 0),
-            weights=xf.Loc.param(ENCODE, 0),
-            eigvals=xf.Loc.result(SCALING, 0),
-        ))
-        .init(data)
+        )
     )
+    model, loc_decode = model.add_node(
+        xf.nodes.pca.vanilla.PCA_Decoder(
+            weights=loc_weights.param(),
+            factors=loc_encode.result(),
+            #
+        )
+    )
+    model = model.add_node(
+        xf.nodes.constraints.linalg.Constraint_Eigenvec(
+            cov=loc_cov.result(),
+            weights=loc_weights.param(),
+            eigvals=loc_eigval_sq.result(),
+        ),
+        constraint=True,
+    ).init(data)
 
     model = model.optimise(
         data, 
@@ -76,14 +88,11 @@ def test_ppca() -> bool:
         # opt = optax.sgd(.1),
         # opt=optax.noisy_sgd(.1),
         # jit=False,
-    )
-    results = model.apply(data)
-    params = model.params
+    ).apply(data)
 
-    eigen_vec = params[ENCODE][0]
-    sigma = results[SCALING][0]
-
-    factors = results[ENCODE][0]
+    eigen_vec = loc_weights.param().access(model)
+    sigma = loc_eigval_sq.result().access(model)
+    factors = loc_encode.result().access(model)
 
     # cov = jax.numpy.cov(factors.T)
     # eigen_vals = jax.numpy.diag(cov)
@@ -107,6 +116,9 @@ def test_ppca() -> bool:
     _order = numpy.flip(numpy.argsort(eigvals))
     eigvecs = eigvecs[..., _order]
     eigvals = eigvals[_order]
+
+    eigvecs = xf.utils.funcs.match_sign_to(eigvecs, row=0)
+    eigen_vec = xf.utils.funcs.match_sign_to(eigen_vec, row=0)
 
     print(numpy.round(eigen_vec, 4))
     print(numpy.round(eigvecs, 4))

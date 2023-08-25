@@ -127,7 +127,18 @@ class Orthogonal(typing.NamedTuple):
         self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Orthogonal, tuple, xf.SiteValue]:
         s = self.shape
-        return self, self.shape, utils.rand.orthogonal(s[0])[..., :s[1]]
+        if len(s) == 2:
+            return self, self.shape, utils.rand.orthogonal(
+                s[0]
+                #
+            )[..., :s[1]]
+        return self, self.shape, jax.numpy.stack([
+            utils.rand.orthogonal(
+                s[1]
+                #
+            )[..., :s[2]]
+            for _ in range(s[0])
+        ])
 
     def apply(
         self,

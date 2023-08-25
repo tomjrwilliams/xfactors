@@ -31,7 +31,10 @@ def test_gmm() -> bool:
     ]) + (xf.utils.rand.gaussian((N_CLUSTERS, N_COLS,)) / 2)
 
     vs = numpy.concatenate([
-        mu[cluster] + (xf.utils.rand.gaussian((N_VARIABLES, N_COLS)) / 2)
+        mu[cluster] + (xf.utils.rand.gaussian(
+            (N_VARIABLES, N_COLS)
+            #
+        ) / 2)
         for cluster in range(N_CLUSTERS)
     ], axis = 0)
 
@@ -40,46 +43,62 @@ def test_gmm() -> bool:
             f: pandas.Series(
                 index=list(range(len(fvs))),
                 data=fvs,
+                #
             )
             for f, fvs in enumerate(numpy.array(vs).T)
         }),
     )
-    
-    model, STAGES = xf.Model().init_stages(2)
-    INPUT, PARAMS, GMM = STAGES
 
-    model = (
-        model.add_input(xf.nodes.inputs.dfs.Input_DataFrame_Wide())
-        .add_node(PARAMS, xf.nodes.params.random.Gaussian(
+    model = xf.Model()
+    
+    model, loc_data = model.add_node(
+        xf.nodes.inputs.dfs.Input_DataFrame_Wide(),
+        input=True,
+    )
+    model, loc_mu = model.add_node(
+        xf.nodes.params.random.Gaussian(
             shape=(N_CLUSTERS, N_COLS,),
-        ))
-        .add_node(PARAMS, xf.nodes.params.random.Gaussian(
+        )
+    )
+    model, loc_cov = model.add_node(
+        xf.nodes.params.random.Orthogonal(
             shape=(N_CLUSTERS, N_COLS, N_COLS,),
-        ))
-        # .add_node(PARAMS, xf.nodes.params.random.GaussianSoftmax(
-        #     shape=(data[0].shape[0], N_CLUSTERS,),
-        # ))
-        .add_node(PARAMS, xf.nodes.params.random.GaussianSoftmax(
-            shape=(N_CLUSTERS,),
-        ))
-        .add_node(GMM, xf.nodes.clustering.gmm.BGMM_EM(
+        )
+    )
+    model, loc_gmm = model.add_node(
+        xf.nodes.clustering.gmm.BGMM_EM(
             k=N_CLUSTERS,
-            data=xf.Loc.result(INPUT, 0),
-            mu=xf.Loc.param(PARAMS, 0),
-            cov=xf.Loc.param(PARAMS, 1),
-        ), random = True)
-        .add_constraint(xf.nodes.constraints.loss.Constraint_Maximise(
-            data=xf.Loc.result(GMM, 0, 1),
-        ))
-        .add_constraint(xf.nodes.constraints.loss.Constraint_Maximise(
-            data=xf.Loc.result(GMM, 0, 2),
-        ))
-        .add_constraint(xf.nodes.constraints.linalg.Constraint_VOrthogonal(
-            data=xf.Loc.param(PARAMS, 1),
-        ))
-        .add_constraint(xf.nodes.constraints.linalg.Constraint_L1_MM_Diag(
-            raw=xf.Loc.param(PARAMS, 1),
-        ))
+            data=loc_data.result(),
+            mu=loc_mu.param(),
+            cov=loc_cov.param(),
+        ), 
+        random = True
+    )
+    model = (
+        model.add_node(
+            xf.nodes.constraints.loss.Constraint_Maximise(
+                data=loc_gmm.result(1),
+            ),
+            constraint=True,
+        )
+        .add_node(
+            xf.nodes.constraints.loss.Constraint_Maximise(
+                data=loc_gmm.result(2),
+            ),
+            constraint=True,
+        )
+        .add_node(
+            xf.nodes.constraints.linalg.Constraint_VOrthogonal(
+                data=loc_cov.param()
+            ),
+            constraint=True,
+        )
+        .add_node(
+            xf.nodes.constraints.linalg.Constraint_L1_MM_Diag(
+                raw=loc_cov.param()
+            ),
+            constraint=True,
+        )
         .init(data)
     )
 
@@ -90,18 +109,15 @@ def test_gmm() -> bool:
         data,
         iters = 1000,
         opt=optax.noisy_sgd(.1),
-        max_error_unchanged = 0.3,
+        max_error_unchanged = 0.5,
         rand_init=1000,
         # jit = False,
-    )
-    results = model.apply(data)
+    ).apply(data)
 
-    params = model.params[PARAMS]
-
-    mu_ = params[0]
-    cov_ = params[1]
+    mu_ = loc_mu.param().access(model)
+    cov_ = loc_cov.param().access(model)
     # probs = params[2]
-    probs = results[GMM][0][0]
+    probs = loc_gmm.result(0).access(model)
     
     cov_ = numpy.round(numpy.matmul(
         numpy.transpose(cov_, (0, 2, 1)),
