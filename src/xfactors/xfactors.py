@@ -54,24 +54,13 @@ def check_location(loc: Location):
 @xt.nTuple.decorate()
 class Model(typing.NamedTuple):
 
-    # TODO: should we rename sites?
     sites: xt.iTuple = xt.iTuple()
     params: xt.iTuple = xt.iTuple()
     results: xt.iTuple = xt.iTuple()
     random: xt.iTuple = xt.iTuple()
 
     order: xt.iTuple = xt.iTuple()
-    # index of location in param / result / random
-    # in the order nodes added to model
-
     stages: xt.iTuple = xt.iTuple()
-    # groups of indices in original node list
-    # to be executed together
-    # where if flattened, gives model.order
-
-    # TODO: render method
-    # that renders the graph
-    # can use type(node).__name__ for labelling
 
     def add_node(
         self: Model, 
@@ -95,6 +84,10 @@ class Model(typing.NamedTuple):
 
     def apply(self, *args, **kwargs):
         return apply_model(self, *args, **kwargs)
+
+    # TODO: render method
+    # that renders the graph
+    # can use type(node).__name__ for labelling
 
 # ---
     
