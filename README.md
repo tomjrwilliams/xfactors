@@ -49,7 +49,7 @@ Where we obey, as much as possible, the maxim that 'code that is read together s
 
 Everything in xf - models, params, results - is a tuple (or ndarray), which means:
 
-- everythings plays nicely with JAX's auto grad functionality, out of the box.
+- everything plays nicely with JAX's auto grad functionality, out of the box.
 
 - xf models can be manipulated just like any other data structure.
 
