@@ -49,15 +49,13 @@ Where we obey, as much as possible, the maxim that 'code that is read together s
 
 Everything in xf - models, params, results - is a tuple (or ndarray), which means:
 
-- everythings plays nicely with JAX's auto grad functionality.
+- everythings plays nicely with JAX's auto grad functionality, out of the box.
 
 - xf models can be manipulated just like any other data structure.
 
-This last point, in particular, allows us to:
+This last point allows us to:
 
-- re-use fully- / partially- / un- trained components and pathways of one model as part of another.
-
-- semi-dynamically filter out certain execution paths (say, for training vs scoring vs testing), without impinging on JAX's static shapes constraint (see [here](https://jax.readthedocs.io/en/latest/errors.html#jax.errors.UnexpectedTracerError))
+- semi-dynamically filter out certain execution paths (say, for training vs scoring vs testing), without messing with JAX's gradient tracing (see [here](https://jax.readthedocs.io/en/latest/errors.html#jax.errors.UnexpectedTracerError)).
 
 - semantically diff two related models (forthcoming).
 
