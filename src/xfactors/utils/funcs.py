@@ -85,19 +85,39 @@ def loss_eigenvec(cov, w, eigvals):
     cov_w = jax.numpy.matmul(cov, w)
     w_scale = jax.numpy.multiply(shapes.expand_dims(eigvals, 0, 1), w)
 
-    norm = jax.numpy.square(jax.numpy.matmul(w.T, w))
+    return (
+        loss_mse(cov_w, w_scale)
+        + loss_eigenvec_norm(w, eigvals)
+    )
 
-    mul = jax.numpy.clip(jax.numpy.multiply(
-        norm, 
+# NOTE: assumes eigvals already positive constrained
+def loss_eigvec_diag(w, eigvals):
+
+    eigval_sq = (
+        eigvals * jax.numpy.eye(eigvals.shape[0])
+    )
+
+    cov = jax.numpy.matmul(jax.numpy.matmul(w, eigval_sq), w.T)
+
+    return loss_eigenvec(cov, w, eigvals)
+
+def loss_eigenvec_norm(w, eigvals):
+    norm = jax.numpy.matmul(w.T, w)
+    norm_sq = jax.numpy.square(norm)
+
+    # norm_unit = jax.nn.sigmoid(norm)
+    # norm_unit = jax.numpy.tanh(norm_sq)
+    # norm_unit = (2 / (1 + jax.numpy.exp(-norm_sq))) - 1
+    norm_unit = jax.numpy.clip(norm_sq, a_max=1.)
+
+    mul = jax.numpy.multiply(
+        norm_unit, 
         1 + (
             jax.numpy.eye(norm.shape[0]) * -2
         ),
-    ), a_max = 1., a_min = -1.)
-
-    return (
-        loss_mse(cov_w, w_scale)
-        + jax.numpy.matmul(mul, eigvals).sum()
     )
+
+    return jax.numpy.matmul(mul, eigvals).sum()
 
 
 # ---------------------------------------------------------------
