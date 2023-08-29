@@ -583,6 +583,7 @@ def init_objective(
     )
 
     def f(params, rand_keys, **flags):
+        
         res = model.stages[n_inputs + n_static:].fold(
             lambda acc, i_stage: acc._replace(
                 results=acc.results.extend(f_stage(acc, i_stage))

@@ -30,13 +30,13 @@ from .. import params
 # ---------------------------------------------------------------
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Scale_Expit(typing.NamedTuple):
+class Expit(typing.NamedTuple):
 
     data: xf.Loc
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Scale_Expit, tuple, xf.SiteValue]: ...
+    ) -> tuple[Expit, tuple, xf.SiteValue]: ...
 
     @classmethod
     def f(cls, data):
@@ -52,13 +52,13 @@ class Scale_Expit(typing.NamedTuple):
         return self.f(self.data.access(state))
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Scale_Exp(typing.NamedTuple):
+class Exp(typing.NamedTuple):
 
     data: xf.Loc
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Scale_Exp, tuple, xf.SiteValue]: ...
+    ) -> tuple[Exp, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -70,13 +70,13 @@ class Scale_Exp(typing.NamedTuple):
         return jax.numpy.exp(self.data.access(state))
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Scale_Sq(typing.NamedTuple):
+class Sq(typing.NamedTuple):
 
     data: xf.Loc
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Scale_Sq, tuple, xf.SiteValue]: ...
+    ) -> tuple[Sq, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -90,7 +90,7 @@ class Scale_Sq(typing.NamedTuple):
 # ---------------------------------------------------------------
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Scale_Linear1D(typing.NamedTuple):
+class Linear1D(typing.NamedTuple):
 
     a: xf.Loc
     b: xf.Loc
@@ -98,7 +98,7 @@ class Scale_Linear1D(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Scale_Linear1D, tuple, xf.SiteValue]: ...
+    ) -> tuple[Linear1D, tuple, xf.SiteValue]: ...
 
     @classmethod
     def add_to_model(
@@ -134,13 +134,13 @@ class Scale_Linear1D(typing.NamedTuple):
         )
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Scale_Logistic(typing.NamedTuple):
+class Logistic(typing.NamedTuple):
 
     data: xf.Loc
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Scale_Logistic, tuple, xf.SiteValue]: ...
+    ) -> tuple[Logistic, tuple, xf.SiteValue]: ...
 
     @classmethod
     def f(cls, data):
@@ -156,13 +156,13 @@ class Scale_Logistic(typing.NamedTuple):
         return self.f(self.data.access(state))
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Scale_Sigmoid(typing.NamedTuple):
+class Sigmoid(typing.NamedTuple):
 
     data: xf.Loc
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Scale_Sigmoid, tuple, xf.SiteValue]: ...
+    ) -> tuple[Sigmoid, tuple, xf.SiteValue]: ...
 
     @classmethod
     def f(cls, data):
@@ -178,13 +178,13 @@ class Scale_Sigmoid(typing.NamedTuple):
         return self.f(self.data.access(state))
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Scale_CosineKernel(typing.NamedTuple):
+class CosineKernel(typing.NamedTuple):
 
     data: xf.Loc
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Scale_Sigmoid, tuple, xf.SiteValue]: ...
+    ) -> tuple[Sigmoid, tuple, xf.SiteValue]: ...
 
     @classmethod
     def f(cls, data):
@@ -201,13 +201,13 @@ class Scale_CosineKernel(typing.NamedTuple):
 
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Scale_RBFKernel(typing.NamedTuple):
+class RBFKernel(typing.NamedTuple):
 
     data: xf.Loc
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Scale_Sigmoid, tuple, xf.SiteValue]: ...
+    ) -> tuple[Sigmoid, tuple, xf.SiteValue]: ...
 
     @classmethod
     def f(cls, data):
@@ -223,13 +223,13 @@ class Scale_RBFKernel(typing.NamedTuple):
         return self.f(self.data.access(state))
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Scale_GaussianKernel(typing.NamedTuple):
+class GaussianKernel(typing.NamedTuple):
 
     data: xf.Loc
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Scale_Sigmoid, tuple, xf.SiteValue]: ...
+    ) -> tuple[Sigmoid, tuple, xf.SiteValue]: ...
 
     @classmethod
     def f(cls, data):

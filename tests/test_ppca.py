@@ -52,7 +52,7 @@ def test_ppca() -> bool:
         xf.params.random.Gaussian(shape=(N + NOISE,))
     )
     model, loc_eigval_sq = model.add_node(
-        xf.transforms.scaling.Scale_Sq(
+        xf.transforms.scaling.Sq(
             data=loc_eigval.param()
         ),
     )

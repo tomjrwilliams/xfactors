@@ -51,7 +51,7 @@ Everything in xf - models, params, results - is a tuple (or ndarray), which mean
 
 - everything plays nicely with JAX's auto grad functionality, out of the box.
 
-- we can semi-dynamically filter out certain execution paths (say, for training vs scoring vs testing), from a model without messing with JAX's gradient tracing (see [here](https://jax.readthedocs.io/en/latest/errors.html#jax.errors.UnexpectedTracerError)).
+- we can semi-dynamically filter out certain model execution paths (say, for training vs scoring vs testing) without messing with JAX's gradient tracing (see [here](https://jax.readthedocs.io/en/latest/errors.html#jax.errors.UnexpectedTracerError)).
 
 ### Work in progress
 

@@ -74,12 +74,7 @@ def loss_orthogonal(X):
     XXt = jax.numpy.matmul(X, X.T)
     return loss_diag(XXt)
 
-# the problem with straight eigval max
-# - the eigval term dominates the orthogonality unit norm, especially for larger
-# - two can be orthogonal by *-1 so duplicate the largest (again, dominating orth norm)
-# fix for 1: scale by unit norm (and maximise)
-# fix for 2: minimise the cross term
-# by clamping norm, pushes eigval to be bigger, rather than w to be beyond unit
+
 # https://proceedings.neurips.cc/paper_files/paper/2019/file/7dd0240cd412efde8bc165e864d3644f-Paper.pdf
 def loss_eigenvec(cov, w, eigvals):
     cov_w = jax.numpy.matmul(cov, w)
@@ -130,6 +125,30 @@ def diff_euclidean(l, r, small = 10 ** -3):
     diffs_sq = jax.numpy.square(jax.numpy.subtract(l, r))
     return jax.numpy.sqrt(
         jax.numpy.sum(diffs_sq, axis = -1) + small
+    )
+
+def diff_mahalanobis():
+    return
+
+# ---------------------------------------------------------------
+
+# sigma ie. standard deviation
+def alpha_beta_steady_state_kalman_params(
+    sigma_process, sigma_noise, T = 1
+):
+    l = (sigma_process * jax.numpy.square(T)) / sigma_noise
+    r = (
+        4 + l - jax.numpy.sqrt((8 * l) + jax.numpy.square(l))
+    ) / 4
+    alpha = 1 - jax.numpy.square(r)
+    beta = (2 * (2 - alpha)) - (4 * jax.numpy.sqrt(1 - alpha))
+    return alpha, beta
+
+def alpha_beta_steady_state_residual_variance(
+    sigma_noise, alpha
+):
+    return jax.numpy.square(sigma_noise) / (
+        1 - jax.numpy.square(alpha)
     )
 
 # ---------------------------------------------------------------

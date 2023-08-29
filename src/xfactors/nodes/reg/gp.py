@@ -32,7 +32,7 @@ from .. import cov
 
 
 
-# NOTE: this is just the kernel, so is currently a misnomer
+# NOTE: this is just a kernel, so is currently a misnomer
 @xt.nTuple.decorate()
 class GP_RBF(typing.NamedTuple):
 
