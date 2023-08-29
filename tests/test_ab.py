@@ -79,29 +79,28 @@ def test_ppca() -> bool:
         markov=xt.iTuple((
             loc_position,
             loc_velocity,
-            None,
-        ))
+        )),
     )
     model = (
-        model.add_node(
-            xf.constraints.loss.MinimiseSquare(
-                loc_update.result(2),
-            ),
-            constraint=True,
-        )
-        # .add_node(
-        #     xf.constraints.loss.MSE(
-        #         loc_velocity.param(),
-        #         loc_update.result(1),
-        #     ),
-        #     constraint=True,
-        # ).add_node(
-        #     xf.constraints.loss.MSE(
-        #         loc_pred.result(),
-        #         loc_update.result(0),
+        # model.add_node(
+        #     xf.constraints.loss.MinimiseSquare(
+        #         loc_update.result(2),
         #     ),
         #     constraint=True,
         # )
+        model.add_node(
+            xf.constraints.loss.MSE(
+                loc_velocity.param(),
+                loc_update.result(1),
+            ),
+            constraint=True,
+        ).add_node(
+            xf.constraints.loss.MSE(
+                loc_pred.result(),
+                loc_update.result(0),
+            ),
+            constraint=True,
+        )
     ).init(data)
 
     model = model.optimise(

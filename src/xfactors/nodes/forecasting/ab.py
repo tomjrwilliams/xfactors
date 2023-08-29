@@ -118,7 +118,6 @@ class AlphaBeta_Update(typing.NamedTuple):
                 vel_clip + (beta_scale * residual),
                 velocity[..., -1:, :]
             ]),
-            residual,
         )
 
 # a, b > 0

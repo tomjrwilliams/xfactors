@@ -781,6 +781,7 @@ def mask_markov_site(s, markov, order):
     elif isinstance(m, (tuple, xt.iTuple)):
         if isinstance(m, tuple):
             m = xt.iTuple(m)
+        assert len(m) == len(res), dict(m=len(m), res=len(res))
         return m.zip(res).filterstar(
             lambda loc, _res: loc is not None
         ).mapstar(
