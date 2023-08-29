@@ -55,6 +55,30 @@ class Eigenvec(typing.NamedTuple):
         return utils.funcs.loss_eigenvec(cov, weights, eigvals)
 
 @xt.nTuple.decorate(init=xf.init_null)
+class Eigenvec_Cov(typing.NamedTuple):
+    
+    eigvals: xf.Location
+    weights: xf.Location
+
+    T: bool = False
+
+    def init(
+        self, site: xf.Site, model: xf.Model, data = None
+    ) -> tuple[Eigenvec, tuple, xf.SiteValue]: ...
+
+    def apply(
+        self,
+        site: xf.Site,
+        state: xf.Model,
+        data = None,
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
+        weights = self.weights.access(state)
+        eigvals = self.eigvals.access(state)
+        if self.T:
+            weights = weights.T
+        return utils.funcs.loss_eigvec_diag(weights, eigvals)
+
+@xt.nTuple.decorate(init=xf.init_null)
 class Orthonormal(typing.NamedTuple):
     
     data: xf.Location

@@ -179,11 +179,15 @@ def access(
         res = model[domain][i]
     else:
         i = model.order[i]
+        try:
+            initial = model[domain][i]
+        except:
+            assert False, [domain, i, len(model[domain])]
         if not len(path):
-            res = model[domain][i]
+            res = initial
         else:
             res = path.fold(
-                lambda acc, _i: acc[_i], initial=model[domain][i]
+                lambda acc, _i: acc[_i], initial=initial
             )
     if into is not None:
         if inspect.isclass(into):
@@ -320,11 +324,12 @@ def loc_fields(node: Node):
     }
 
 def access_sites(node: Node, model: Model):
-    return {
+    sites = {
         k: getattr(node, k).site().access(model)
         for k, _ in loc_fields(node).items()
         if getattr(node, k) is not None
     }
+    return sites
 
 def access_locs(node: Node, model: Model):
     return {
@@ -416,9 +421,11 @@ def order_nodes(model: Model) -> Model:
     # groups: ordered groups of position in .sites
 
     children = {
-        site.loc: xt.iTuple.from_values(
+        site.loc.site(): xt.iTuple.from_values(
             access_sites(site.node, model)
-        ).map(lambda s: s.loc) for site in model.sites
+        ).map(lambda s: s.loc.site()).sort(
+            lambda s: s.i
+        ) for site in model.sites
     }
 
     remaining = model.sites.enumerate()
@@ -448,8 +455,9 @@ def order_nodes(model: Model) -> Model:
 
     assert remaining.len() == 0, remaining
 
-    order = model.sites.len_range().sort(
-        lambda i: stages.flatten().index_of(i)
+    stages_flat = stages.flatten()
+    order = model.sites.len_range().map(
+        lambda i: stages_flat.index_of(i)
     )
     
     return model._replace(
@@ -538,7 +546,7 @@ def rec_detach(v):
     elif isinstance(v, numpy.ndarray):
         return v
     elif isinstance(v, tuple):
-        return (rec_detach(_v) for _v in v)
+        return xt.iTuple(v).map(rec_detach)
     elif isinstance(v, xt.iTuple):
         return v.map(rec_detach)
     elif isinstance(v, float):
@@ -591,7 +599,8 @@ def init_objective(
 
     def f_stage(res, i_stage):
         call_apply = operator.methodcaller("apply", res)
-        return i_stage.map(lambda i: call_apply(res.sites[i]))
+        res = i_stage.map(lambda i: call_apply(res.sites[i]))
+        return res
 
     model = model.stages[n_inputs: n_inputs + n_static].fold(
         lambda res, i_stage: res._replace(
@@ -599,6 +608,16 @@ def init_objective(
         ),
         initial=model,
     )
+
+    # TODO: we need to pass in the markov mask
+    # as a separate argument, so the same sites (objects) that we initialise the solver with
+
+    # are still there with the params
+
+    # for markov params we can even then ignore them from the
+    # solver.init call (as they'll be masked anyway)
+
+    # ie. mask the params object before running the model here
 
     def f(params, rand_keys, **flags):
 
@@ -857,6 +876,10 @@ def optimise_model(
     solver = jaxopt.OptaxSolver(
         opt=opt, fun=objective, maxiter=iters, jit=jit
     )
+
+    markov_sites = model.sites.filter(lambda s: s.markov)
+
+
     state = solver.init_state(params) 
 
     error = None
@@ -866,8 +889,6 @@ def optimise_model(
     since_min = 0
 
     rand_keys, n_random = gen_rand_keys(model)
-
-    markov_sites = model.sites.filter(lambda s: s.markov)
 
     for i in range(iters):
         params, state = solver.update(

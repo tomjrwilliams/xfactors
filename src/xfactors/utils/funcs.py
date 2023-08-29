@@ -88,11 +88,11 @@ def loss_eigenvec(cov, w, eigvals):
 # NOTE: assumes eigvals already positive constrained
 def loss_eigvec_diag(w, eigvals):
 
-    eigval_sq = (
+    scale = (
         eigvals * jax.numpy.eye(eigvals.shape[0])
     )
 
-    cov = jax.numpy.matmul(jax.numpy.matmul(w, eigval_sq), w.T)
+    cov = jax.numpy.matmul(jax.numpy.matmul(w, scale), w.T)
 
     return loss_eigenvec(cov, w, eigvals)
 
@@ -143,6 +143,8 @@ def alpha_beta_steady_state_kalman_params(
     alpha = 1 - jax.numpy.square(r)
     beta = (2 * (2 - alpha)) - (4 * jax.numpy.sqrt(1 - alpha))
     return alpha, beta
+
+ab_kalman_params = alpha_beta_steady_state_kalman_params
 
 def alpha_beta_steady_state_residual_variance(
     sigma_noise, alpha

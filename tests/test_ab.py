@@ -43,7 +43,7 @@ def test_ppca() -> bool:
     )
 
     model, loc_position = model.add_node(
-        xf.params.random.Gaussian((N, 1,))
+        xf.params.random.Gaussian((N+1, 1,))
     )
     model, loc_velocity = model.add_node(
         xf.params.random.Gaussian((N, 1,))
@@ -63,13 +63,13 @@ def test_ppca() -> bool:
     )
 
     model, loc_pred = model.add_node(
-        xf.forecasting.ab.AlphaBeta_Prediction(
+        xf.forecasting.ab.Prediction(
             position=loc_position.param(),
             velocity=loc_velocity.param(),
         )
     )
     model, loc_update = model.add_node(
-        xf.forecasting.ab.AlphaBeta_Update(
+        xf.forecasting.ab.Update(
             position=loc_data.result(),
             prediction=loc_pred.result(),
             velocity=loc_velocity.param(),
@@ -118,12 +118,9 @@ def test_ppca() -> bool:
 
     position = loc_position.param().access(model)
 
-    print(alpha, beta)
-
     utils.assert_is_close(
-        numpy.round(data[0][0].values, 2)[1:],
+        numpy.round(data[0][0].values, 2),
         numpy.round(position[:, 0], 2)[:-1],
-        True,
         atol=.1,
     )
 

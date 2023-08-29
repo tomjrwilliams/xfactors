@@ -6,7 +6,9 @@ tolerances=dict(
     atol=1e-2,
 )
 
-def assert_is_close(v1, v2, b, results=None, n_max=0, **tols):
+def assert_is_close(
+    v1, v2, b=True, results=None, n_max=0, **tols
+):
     if results is None:
         results = dict(v1=v1, v2=v2)
     tols = {**tolerances, **tols}

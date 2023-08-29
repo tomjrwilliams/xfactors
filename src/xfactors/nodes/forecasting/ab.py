@@ -36,8 +36,10 @@ from ... import xfactors as xf
 # can optionally extend prediction if a non additive dynamic
 # function of next(position) given current(position, velocity)
 
+# ---------------------------------------------------------------
+
 @xt.nTuple.decorate(init=xf.init_null)
-class AlphaBeta_Prediction(typing.NamedTuple):
+class Prediction(typing.NamedTuple):
     
     position: xf.Loc
     velocity: xf.Loc
@@ -49,7 +51,7 @@ class AlphaBeta_Prediction(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[AlphaBeta_Prediction, tuple, xf.SiteValue]: ...
+    ) -> tuple[Prediction, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -60,12 +62,18 @@ class AlphaBeta_Prediction(typing.NamedTuple):
         position = self.position.access(state)
         velocity = self.velocity.access(state)
         if self.delta_t is None:
-            return position + velocity
+            return jax.numpy.concatenate([
+                position[..., :1, :],
+                position[..., 1:, :] + velocity
+            ])
         delta_t = self.delta_t.access(state)
-        return position + (velocity * delta_t)
+        return jax.numpy.concatenate([
+            position[..., :1, :],
+            position[..., 1:, :] + (velocity * delta_t)
+        ])
     
 @xt.nTuple.decorate(init=xf.init_null)
-class AlphaBeta_Update(typing.NamedTuple):
+class Update(typing.NamedTuple):
     
     position: xf.Loc
 
@@ -79,7 +87,7 @@ class AlphaBeta_Update(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[AlphaBeta_Update, tuple, xf.SiteValue]: ...
+    ) -> tuple[Update, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
@@ -99,7 +107,7 @@ class AlphaBeta_Update(typing.NamedTuple):
         vel_clip = velocity[..., :-1, :]
 
         # assume same shape as pca: n_days, n_cols
-        residual = position[..., 1:, :] - pred_clip
+        residual = position - pred_clip
 
         if self.delta_t is None:
             beta_scale = beta
@@ -115,14 +123,14 @@ class AlphaBeta_Update(typing.NamedTuple):
                 prediction[..., -1:, :]
             ]),
             jax.numpy.concatenate([
-                vel_clip + (beta_scale * residual),
-                velocity[..., -1:, :]
+                vel_clip + (beta_scale * residual[..., 1:, :]),
+                velocity[..., -2:-1, :],
             ]),
         )
 
 # a, b > 0
 # a, b < 1
-# if a > 1, we amplify the signal
-# if b > 1 (strictly <= 2), we amplify noise
+# elif a > 1, we amplify the signal
+# elif b > 1 (strictly <= 2), we amplify noise
 
 # ---------------------------------------------------------------
