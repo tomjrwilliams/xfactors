@@ -95,21 +95,31 @@ class AlphaBeta_Update(typing.NamedTuple):
         alpha = self.alpha.access(state)
         beta = self.beta.access(state)
 
-        residual = position[..., 1:] - prediction[..., :-1]
+        pred_clip = prediction[..., :-1, :]
+        vel_clip = velocity[..., :-1, :]
+
+        # assume same shape as pca: n_days, n_cols
+        residual = position[..., 1:, :] - pred_clip
 
         if self.delta_t is None:
-            return (
-                prediction + (alpha * residual),
-                velocity + (beta * residual),
-                residual,
-            )   
-    
-        delta_t = self.delta_t.access(state)
+            beta_scale = beta
+        else:
+            delta_t = self.delta_t.access(state)
+            beta_scale = beta / delta_t
+
+        # re-attach final values for which we don't have residual
+        # so shape matches
         return (
-            prediction + (alpha * residual),
-            velocity + ((beta / delta_t) * residual),
-            residual
-        )    
+            jax.numpy.concatenate([
+                pred_clip + (alpha * residual),
+                prediction[..., -1:, :]
+            ]),
+            jax.numpy.concatenate([
+                vel_clip + (beta_scale * residual),
+                velocity[..., -1:, :]
+            ]),
+            residual,
+        )
 
 # a, b > 0
 # a, b < 1

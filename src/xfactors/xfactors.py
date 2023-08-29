@@ -240,6 +240,7 @@ class Site(typing.NamedTuple):
     random: bool = False
     static: bool = False
     masked: bool = False
+    markov: bool = False
     
     # deciding whether to run
     only_if: dict = {}
@@ -529,9 +530,26 @@ def n_stages_where_all(model, stages, f, offset = 0):
     n = 0 if n is None else n
     return n
 
+def rec_detach(v):
+    if v is None:
+        return v
+    elif isinstance(v, jax.numpy.ndarray):
+        return jax.lax.stop_gradient(v)
+    elif isinstance(v, numpy.ndarray):
+        return v
+    elif isinstance(v, tuple):
+        return (rec_detach(_v) for _v in v)
+    elif isinstance(v, xt.iTuple):
+        return v.map(rec_detach)
+    elif isinstance(v, float):
+        return v
+    else:
+        assert False, v
+
 def init_objective(
     model: Model,
     data,
+    markov,
     init_rand_keys,
     jit = True,
 ):
@@ -583,7 +601,7 @@ def init_objective(
     )
 
     def f(params, rand_keys, **flags):
-        
+
         res = model.stages[n_inputs + n_static:].fold(
             lambda acc, i_stage: acc._replace(
                 results=acc.results.extend(f_stage(acc, i_stage))
@@ -599,10 +617,17 @@ def init_objective(
             )
         ).flatten().pipe(list)).sum()
 
+        for site in model.sites:
+            if site.markov:
+                markov[site.loc] = rec_detach(
+                    site.loc.result().access(res)
+                )
+
         return loss
 
     if jit:
         return jax.jit(f)
+
     return f
 
 def apply_model(
@@ -651,6 +676,9 @@ def apply_model(
         ),
         initial=model,
     )
+
+    # ... acc
+
     return model
 
 # ---------------------------------------------------------------
@@ -695,9 +723,11 @@ def init_optimisation(
 
     rand_keys, _ = gen_rand_keys(model)
 
+    markov = {}
     objective = init_objective(
         score_model,
         data,
+        markov,
         init_rand_keys=rand_keys,
         jit = jit,
     )
@@ -717,7 +747,7 @@ def init_optimisation(
         # TODO: don't re init input / static
 
         _test_loss, test_grad = f_grad(
-            _params, rand_keys
+            _params, rand_keys,
         )
 
         try:
@@ -732,6 +762,50 @@ def init_optimisation(
                 assert tries > 0
 
     return params
+
+def mask_markov_loc(loc, res, order):
+    assert isinstance(loc, Location), loc
+    i_param = order[loc.i]
+    if loc.path.len() == 0:
+        return i_param, res
+    # TODO: only update the particular tuple element
+    assert False, loc
+
+def mask_markov_site(s, markov, order):
+    m = s.markov
+    res = markov[s.loc]
+    if isinstance(m, Location):
+        return xt.iTuple((
+            mask_markov_loc(m, res, order),
+        ))
+    elif isinstance(m, (tuple, xt.iTuple)):
+        if isinstance(m, tuple):
+            m = xt.iTuple(m)
+        return m.zip(res).filterstar(
+            lambda loc, _res: loc is not None
+        ).mapstar(
+            lambda loc, _res: mask_markov_loc(loc, _res, order)
+        )
+    else:
+        assert False, s.markov
+
+def mask_markov_params(markov, sites, params, model):
+    if sites.len() == 0:
+        return params
+
+    mask_site = functools.partial(
+        mask_markov_site,
+        markov=markov,
+        order=model.order,
+    )
+    
+    param_mask = {
+        i: p for i, p in sites.map(mask_site).flatten()
+    }
+
+    return xt.iTuple(params).enumerate().mapstar(
+        lambda i, p: p if i not in param_mask else param_mask[i]
+    ).pipe(tuple)
 
 def optimise_model(
     model, 
@@ -763,9 +837,13 @@ def optimise_model(
     train_model = model.apply_flags(**flags, train=True)
     
     rand_keys, _ = gen_rand_keys(model)
+
+    markov = {}
+
     objective = init_objective(
         train_model,
         data,
+        markov,
         init_rand_keys=rand_keys,
         jit = jit,
     )
@@ -788,6 +866,8 @@ def optimise_model(
 
     rand_keys, n_random = gen_rand_keys(model)
 
+    markov_sites = model.sites.filter(lambda s: s.markov)
+
     for i in range(iters):
         params, state = solver.update(
             params,
@@ -795,6 +875,13 @@ def optimise_model(
             rand_keys,
         )
         error = state.error
+
+        params = mask_markov_params(
+            markov, 
+            markov_sites, 
+            params,
+            model,
+        )
 
         if i % int(iters / 10) == 0 or i == iters - 1:
             if verbose: print(i, error)

@@ -29,11 +29,12 @@ def test_ppca() -> bool:
         pandas.DataFrame({
             0: pandas.Series(
                 index=v_series.index,
-                data=v_series.values + noise,
+                data=numpy.concatenate([
+                    numpy.cumsum(v_series.values)
+                ]) + noise,
             )
         }),
     )
-    assert False, data
 
     model = xf.Model()
     model, loc_data = model.add_node(
@@ -74,23 +75,33 @@ def test_ppca() -> bool:
             velocity=loc_velocity.param(),
             alpha=loc_alpha.result(),
             beta=loc_beta.result(),
-        )
+        ),
+        markov=xt.iTuple((
+            loc_position,
+            loc_velocity,
+            None,
+        ))
     )
     model = (
         model.add_node(
-            xf.constraints.loss.MSE(
-                loc_velocity.param(),
-                loc_update.result(0),
+            xf.constraints.loss.MinimiseSquare(
+                loc_update.result(2),
             ),
             constraint=True,
         )
-        .add_node(
-            xf.constraints.loss.MSE(
-                loc_update.result(0),
-                loc_pred.result(),
-            ),
-            constraint=True,
-        )
+        # .add_node(
+        #     xf.constraints.loss.MSE(
+        #         loc_velocity.param(),
+        #         loc_update.result(1),
+        #     ),
+        #     constraint=True,
+        # ).add_node(
+        #     xf.constraints.loss.MSE(
+        #         loc_pred.result(),
+        #         loc_update.result(0),
+        #     ),
+        #     constraint=True,
+        # )
     ).init(data)
 
     model = model.optimise(
@@ -111,8 +122,8 @@ def test_ppca() -> bool:
     print(alpha, beta)
 
     utils.assert_is_close(
-        position,
-        data[0][0].values,
+        numpy.round(data[0][0].values, 2)[1:],
+        numpy.round(position[:, 0], 2)[:-1],
         True,
         atol=.1,
     )
