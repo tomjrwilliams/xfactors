@@ -26,7 +26,6 @@ from ... import xfactors as xf
 
 # ---------------------------------------------------------------
 
-
 @xt.nTuple.decorate()
 class Scalar(typing.NamedTuple):
 

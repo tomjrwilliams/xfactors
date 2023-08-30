@@ -37,6 +37,8 @@ class Eigen_Cov(typing.NamedTuple):
     eigvals: xf.Loc
     eigvecs: xf.Loc
 
+    vmax: typing.Optional[float] = None
+
     def init(
         self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[Eigen_Cov, tuple, xf.SiteValue]: ...
@@ -55,6 +57,11 @@ class Eigen_Cov(typing.NamedTuple):
         )
 
         cov = jax.numpy.matmul(jax.numpy.matmul(w, scale), w.T)
+
+        if self.vmax:
+            return jax.numpy.clip(
+                cov, a_min=-1 * self.vmax, a_max=self.vmax
+            )
 
         return cov
 

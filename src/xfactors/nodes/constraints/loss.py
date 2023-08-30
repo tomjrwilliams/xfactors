@@ -70,6 +70,8 @@ class MinimiseSquare(typing.NamedTuple):
     
     data: xf.Location
 
+    dropout: float = 0
+
     def init(
         self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[MinimiseSquare, tuple, xf.SiteValue]: ...
@@ -81,6 +83,12 @@ class MinimiseSquare(typing.NamedTuple):
         data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         data = self.data.access(state)
+        if self.dropout:
+            key = site.loc.random().access(
+                state, into=jax.numpy.ndarray
+            )
+            n = int(len(data) * (1 - self.dropout))
+            data = jax.random.shuffle(key, data)[:n]
         return jax.numpy.square(data).mean()
 
 # ---------------------------------------------------------------
@@ -120,6 +128,26 @@ class L1(typing.NamedTuple):
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         data = self.data.access(state)
         return jax.numpy.abs(data).mean()
+
+@xt.nTuple.decorate(init=xf.init_null)
+class L1Diag(typing.NamedTuple):
+    
+    data: xf.Location
+
+    def init(
+        self, site: xf.Site, model: xf.Model, data = None
+    ) -> tuple[L1, tuple, xf.SiteValue]: ...
+    
+    def apply(
+        self,
+        site: xf.Site,
+        state: xf.Model,
+        data = None,
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
+        data = self.data.access(state)
+        return jax.numpy.abs(
+            jax.numpy.diag(data)
+        ).mean()
 
 @xt.nTuple.decorate(init=xf.init_null)
 class VL1(typing.NamedTuple):

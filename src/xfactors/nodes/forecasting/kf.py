@@ -64,10 +64,20 @@ class State_Prediction(typing.NamedTuple):
         # should now treat state[0] as batch dim
         # and multiply in from the right
 
-        FX = mm(F, X)
+        FX = mm(F, X[:-1, :, :])
+
+        # F_inv = jax.numpy.linalg.inv(F)
 
         if self.input is None:
-            return FX
+            res = jax.numpy.concatenate([
+                # mm(F_inv, X[1:2, :, :]),
+                X[:1, :, :],
+                FX
+            ], axis = 0)
+
+            assert res.shape == X.shape, [res.shape, X.shape]
+
+            return res
 
         B = self.control.access(state)
 
@@ -76,7 +86,11 @@ class State_Prediction(typing.NamedTuple):
 
         BU = mm(B, U)
 
-        return FX + BU
+        return jax.numpy.concatenate([
+            # mm(F_inv, X[1:2, :, :]),
+            X[:1, :, :],
+            FX + BU
+        ], axis = 0)
 
 @xt.nTuple.decorate(init=xf.init_null)
 class Cov_Prediction(typing.NamedTuple):
@@ -103,14 +117,23 @@ class Cov_Prediction(typing.NamedTuple):
         P = self.cov.access(state)
         noise = self.noise.access(state)
 
+        # if (jax.numpy.abs(noise) > 10 ** 5).any():
+        #     assert False, noise
+
         assert len(P.shape) == 3, P.shape
 
         # cov: n_days, n_features, n_features
         # numpy should (?) broadcast lhs dimensions
 
-        return mm(
-            F, mm(P, F.T)
-        ) + xf.expand_dims(noise, 0, P.shape[0])
+        P_trim = P[:-1, :, :]
+
+        return jax.numpy.concatenate([
+            # xf.expand_dims(noise, 0, 1),
+            P[:1, :, :],
+            mm(
+                F, mm(P_trim, F.T)
+            ) + xf.expand_dims(noise, 0, P_trim.shape[0])
+        ])
 
 # ---------------------------------------------------------------
 
@@ -143,7 +166,7 @@ class State_Innovation(typing.NamedTuple):
 
         data = xf.expand_dims(data, -1, 1)
 
-        return data - jax.numpy.matmul(H, X)
+        return data - jax.numpy.matmul(H, X)[:-1, :, :]
 
 @xt.nTuple.decorate(init=xf.init_null)
 class Cov_Innovation(typing.NamedTuple):
@@ -151,6 +174,10 @@ class Cov_Innovation(typing.NamedTuple):
     observation: xf.Loc
     cov: xf.Loc # from the predict step
     noise: xf.Loc # observation noise covariance
+
+    # observation_noise: float = 0.01
+
+    vmax: float = 10.
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
@@ -169,11 +196,33 @@ class Cov_Innovation(typing.NamedTuple):
 
         assert len(P.shape) == 3, P.shape
 
-        return mm(
+        # if (jax.numpy.abs(noise) > 10 ** 5).any():
+        #     assert False, noise
+
+        # if self.observation_noise:
+        #     key = site.loc.random().access(
+        #         state, into=jax.numpy.ndarray
+        #     )
+        #     H = H + (
+        #         jax.random.normal(key, shape=H.shape) * self.observation_noise
+        #     )
+
+        res = mm(
             H, mm(P, H.T)
         ) + xf.expand_dims(noise, 0, P.shape[0])
 
+        # if (jax.numpy.abs(res) > 10 ** 5).any():
+        #     assert False, dict(
+        #         res=res[:10],
+        #         P=P[:10],
+        #         H=H,
+        #     )
+
+        return res
+
 # ---------------------------------------------------------------
+
+small = 10 ** -4
 
 
 @xt.nTuple.decorate(init=xf.init_null)
@@ -182,6 +231,8 @@ class Kalman_Gain(typing.NamedTuple):
     cov: xf.Loc # prediction
     observation: xf.Loc
     cov_innovation: xf.Loc
+
+    # observation_noise: float = 0.01
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
@@ -200,9 +251,30 @@ class Kalman_Gain(typing.NamedTuple):
 
         assert len(P.shape) == 3, P.shape
 
+        # if self.observation_noise:
+        #     key = site.loc.random().access(
+        #         state, into=jax.numpy.ndarray
+        #     )
+        #     H = H + (
+        #         jax.random.normal(key, shape=H.shape) * self.observation_noise
+        #     )
+        try:
+            inv_innovation = jax.numpy.linalg.inv(
+                cov_innovation
+            )
+        except:
+            assert False, cov_innovation[:10]
+            #  + (
+            #     jax.numpy.eye(
+            #         cov_innovation.shape[-1]
+            #     ) * small
+            #     #
+            # )
+        # )
+
         return mm(
             mm(P, H.T), 
-            jax.numpy.linalg.inv(cov_innovation),
+            inv_innovation,
         )
 
 # ---------------------------------------------------------------
@@ -228,10 +300,15 @@ class State_Updated(typing.NamedTuple):
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         kalman_gain = self.kalman_gain.access(state)
         state_innovation = self.state_innovation.access(state)
-        
+
         X = self.state.access(state)
 
-        return (X + mm(kalman_gain, state_innovation))[..., 0]
+        return jax.numpy.concatenate([
+            (X[:-1, :, :] + mm(
+                kalman_gain[:-1, :, :], state_innovation
+            )),
+            X[-1:, :, :],
+        ], axis = 0)[..., 0]
 
 
 @xt.nTuple.decorate(init=xf.init_null)
@@ -254,13 +331,19 @@ class Cov_Updated(typing.NamedTuple):
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         kalman_gain = self.kalman_gain.access(state)
         H = self.observation.access(state)
+
         P = self.cov.access(state)
+        # P_trim = P[:-1, :, :]
         
         I = xf.expand_dims(
             jax.numpy.eye(P.shape[1]), 0, P.shape[0]
         )
 
         return mm(I - mm(kalman_gain, H), P)
+        # jax.numpy.concatenate([
+        #     mm(I - mm(kalman_gain, H), P),
+        #     P[-1:, :, :],
+        # ], axis = 0)
 
 
 @xt.nTuple.decorate(init=xf.init_null)
@@ -281,7 +364,6 @@ class Residual(typing.NamedTuple):
         state: xf.Model,
         data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
-        data = self.data.access(state)
 
         H = self.observation.access(state)
         X = self.state.access(state)
@@ -293,7 +375,7 @@ class Residual(typing.NamedTuple):
         X = xf.expand_dims(X, -1, 1)
         data = xf.expand_dims(data, -1, 1)
         
-        return data - mm(H, X)
+        return data - mm(H, X)[:-1, :, :]
 
 
 # ---------------------------------------------------------------

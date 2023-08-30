@@ -557,9 +557,9 @@ def rec_detach(v):
 def init_objective(
     model: Model,
     data,
-    markov,
     init_rand_keys,
     jit = True,
+    markov: typing.Optional[dict] = None,
 ):
 
     n_inputs = n_stages_where_all(
@@ -608,19 +608,10 @@ def init_objective(
         ),
         initial=model,
     )
+    
+    markov_sites = model.sites.filter(lambda s: s.markov)
 
-    # TODO: we need to pass in the markov mask
-    # as a separate argument, so the same sites (objects) that we initialise the solver with
-
-    # are still there with the params
-
-    # for markov params we can even then ignore them from the
-    # solver.init call (as they'll be masked anyway)
-
-    # ie. mask the params object before running the model here
-
-    def f(params, rand_keys, **flags):
-
+    def f_res(params, rand_keys, **flags):
         res = model.stages[n_inputs + n_static:].fold(
             lambda acc, i_stage: acc._replace(
                 results=acc.results.extend(f_stage(acc, i_stage))
@@ -635,17 +626,37 @@ def init_objective(
                 lambda i: model.sites[i].loc.result().access(res)
             )
         ).flatten().pipe(list)).sum()
+        return res.results.pipe(tuple), loss
 
-        for site in model.sites:
-            if site.markov:
-                markov[site.loc] = rec_detach(
-                    site.loc.result().access(res)
-                )
+    if len(markov_sites) and markov is not None:
+        if jit:
+            f_res = jax.jit(f_res)
 
+        def f(params, rand_keys, **flags):
+
+            mask = get_markov_mask(
+                markov, markov_sites, params, model.order
+            )
+            params = apply_markov_mask(mask, params)
+
+            res, loss = f_res(params, rand_keys)
+
+            if markov is not None and not jax.numpy.isnan(loss):
+                _m = model._replace(results=xt.iTuple(res))
+                for site in markov_sites:
+                    markov[site.loc] = rec_detach(
+                        site.loc.result().access(_m)
+                    )
+
+            return loss
+        return f
+
+    def f(params, rand_keys, **flags):
+        _, loss = f_res(params, rand_keys)
         return loss
 
     if jit:
-        return jax.jit(f)
+        f = jax.jit(f)
 
     return f
 
@@ -717,6 +728,88 @@ def gen_rand_keys(model: Model):
 
 # ---------------------------------------------------------------
 
+def get_markov_site(s, order):
+    m = s.markov
+    if isinstance(m, Location):
+        loc = m
+        return xt.iTuple((
+            order[loc.i]
+        ))
+    elif isinstance(m, (tuple, xt.iTuple)):
+        if isinstance(m, tuple):
+            m = xt.iTuple(m)
+        return m.not_none().assert_all(
+            lambda loc: isinstance(loc, Location),
+            f_error=lambda it: it.filter(
+                lambda loc: not isinstance(loc)
+            )
+        ).map(lambda loc: order[m.i])
+    else:
+        assert False, s.markov
+
+def get_markov_sites(sites, order):
+    return sites.map(
+        lambda s: get_markov_site(s, order)
+    ).flatten()
+
+def unpack_markov_res(loc, res, order, params):
+    assert isinstance(loc, Location), loc
+    i_param = order[loc.i]
+    if loc.path.len() == 0:
+        return i_param, res
+
+    # TODO: if loc.path, only update the particular tuple element
+    # ie. call replace on the relevant index in the original param element
+
+    # in theory that means then re-merging the updated elements
+    # if same loc.i
+
+    assert False, loc
+
+def get_markov_res(s, markov, order, params):
+    m = s.markov
+    res = markov[s.loc]
+    if isinstance(m, Location):
+        return xt.iTuple((
+            unpack_markov_res(m, res, order, params),
+        ))
+    elif isinstance(m, (tuple, xt.iTuple)):
+        if isinstance(m, tuple):
+            m = xt.iTuple(m)
+        assert len(m) == len(res), dict(m=len(m), res=len(res))
+        return m.zip(res).filterstar(
+            lambda loc, _res: loc is not None
+        ).mapstar(
+            lambda loc, _res: unpack_markov_res(
+                loc, _res, order, params
+            )
+        )
+    else:
+        assert False, s.markov
+
+def get_markov_mask(markov, sites, params, order):
+
+    if sites.len() == 0:
+        return {}
+
+    mask_site = functools.partial(
+        get_markov_res,
+        markov=markov,
+        order=order,
+        params=params,
+    )
+    
+    return {
+        i: p for i, p in sites.map(mask_site).flatten()
+    }
+
+def apply_markov_mask(mask, params):
+    return xt.iTuple(params).enumerate().mapstar(
+        lambda i, p: p if i not in mask else mask[i]
+    ).pipe(tuple)
+
+# ---------------------------------------------------------------
+
 def to_tuple_rec(v):
     if isinstance(v, xt.iTuple):
         return v.map(to_tuple_rec).pipe(tuple)
@@ -742,11 +835,9 @@ def init_optimisation(
 
     rand_keys, _ = gen_rand_keys(model)
 
-    markov = {}
     objective = init_objective(
         score_model,
         data,
-        markov,
         init_rand_keys=rand_keys,
         jit = jit,
     )
@@ -782,51 +873,6 @@ def init_optimisation(
 
     return params
 
-def mask_markov_loc(loc, res, order):
-    assert isinstance(loc, Location), loc
-    i_param = order[loc.i]
-    if loc.path.len() == 0:
-        return i_param, res
-    # TODO: only update the particular tuple element
-    assert False, loc
-
-def mask_markov_site(s, markov, order):
-    m = s.markov
-    res = markov[s.loc]
-    if isinstance(m, Location):
-        return xt.iTuple((
-            mask_markov_loc(m, res, order),
-        ))
-    elif isinstance(m, (tuple, xt.iTuple)):
-        if isinstance(m, tuple):
-            m = xt.iTuple(m)
-        assert len(m) == len(res), dict(m=len(m), res=len(res))
-        return m.zip(res).filterstar(
-            lambda loc, _res: loc is not None
-        ).mapstar(
-            lambda loc, _res: mask_markov_loc(loc, _res, order)
-        )
-    else:
-        assert False, s.markov
-
-def mask_markov_params(markov, sites, params, model):
-    if sites.len() == 0:
-        return params
-
-    mask_site = functools.partial(
-        mask_markov_site,
-        markov=markov,
-        order=model.order,
-    )
-    
-    param_mask = {
-        i: p for i, p in sites.map(mask_site).flatten()
-    }
-
-    return xt.iTuple(params).enumerate().mapstar(
-        lambda i, p: p if i not in param_mask else param_mask[i]
-    ).pipe(tuple)
-
 def optimise_model(
     model, 
     data,
@@ -853,19 +899,32 @@ def optimise_model(
         jit=jit,
         **flags,
     )
-    
+    model = model._replace(params=params)
+
     train_model = model.apply_flags(**flags, train=True)
     
     rand_keys, _ = gen_rand_keys(model)
 
-    markov = {}
+    markov_sites = model.sites.filter(lambda s: s.markov)
+    markov_i = get_markov_sites(markov_sites, model.order)
+
+    # init with the starting param values (of the masked site)
+    if markov_sites.len():
+        markov = {
+            site.loc: rec_detach(
+                model.sites[i].loc.param().access(model)
+            )
+            for i, site in markov_i.zip(markov_sites)
+        }
+    else:
+        markov = None
 
     objective = init_objective(
         train_model,
         data,
-        markov,
         init_rand_keys=rand_keys,
         jit = jit,
+        markov=markov,
     )
 
     if opt is None:
@@ -877,9 +936,9 @@ def optimise_model(
         opt=opt, fun=objective, maxiter=iters, jit=jit
     )
 
-    markov_sites = model.sites.filter(lambda s: s.markov)
-
-
+    params = xt.iTuple(params).enumerate().mapstar(
+        lambda i, p: p if i not in markov_i else ()
+    ).pipe(tuple)
     state = solver.init_state(params) 
 
     error = None
@@ -898,12 +957,9 @@ def optimise_model(
         )
         error = state.error
 
-        params = mask_markov_params(
-            markov, 
-            markov_sites, 
-            params,
-            model,
-        )
+        if numpy.isnan(error):
+            params = params_opt
+            break
 
         if i % int(iters / 10) == 0 or i == iters - 1:
             if verbose: print(i, error)
@@ -924,6 +980,11 @@ def optimise_model(
 
         if n_random > 0:
             rand_keys, _ = gen_rand_keys(model)
+
+    mask = get_markov_mask(
+        markov, markov_sites, params, model.order
+    )
+    params = apply_markov_mask(mask, params)
 
     model = model._replace(params=params)
     return model

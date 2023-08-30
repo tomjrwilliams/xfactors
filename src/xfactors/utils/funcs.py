@@ -40,6 +40,11 @@ def loss_descending(x):
     xr = acc[..., 1:]
     return -1 * jax.numpy.subtract(xl, xr).mean()
 
+def to_diag(v):
+    return jax.numpy.multiply(
+        jax.numpy.eye(v.shape[0]), v
+    )
+
 def loss_diag(X):
     diag = jax.numpy.diag(X)
     diag = jax.numpy.multiply(
@@ -80,22 +85,12 @@ def loss_eigenvec(cov, w, eigvals):
     cov_w = jax.numpy.matmul(cov, w)
     w_scale = jax.numpy.multiply(shapes.expand_dims(eigvals, 0, 1), w)
 
-    return (
-        loss_mse(cov_w, w_scale)
-        + loss_eigenvec_norm(w, eigvals)
-    )
+    _mse = loss_mse(cov_w, w_scale)
+    _norm = loss_eigenvec_norm(w, eigvals)
+
+    return _mse + _norm
 
 # NOTE: assumes eigvals already positive constrained
-def loss_eigvec_diag(w, eigvals):
-
-    scale = (
-        eigvals * jax.numpy.eye(eigvals.shape[0])
-    )
-
-    cov = jax.numpy.matmul(jax.numpy.matmul(w, scale), w.T)
-
-    return loss_eigenvec(cov, w, eigvals)
-
 def loss_eigenvec_norm(w, eigvals):
     norm = jax.numpy.matmul(w.T, w)
     norm_sq = jax.numpy.square(norm)

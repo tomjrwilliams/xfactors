@@ -27,6 +27,7 @@ from ... import utils
 
 # ---------------------------------------------------------------
 
+small = 10 ** -4
 
 
 @xt.nTuple.decorate(init=xf.init_null)
@@ -49,7 +50,7 @@ class Eigenvec(typing.NamedTuple):
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         weights = self.weights.access(state)
         cov = self.cov.access(state)
-        eigvals = self.eigvals.access(state)
+        eigvals = self.eigvals.access(state) + small
         if self.T:
             weights = weights.T
         return utils.funcs.loss_eigenvec(cov, weights, eigvals)
@@ -73,10 +74,10 @@ class Eigenvec_Cov(typing.NamedTuple):
         data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         weights = self.weights.access(state)
-        eigvals = self.eigvals.access(state)
+        eigvals = self.eigvals.access(state) + small
         if self.T:
             weights = weights.T
-        return utils.funcs.loss_eigvec_diag(weights, eigvals)
+        return utils.funcs.loss_eigenvec_norm(weights, eigvals)
 
 @xt.nTuple.decorate(init=xf.init_null)
 class Orthonormal(typing.NamedTuple):
@@ -211,6 +212,27 @@ class VOrthonormal(typing.NamedTuple):
         ]).sum()
         # return jax.vmap(utils.funcs.loss_orthonormal)(X).sum()
 
+
+@xt.nTuple.decorate(init=xf.init_null)
+class Diagonal(typing.NamedTuple):
+    
+    data: xf.Location
+    T: bool = False
+
+    def init(
+        self, site: xf.Site, model: xf.Model, data = None
+    ) -> tuple[VDiagonal, tuple, xf.SiteValue]: ...
+
+    def apply(
+        self,
+        site: xf.Site,
+        state: xf.Model,
+        data = None,
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
+        X = self.data.access(state)
+        if self.T:
+            X = X.T
+        return utils.funcs.loss_diag(X)
 
 @xt.nTuple.decorate(init=xf.init_null)
 class VDiagonal(typing.NamedTuple):

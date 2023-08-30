@@ -70,9 +70,64 @@ class Exp(typing.NamedTuple):
         return jax.numpy.exp(self.data.access(state))
 
 @xt.nTuple.decorate(init=xf.init_null)
+class UnitNorm(typing.NamedTuple):
+
+    data: xf.Loc
+
+    axis: int = 0
+
+    def init(
+        self, site: xf.Site, model: xf.Model, data = None
+    ) -> tuple[Exp, tuple, xf.SiteValue]: ...
+
+    def apply(
+        self,
+        site: xf.Site,
+        state: xf.Model,
+        data = None,
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
+        assert site.loc is not None
+        data = self.data.access(state)
+        norm = jax.numpy.sqrt(
+            jax.numpy.square(data).sum(axis=self.axis)
+        )
+        return jax.numpy.divide(
+            data, 
+            xf.expand_dims(
+                norm, self.axis, data.shape[self.axis]
+            )
+        )
+
+@xt.nTuple.decorate(init=xf.init_null)
+class Softmax(typing.NamedTuple):
+
+    data: xf.Loc
+
+    axis: int = 0
+
+    def init(
+        self, site: xf.Site, model: xf.Model, data = None
+    ) -> tuple[Exp, tuple, xf.SiteValue]: ...
+
+    def apply(
+        self,
+        site: xf.Site,
+        state: xf.Model,
+        data = None,
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
+        assert site.loc is not None
+        return jax.nn.softmax(
+            self.data.access(state), axis=self.axis
+        )
+
+
+@xt.nTuple.decorate(init=xf.init_null)
 class Sq(typing.NamedTuple):
 
     data: xf.Loc
+
+    vmin: typing.Optional[float] = None
+    vmax: typing.Optional[float] = None
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
@@ -85,7 +140,12 @@ class Sq(typing.NamedTuple):
         data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
-        return jax.numpy.square(self.data.access(state))
+        res = jax.numpy.square(self.data.access(state))
+        # if self.vmin is not None:
+        #     res = jax.numpy.clip(res, a_min=self.vmin)
+        # if self.vmax is not None:
+        #     res = jax.numpy.clip(res, a_max=self.vmax)
+        return res
 
 # ---------------------------------------------------------------
 

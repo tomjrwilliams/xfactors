@@ -11,7 +11,7 @@ import xfactors as xf
 
 from tests import utils
 
-def test_ppca() -> bool:
+def test_ab() -> bool:
     xf.utils.rand.reset_keys()
 
     N = 100
