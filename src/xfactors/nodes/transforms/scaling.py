@@ -74,7 +74,7 @@ class UnitNorm(typing.NamedTuple):
 
     data: xf.Loc
 
-    axis: int = 0
+    axis: int = -1
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
@@ -141,10 +141,10 @@ class Sq(typing.NamedTuple):
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         assert site.loc is not None
         res = jax.numpy.square(self.data.access(state))
-        # if self.vmin is not None:
-        #     res = jax.numpy.clip(res, a_min=self.vmin)
-        # if self.vmax is not None:
-        #     res = jax.numpy.clip(res, a_max=self.vmax)
+        if self.vmin is not None:
+            res = self.vmin + res
+        if self.vmax is not None:
+            res = jax.numpy.clip(res, a_max=self.vmax)
         return res
 
 # ---------------------------------------------------------------

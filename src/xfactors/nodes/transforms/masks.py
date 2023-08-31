@@ -50,14 +50,14 @@ class Zero(typing.NamedTuple):
 
 
 @xt.nTuple.decorate(init=xf.init_null)
-class Abs(typing.NamedTuple):
+class Positive(typing.NamedTuple):
 
     data: xf.Loc
     v: numpy.ndarray
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Abs, tuple, xf.SiteValue]: ...
+    ) -> tuple[Positive, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -67,6 +67,31 @@ class Abs(typing.NamedTuple):
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         data = self.data.access(state)
         data_pos = jax.numpy.abs(data)
+        pos_mask = self.v
+        no_mask = 1 + (self.v * -1)
+        return jax.numpy.multiply(
+            data, no_mask
+        ) + jax.numpy.multiply(
+            data_pos, pos_mask
+        )
+@xt.nTuple.decorate(init=xf.init_null)
+class Negative(typing.NamedTuple):
+
+    data: xf.Loc
+    v: numpy.ndarray
+
+    def init(
+        self, site: xf.Site, model: xf.Model, data = None
+    ) -> tuple[Negative, tuple, xf.SiteValue]: ...
+
+    def apply(
+        self,
+        site: xf.Site,
+        state: xf.Model,
+        data = None,
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
+        data = self.data.access(state)
+        data_pos = -1 * jax.numpy.abs(data)
         pos_mask = self.v
         no_mask = 1 + (self.v * -1)
         return jax.numpy.multiply(

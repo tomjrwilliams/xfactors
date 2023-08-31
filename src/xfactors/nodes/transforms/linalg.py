@@ -52,11 +52,23 @@ class Eigen_Cov(typing.NamedTuple):
         eigvals = self.eigvals.access(state)
         w = self.eigvecs.access(state)
 
-        scale = (
-            eigvals * jax.numpy.eye(eigvals.shape[0])
-        )
-
-        cov = jax.numpy.matmul(jax.numpy.matmul(w, scale), w.T)
+        if len(eigvals.shape) == 1:
+            scale = (
+                eigvals * jax.numpy.eye(eigvals.shape[-1])
+            )
+            cov = jax.numpy.matmul(
+                jax.numpy.matmul(w, scale), w.T
+            )
+        else:
+            scale = (
+                xf.expand_dims(
+                    eigvals, 1, 1
+                ) * jax.numpy.eye(eigvals.shape[-1])
+            )
+            cov = jax.numpy.matmul(
+                jax.numpy.matmul(w, scale),
+                jax.numpy.transpose(w, (0, 2, 1))
+            )
 
         if self.vmax:
             return jax.numpy.clip(

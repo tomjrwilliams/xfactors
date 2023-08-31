@@ -3,6 +3,12 @@ import jax
 
 # ---------------------------------------------------------------
 
+def transpose(x):
+    inds = list(range(len(x.shape)))
+    return jax.numpy.transpose(x, tuple(
+        (*inds[:-2], inds[-1], inds[-2])
+    ))
+
 def expand_dims(v, axis, size):
     v_expand = jax.numpy.expand_dims(v, axis)
     if axis == -1:

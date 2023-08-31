@@ -77,7 +77,11 @@ class Eigenvec_Cov(typing.NamedTuple):
         eigvals = self.eigvals.access(state) + small
         if self.T:
             weights = weights.T
-        return utils.funcs.loss_eigenvec_norm(weights, eigvals)
+        if len(weights.shape) == 3:
+            eigvals = xf.expand_dims(eigvals, -1, 1)
+        return utils.funcs.loss_eigenvec_norm(
+            weights, eigvals
+        )
 
 @xt.nTuple.decorate(init=xf.init_null)
 class Orthonormal(typing.NamedTuple):

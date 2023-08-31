@@ -943,6 +943,7 @@ def optimise_model(
 
     error = None
     params_opt = None
+    params_prev = None
 
     error_min = None
     since_min = 0
@@ -957,9 +958,14 @@ def optimise_model(
         )
         error = state.error
 
+        # TODO: markov needs to be kept at optimal as well?
+
         if numpy.isnan(error):
-            params = params_opt
+            print("Hit NA, early termination")
+            params = params_prev
             break
+
+        params_prev = params
 
         if i % int(iters / 10) == 0 or i == iters - 1:
             if verbose: print(i, error)

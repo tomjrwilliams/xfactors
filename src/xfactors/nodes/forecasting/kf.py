@@ -38,6 +38,8 @@ class State_Prediction(typing.NamedTuple):
     transition: xf.Loc
     state: xf.Loc
 
+    noise: xf.Loc
+
     input: xf.OptionalLoc = None
     control: xf.OptionalLoc = None
 
@@ -56,10 +58,13 @@ class State_Prediction(typing.NamedTuple):
         F = self.transition.access(state)
         X = self.state.access(state)
 
+        noise = self.noise.access(state)
+
         # state: (n_days, n_features)
         # transition = n_features, n_features
 
-        X = xf.expand_dims(X, -1, 1)
+        if len(X.shape) < 3:
+            X = xf.expand_dims(X, -1, 1)
 
         # should now treat state[0] as batch dim
         # and multiply in from the right
@@ -71,13 +76,20 @@ class State_Prediction(typing.NamedTuple):
         if self.input is None:
             res = jax.numpy.concatenate([
                 # mm(F_inv, X[1:2, :, :]),
+                # X[1:2, :, :],
                 X[:1, :, :],
                 FX
             ], axis = 0)
 
             assert res.shape == X.shape, [res.shape, X.shape]
 
-            return res
+            res = res[..., 0]
+
+            return (
+                res,
+                res, # + noise,
+                res - X[..., 0]
+            )
 
         B = self.control.access(state)
 
@@ -86,11 +98,18 @@ class State_Prediction(typing.NamedTuple):
 
         BU = mm(B, U)
 
-        return jax.numpy.concatenate([
+        res = jax.numpy.concatenate([
             # mm(F_inv, X[1:2, :, :]),
+            # X[1:2, :, :],
             X[:1, :, :],
             FX + BU
-        ], axis = 0)
+        ], axis = 0)[..., 0]
+        
+        return (
+            res,
+            res,
+            res - X[..., 0]
+        )
 
 @xt.nTuple.decorate(init=xf.init_null)
 class Cov_Prediction(typing.NamedTuple):
@@ -127,13 +146,15 @@ class Cov_Prediction(typing.NamedTuple):
 
         P_trim = P[:-1, :, :]
 
+        res = mm(
+            mm(F, P_trim), F.T
+        )
+
         return jax.numpy.concatenate([
             # xf.expand_dims(noise, 0, 1),
             P[:1, :, :],
-            mm(
-                F, mm(P_trim, F.T)
-            ) + xf.expand_dims(noise, 0, P_trim.shape[0])
-        ])
+            res + xf.expand_dims(noise, 0, P_trim.shape[0])
+        ]), P[1:, ...] - res
 
 # ---------------------------------------------------------------
 
@@ -160,6 +181,9 @@ class State_Innovation(typing.NamedTuple):
         data = self.data.access(state)
         H = self.observation.access(state)
         X = self.state.access(state)
+
+        if len(X.shape) < 3:
+            X = xf.expand_dims(X, -1, 1)
 
         # assert has batch dim, state.shape[2] == 1
         assert len(X.shape) == 3, X.shape
@@ -271,6 +295,7 @@ class Kalman_Gain(typing.NamedTuple):
             #     #
             # )
         # )
+        # assert not jax.numpy.isnan(inv_innovation).any()
 
         return mm(
             mm(P, H.T), 
@@ -302,6 +327,9 @@ class State_Updated(typing.NamedTuple):
         state_innovation = self.state_innovation.access(state)
 
         X = self.state.access(state)
+
+        if len(X.shape) < 3:
+            X = xf.expand_dims(X, -1, 1)
 
         return jax.numpy.concatenate([
             (X[:-1, :, :] + mm(
@@ -364,6 +392,7 @@ class Residual(typing.NamedTuple):
         state: xf.Model,
         data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
+        data = self.data.access(state)
 
         H = self.observation.access(state)
         X = self.state.access(state)
