@@ -386,6 +386,15 @@ def test_kf() -> bool:
         )
     ).init(data)
 
+    # NOTE: under determined up to scaling in the example above
+    # and given the linearity, probably many cases
+
+    # so perhaps have some kind of parameter regularisation
+    # could be unit norm, or perhaps just gaussian likelihood
+    # independent, unit scale variance
+
+    # (which mimics how the test data was generated)
+
     model = model.optimise(
         data, 
         iters = 2500,
