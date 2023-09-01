@@ -66,7 +66,7 @@ def test_gmm() -> bool:
         )
     )
     model, loc_gmm = model.add_node(
-        xf.clustering.gmm.GMM_Likelihood_Separability(
+        xf.clustering.gmm.Likelihood_Separability(
             k=N_CLUSTERS,
             data=loc_data.result(),
             mu=loc_mu.param(),

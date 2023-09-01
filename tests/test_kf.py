@@ -125,14 +125,14 @@ def test_kf() -> bool:
     
     model, loc_state_eigvec_raw = model.add_node(
         xf.params.scalar.Scalar(
-            xf.expand_dims(jax.numpy.eye(2), 0, N+1)
+            xf.expand_dims(numpy.eye(2), 0, N+1)
         )
     )
     model, loc_noise_state_eigvec_raw = model.add_node(
-        xf.params.scalar.Scalar(jax.numpy.eye(2))
+        xf.params.scalar.Scalar(numpy.eye(2))
     )
     model, loc_noise_obs_eigvec_raw = model.add_node(
-        xf.params.scalar.Scalar(jax.numpy.eye(3))
+        xf.params.scalar.Scalar(numpy.eye(3))
     )
 
     model, loc_state_eigvec = model.add_node(
@@ -179,16 +179,7 @@ def test_kf() -> bool:
             vmin=0.01
         )
     )
-    # model, loc_noise_state_eigvec = model.add_node(
-    #     xf.transforms.scaling.UnitNorm(
-    #         loc_noise_state_eigvec_raw.param(),
-    #     )
-    # )
-    # model, loc_noise_obs_eigvec = model.add_node(
-    #     xf.transforms.scaling.UnitNorm(
-    #         loc_noise_obs_eigvec_raw.param(),
-    #     )
-    # )
+
     model, loc_cov = model.add_node(
         xf.transforms.linalg.Eigen_Cov(
             loc_state_eigval.result(),
@@ -265,15 +256,6 @@ def test_kf() -> bool:
         # markov=loc_cov.result(), 
     )
 
-    # model, loc_state_nll = model.add_node(
-    #     xf.forecasting.kf.State_NegLikelihood(
-    #         transition=loc_transition.result(),
-    #         state=loc_state.param(),
-            
-    #         # cov=loc_cov.result(),
-    #         cov=loc_noise_state.result(),
-    #     )
-    # )
     model, loc_residual = model.add_node(
         xf.forecasting.kf.Residual(
             data=loc_data.result(),
@@ -291,12 +273,6 @@ def test_kf() -> bool:
             ),
             constraint=True,
         )
-        # model.add_node(
-        #     xf.constraints.loss.L2(
-        #         loc_residual.result(),
-        #     ),
-        #     constraint=True,
-        # )
         .add_node(
             xf.constraints.loss.MSE(
                 loc_cov_pred.result(1),
@@ -306,48 +282,11 @@ def test_kf() -> bool:
             constraint=True,
         )
         .add_node(
-            # this implicitly contains the noise gaussian
-            # as its likelihood(next - pred, noise_dist)
             xf.constraints.loss.L2(
-            # xf.constraints.dist.NegLikelihood_Gaussian(
                 loc_state_pred.result(2),
-                # loc_noise_state.result(),
             ),
             constraint=True,
         )
-        # .add_node(
-        #     xf.constraints.dist.NegLikelihood_Gaussian(
-        #         loc_noise.param(),
-        #         loc_noise_state.result(),
-        #     ),
-        #     constraint=True,
-        # )
-        # .add_node(
-        #     xf.constraints.loss.MSE(
-        #         loc_cov.result(),
-        #         loc_cov_new.result(),
-        #     ),
-        #     constraint=True,
-        #     # random=True,
-        # )
-        # .add_node(
-        #     xf.constraints.loss.Minimise(
-        #         loc_state_nll.result(),
-        #     ),
-        #     constraint=True,
-        # )
-        # .add_node(
-        #     xf.constraints.loss.L2(
-        #         loc_state_eigval.result(),
-        #     ),
-        #     constraint=True,
-        # )
-        # .add_node(
-        #     xf.constraints.loss.L2(
-        #         loc_noise_state_eigval.result(),
-        #     ),
-        #     constraint=True,
-        # )
         .add_node(
             xf.constraints.loss.L2(
                 loc_noise_obs_eigval.result(),
@@ -355,30 +294,18 @@ def test_kf() -> bool:
             constraint=True,
         )
         .add_node(
-            # xf.constraints.linalg.Eigenvec_Cov(
-            #     loc_state_eigval.result(),
-            #     loc_state_eigvec.result(),
-            # ),
             xf.constraints.linalg.Orthonormal(
                 loc_state_eigvec.result(),
             ),
             constraint=True,
         )
         .add_node(
-            # xf.constraints.linalg.Eigenvec_Cov(
-            #     loc_noise_state_eigval.result(),
-            #     loc_noise_state_eigvec.result(),
-            # ),
             xf.constraints.linalg.Orthonormal(
                 loc_noise_state_eigvec.result(),
             ),
             constraint=True,
         )
         .add_node(
-            # xf.constraints.linalg.Eigenvec_Cov(
-            #     loc_noise_obs_eigval.result(),
-            #     loc_noise_obs_eigvec.result(),
-            # ),
             xf.constraints.linalg.Orthonormal(
                 loc_noise_obs_eigvec.result(),
             ),

@@ -22,74 +22,72 @@ def order_eig(evals, evecs):
     evals = evals[order]
     return evals, evecs
 
-def test_ppca(iters=2500) -> bool:
+def test_eig(iters=2500) -> bool:
     xf.utils.rand.reset_keys()
 
-    for _ in range(1):
+    eigvals = jax.numpy.square(xf.utils.rand.gaussian((5,)))
 
-        eigvals = jax.numpy.square(xf.utils.rand.gaussian((5,)))
+    f_loss= functools.partial(
+        xf.utils.funcs.loss_eigenvec_norm,
+        eigvals=eigvals
+    )
+    # f_loss = lambda w_e: xf.utils.funcs.loss_eigvec_diag(*w_e)
 
-        f_loss= functools.partial(
-            xf.utils.funcs.loss_eigvec_diag,
-            eigvals=eigvals
+    w = xf.utils.rand.gaussian((5, 5,))
+
+    opt = optax.adam(0.01)
+    solver = jaxopt.OptaxSolver(
+        opt=opt, fun=f_loss, maxiter=1000, jit=True
+    )
+
+    params = w
+    # params = (w, eigvals)
+    
+    state = solver.init_state(params) 
+
+    for iter in range(iters):
+        params, state = solver.update(
+            params,
+            state,
         )
-        # f_loss = lambda w_e: xf.utils.funcs.loss_eigvec_diag(*w_e)
+        error = state.error
+        if iter % int(iters / 10) == 0:
+            print(iter, ":", error)
 
-        w = xf.utils.rand.gaussian((5, 5,))
+    w = params
+    # w, eigvals = params
 
-        opt = optax.adam(0.01)
-        solver = jaxopt.OptaxSolver(
-            opt=opt, fun=f_loss, maxiter=1000, jit=True
-        )
+    eigvals, w = order_eig(eigvals, w)
 
-        params = w
-        # params = (w, eigvals)
-        
-        state = solver.init_state(params) 
+    wTw = numpy.matmul(w.T, w)
 
-        for iter in range(iters):
-            params, state = solver.update(
-                params,
-                state,
-            )
-            error = state.error
-            if iter % int(iters / 10) == 0:
-                print(iter, ":", error)
+    evals, evecs = numpy.linalg.eig(
+        numpy.matmul(numpy.matmul(
+            w, eigvals * numpy.eye(w.shape[0])
+        ), w.T)
+    )
+    evals, evecs = order_eig(evals, evecs)
 
-        w = params
-        # w, eigvals = params
+    print(numpy.round(wTw, 2))
 
-        eigvals, w = order_eig(eigvals, w)
+    print(numpy.round(w, 2))
+    print(numpy.round(evecs, 2))
 
-        wTw = numpy.matmul(w.T, w)
+    print(numpy.round(eigvals, 2))
+    print(numpy.round(evals, 2))
 
-        evals, evecs = numpy.linalg.eig(
-            numpy.matmul(numpy.matmul(
-                w, eigvals * numpy.eye(w.shape[0])
-            ), w.T)
-        )
-        evals, evecs = order_eig(evals, evecs)
+    utils.assert_is_close(
+        eigvals,
+        evals,
+        True,
+        atol=0.2,
+    )
 
-        print(numpy.round(wTw, 2))
+    utils.assert_is_close(
+        w,
+        evecs,
+        True,
+        atol=0.2,
+    )
 
-        print(numpy.round(w, 2))
-        print(numpy.round(evecs, 2))
-
-        print(numpy.round(eigvals, 2))
-        print(numpy.round(evals, 2))
-
-        utils.assert_is_close(
-            eigvals,
-            evals,
-            True,
-            atol=0.2,
-        )
-
-        utils.assert_is_close(
-            w,
-            evecs,
-            True,
-            atol=0.2,
-        )
-
-    return
+    return True

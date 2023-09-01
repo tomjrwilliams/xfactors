@@ -84,6 +84,7 @@ class MinimiseSquare(typing.NamedTuple):
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         data = self.data.access(state)
         if self.dropout:
+            assert site.loc is not None
             key = site.loc.random().access(
                 state, into=jax.numpy.ndarray
             )

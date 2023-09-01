@@ -32,7 +32,7 @@ mm = jax.numpy.matmul
 # ---------------------------------------------------------------
 
 @xt.nTuple.decorate(init=xf.init_null)
-class NegLikelihood_Gaussian(typing.NamedTuple):
+class Neg_Gaussian(typing.NamedTuple):
     
     data: xf.Loc
     cov: xf.Loc
@@ -41,7 +41,7 @@ class NegLikelihood_Gaussian(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[NegLikelihood_Gaussian, tuple, xf.SiteValue]: ...
+    ) -> tuple[Neg_Gaussian, tuple, xf.SiteValue]: ...
 
     def apply(
         self,

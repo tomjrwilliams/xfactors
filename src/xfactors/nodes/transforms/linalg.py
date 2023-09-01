@@ -29,6 +29,9 @@ from .. import params
 
 # ---------------------------------------------------------------
 
+# TODO: inv covar (assuming diagonalised representation)
+
+
 # NOTE: assumes eigvals already positive constrained
 # also eigval (not singular value, so no need to square)
 @xt.nTuple.decorate(init=xf.init_null)

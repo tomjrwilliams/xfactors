@@ -41,13 +41,13 @@ class GMM(typing.NamedTuple):
     data: xf.Location
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
+        self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[GMM, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
+        state: xf.Model,
         model: xf.Model,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         # https://en.wikipedia.org/wiki/EM_algorithm_and_GMM_model
@@ -58,7 +58,7 @@ class GMM(typing.NamedTuple):
 small = 10 ** -4
 
 @xt.nTuple.decorate(init=xf.init_null)
-class BGMM_EM(typing.NamedTuple):
+class Likelihood_Separability(typing.NamedTuple):
     
     k: int
     data: xf.Location
@@ -70,14 +70,14 @@ class BGMM_EM(typing.NamedTuple):
     noise: typing.Optional[float] = 0.1
 
     def init(
-        self, site: xf.Site, model: xf.Model, data: tuple
-    ) -> tuple[BGMM_EM, tuple, xf.SiteValue]: ...
+        self, site: xf.Site, model: xf.Model, data = None
+    ) -> tuple[Likelihood_Separability, tuple, xf.SiteValue]: ...
     
     def apply(
         self,
         site: xf.Site,
-        state: xf.State,
-        model: xf.Model,
+        state: xf.Model,
+        data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
 
         # https://en.wikipedia.org/wiki/EM_algorithm_and_GMM_model
@@ -94,7 +94,7 @@ class BGMM_EM(typing.NamedTuple):
         
         if self.noise:
             assert site.loc is not None
-            key = site.loc.as_random().access(
+            key = site.loc.random().access(
                 state, into=jax.numpy.ndarray
             )
             noise = ((

@@ -91,6 +91,7 @@ class State_Prediction(typing.NamedTuple):
                 res - X[..., 0]
             )
 
+        assert self.control is not None
         B = self.control.access(state)
 
         U = self.input.access(state)

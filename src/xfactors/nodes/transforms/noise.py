@@ -58,6 +58,7 @@ class Diagonal_Gaussian(typing.NamedTuple):
         eigvec = self.eigvec.access(state)
         eigval = self.eigval.access(state)
 
+        assert site.loc is not None
         key = site.loc.random().access(
             state, into=jax.numpy.ndarray
         )

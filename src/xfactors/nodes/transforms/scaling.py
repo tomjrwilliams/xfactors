@@ -78,7 +78,7 @@ class UnitNorm(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Exp, tuple, xf.SiteValue]: ...
+    ) -> tuple[UnitNorm, tuple, xf.SiteValue]: ...
 
     def apply(
         self,
@@ -107,7 +107,7 @@ class Softmax(typing.NamedTuple):
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[Exp, tuple, xf.SiteValue]: ...
+    ) -> tuple[Softmax, tuple, xf.SiteValue]: ...
 
     def apply(
         self,

@@ -207,7 +207,7 @@ class Node(typing.Protocol):
         self: NodeClass,
         site: Site,
         model: Model,
-        data: tuple,
+        data = None,
     ) -> tuple[NodeClass, tuple, SiteValue]:
         ...
 
@@ -650,15 +650,13 @@ def init_objective(
 
             return loss
         return f
-
-    def f(params, rand_keys, **flags):
-        _, loss = f_res(params, rand_keys)
-        return loss
-
-    if jit:
-        f = jax.jit(f)
-
-    return f
+    else:
+        def f(params, rand_keys, **flags):
+            _, loss = f_res(params, rand_keys)
+            return loss
+        if jit:
+            f = jax.jit(f)
+        return f
 
 def apply_model(
     model,
@@ -741,9 +739,9 @@ def get_markov_site(s, order):
         return m.not_none().assert_all(
             lambda loc: isinstance(loc, Location),
             f_error=lambda it: it.filter(
-                lambda loc: not isinstance(loc)
+                lambda loc: not isinstance(loc, Location)
             )
-        ).map(lambda loc: order[m.i])
+        ).map(lambda loc: order[loc.i])
     else:
         assert False, s.markov
 
