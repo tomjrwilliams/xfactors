@@ -38,6 +38,12 @@ def test_ppca_missing() -> bool:
 
     model = xf.Model()
 
+    # TODO: hide some values
+
+    # and then pca mse interpolation to fill back in
+
+    # compare before vs after
+
     model, loc_data = model.add_node(
         xf.inputs.dfs.DataFrame_Wide(),
         input=True,
