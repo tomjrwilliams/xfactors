@@ -32,7 +32,7 @@ from ... import utils
 class Cov(typing.NamedTuple):
 
     data: xf.Loc
-    exists: xf.OptionalLoc
+    exists: xf.OptionalLoc = None
     
     shrinkage: typing.Optional[str] = None
 
@@ -60,10 +60,9 @@ class Cov(typing.NamedTuple):
 
 @xt.nTuple.decorate(init=xf.init_null)
 class VCov(typing.NamedTuple):
-
     
     data: xf.Loc
-    exists: xf.OptionalLoc
+    exists: xf.OptionalLoc = None
     
     shrinkage: typing.Optional[str] = None
 

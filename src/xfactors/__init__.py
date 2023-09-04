@@ -17,10 +17,10 @@ if pathlib.Path(os.getcwd()).parts[-1] == "xfactors":
     if PATHS.XTENORS not in sys.path:
         sys.path.append(PATHS.XTENORS)
 
-from . import bt
-from . import nodes
 from . import utils
 from . import visuals
+from . import nodes
+from . import bt
 
 from .nodes import *
 from .xfactors import *
