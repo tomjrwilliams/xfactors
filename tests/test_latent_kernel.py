@@ -8,7 +8,6 @@ import pandas
 import xtuples as xt
 import xfactors as xf
 
-from tests import utils
 
 # import jax.config
 # jax.config.update("jax_debug_nans", True)
@@ -142,7 +141,7 @@ def test_latent_kernel() -> bool:
         clusters=CLUSTER_MAP,
     )
 
-    utils.assert_is_close(
+    xf.utils.tests.assert_is_close(
         cov,
         cov_res,
         True,

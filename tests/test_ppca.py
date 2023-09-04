@@ -9,7 +9,6 @@ import optax
 import xtuples as xt
 import xfactors as xf
 
-from tests import utils
 
 def test_ppca() -> bool:
     xf.utils.rand.reset_keys()
@@ -126,7 +125,7 @@ def test_ppca() -> bool:
     print(numpy.round(eigen_vals, 3))
     print(numpy.round(eigvals, 3))
 
-    utils.assert_is_close(
+    xf.utils.tests.assert_is_close(
         eigen_vec.real[..., :1],
         eigvecs.real[..., :1],
         True,

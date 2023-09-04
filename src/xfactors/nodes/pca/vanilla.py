@@ -125,45 +125,6 @@ class PCA_Decoder(typing.NamedTuple):
         return jax.numpy.matmul(weights, data.T).T
 
 
-@xt.nTuple.decorate()
-class PCA_Interpolation(typing.NamedTuple):
-
-    data: xf.Location
-    weights: xf.OptionalLocation = None
-
-    def init(
-        self, site: xf.Site, model: xf.Model, data = None
-    ) -> tuple[PCA_Interpolation, tuple, xf.SiteValue]:
-        # TODO
-        return self, (), ()
-
-    def apply(
-        self,
-        site: xf.Site,
-        state: xf.Model,
-        data = None,
-    ) -> typing.Union[tuple, jax.numpy.ndarray]:
-        assert False
-        # the idea is actually quite simple
-        # can take a wide dataframe (at the cost of a little redundancy vs tall)
-        # generate a fill_mask where na (for instance)
-        # generate a param object the same shape as data
-        # then here, we sum the zero masked (where param) original data
-        # with the param data (zero mask where not na in original)
-        # and do mse on encode-decode loop
-
-        # where this is assuming fixed weights
-        # can also generate a cov matrix (from the partial data)
-        # and then use that to ppca into the weights
-        # to fit concurrently
-
-        # or even, use a kernel to generate cov
-        # cov to weights
-        # weights to data interpolation
-        # where kernel doesnt even need to be a function of data itself
-
-        # at which point we have a generalised i-pca
-
 # ---------------------------------------------------------------
 
 

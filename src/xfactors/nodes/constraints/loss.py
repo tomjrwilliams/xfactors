@@ -278,6 +278,8 @@ class MSE(typing.NamedTuple):
     l: xf.Location
     r: xf.Location
 
+    condition: xf.OptionalLoc = None
+
     def init(
         self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[MSE, tuple, xf.SiteValue]: ...
@@ -290,6 +292,9 @@ class MSE(typing.NamedTuple):
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         l = self.l.access(state)
         r = self.r.access(state)
+        if self.condition is not None:
+            mask = self.condition.access(state)
+            return utils.funcs.loss_mse(l, r, mask=mask)
         return utils.funcs.loss_mse(l, r)
 
 @xt.nTuple.decorate(init=xf.init_null)

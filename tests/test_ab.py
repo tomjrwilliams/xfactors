@@ -9,7 +9,6 @@ import optax
 import xtuples as xt
 import xfactors as xf
 
-from tests import utils
 
 def test_ab() -> bool:
     xf.utils.rand.reset_keys()
@@ -118,7 +117,7 @@ def test_ab() -> bool:
 
     position = loc_position.param().access(model)
 
-    utils.assert_is_close(
+    xf.utils.tests.assert_is_close(
         numpy.round(data[0][0].values, 2),
         numpy.round(position[:, 0], 2)[:-1],
         atol=.1,

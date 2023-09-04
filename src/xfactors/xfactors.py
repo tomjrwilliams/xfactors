@@ -881,6 +881,7 @@ def optimise_model(
     max_error_unchanged=None,
     lr = 0.01,
     opt=None,
+    nan_termination=True,
     **flags,
 ):
 
@@ -943,6 +944,7 @@ def optimise_model(
     params_opt = None
     params_prev = None
 
+    i_min = None
     error_min = None
     since_min = 0
 
@@ -959,19 +961,23 @@ def optimise_model(
         # TODO: markov needs to be kept at optimal as well?
 
         if numpy.isnan(error):
-            print("Hit NA, early termination")
-            params = params_prev
+            if verbose: print("Hit NA, early termination")
+            if not nan_termination:
+                # we do not allow nan as a valid termination condition
+                # so return prev params so we can debug what went wrong
+                params = params_prev
             break
 
         params_prev = params
 
-        if i % int(iters / 10) == 0 or i == iters - 1:
+        if i % int(iters / 10) == 0:
             if verbose: print(i, error)
         
         if error_min is None or error < error_min:
             error_min = error
             since_min = 0
             params_opt = params
+            i_min = i
         else:
             since_min += 1
 
@@ -984,6 +990,13 @@ def optimise_model(
 
         if n_random > 0:
             rand_keys, _ = gen_rand_keys(model)
+
+    if verbose:
+        print(i, error)
+        print("Min", i_min, error_min)
+
+    if nan_termination:
+        params = params_opt
 
     mask = get_markov_mask(
         markov, markov_sites, params, model.order

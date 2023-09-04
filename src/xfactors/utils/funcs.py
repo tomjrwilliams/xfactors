@@ -9,6 +9,8 @@ import jax.numpy
 import jax.numpy.linalg
 
 from . import shapes
+from . import rand
+from . import tests
 
 # ---------------------------------------------------------------
 
@@ -21,8 +23,10 @@ mm = jax.numpy.matmul
 def loss_mabse(l, r):
     return jax.numpy.abs(jax.numpy.subtract(l, r)).mean()
 
-def loss_mse(l, r):
-    return sq(jax.numpy.subtract(l, r)).mean()
+def loss_mse(l, r, mask = None):
+    if mask is None:
+        return sq(jax.numpy.subtract(l, r)).mean()
+    return sq(jax.numpy.multiply(jax.numpy.subtract(l, r), mask)).mean()
 
 def loss_sumse(l, r):
     return sq(jax.numpy.subtract(l, r)).sum()
@@ -76,8 +80,8 @@ def match_sign_to(X, row = None, col = None):
         )
 
 def loss_orthonormal(X):
-    eye = jax.numpy.eye(X.shape[-1])
     XXt = mm(X, shapes.transpose(X))
+    eye = jax.numpy.eye(XXt.shape[-1])
     return loss_mse(XXt, eye)
 
 def loss_orthogonal(X):
@@ -119,6 +123,55 @@ def loss_eigenvec_norm(w, eigvals):
 
     return mm(mul, eigvals).mean()
 
+# ---------------------------------------------------------------
+
+# data = n_points, n_features
+def cov(data, exists = None):
+    """
+    >>> betas = rand.gaussian(shape=(3, 3,))
+    >>> noise = rand.gaussian(shape=(100, 3))
+    >>> data = mm(noise, betas)
+    >>> exists = numpy.ones(data.shape)
+    >>> cov_data = cov(data)
+    >>> tests.assert_is_close(cov_data, cov(data, exists), atol=.05)
+    >>> exists = rand.bernoulli(shape=data.shape, p = 0.9)
+    >>> cov_res = cov(data, exists)
+    >>> tests.assert_is_close(cov_res, cov_res.T, atol=.01)
+    >>> tests.assert_is_close(cov_data, cov_res, atol=.2)
+    """
+    if exists is None:
+        return jax.numpy.cov(
+            jax.numpy.transpose(data)
+        )
+    exists_cross = shapes.expand_dims(
+        exists,
+        -1,
+        data.shape[-1]
+    )
+    exists_mask = jax.numpy.multiply(
+        exists_cross,
+        jax.numpy.transpose(exists_cross, (0, 2, 1))
+    )
+    n_exists = exists.sum(axis=0)
+    mu = jax.numpy.divide(data.sum(axis=0), n_exists)
+    mu_diff = shapes.expand_dims(
+        data - shapes.expand_dims(mu, 0, data.shape[0]),
+        -1,
+        data.shape[-1]
+    )
+    mu_diff_T = jax.numpy.transpose(
+        mu_diff, (0, 2, 1)
+    )
+    mu_diff_prod = jax.numpy.multiply(jax.numpy.multiply(
+        mu_diff,
+        mu_diff_T
+    ), exists_mask)
+    n_exists_mask = exists_mask.sum(axis=0) - 1
+    res = jax.numpy.divide(
+        mu_diff_prod.sum(axis=0),
+        n_exists_mask
+    )
+    return res
 
 # ---------------------------------------------------------------
 

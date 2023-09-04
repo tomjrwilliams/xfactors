@@ -8,7 +8,6 @@ import pandas
 import xtuples as xt
 import xfactors as xf
 
-from tests import utils
 
 import optax
 
@@ -125,7 +124,7 @@ def test_kmeans() -> bool:
         if l != sk_l
     }
 
-    utils.assert_is_close(
+    xf.utils.tests.assert_is_close(
         clusters,
         mu,
         True,

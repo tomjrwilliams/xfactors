@@ -7,7 +7,6 @@ import pandas
 import xtuples as xt
 import xfactors as xf
 
-from tests import utils
 
 def test_linreg() -> bool:
     xf.utils.rand.reset_keys()
@@ -71,13 +70,13 @@ def test_linreg() -> bool:
         post=betas_post.squeeze(),
     )
 
-    utils.assert_is_close(
+    xf.utils.tests.assert_is_close(
         results["betas"],
         results["pre"],
         False,
         results,
     )
-    utils.assert_is_close(
+    xf.utils.tests.assert_is_close(
         results["betas"],
         results["post"],
         True,

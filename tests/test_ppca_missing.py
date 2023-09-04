@@ -11,7 +11,6 @@ import optax
 import xtuples as xt
 import xfactors as xf
 
-from tests import utils
 
 def test_ppca_missing() -> bool:
     xf.utils.rand.reset_keys()
@@ -26,30 +25,54 @@ def test_ppca_missing() -> bool:
     betas = xf.utils.rand.gaussian((N, N_COLS,))
     vs = numpy.matmul(vs_norm, betas)
 
+    exists = xf.utils.rand.bernoulli(p=0.9, shape=vs.shape)
+    missing = 1 + (-1 * exists)
+
+    vs_mask = numpy.where(missing, numpy.zeros(vs.shape), vs)
+
     data = (
         pandas.DataFrame({
             f: xf.utils.dates.dated_series({
                 d: v for d, v in zip(ds, fvs) #
             })
-            for f, fvs in enumerate(numpy.array(vs).T)
+            for f, fvs in enumerate(numpy.array(vs_mask).T)
+        }),
+        pandas.DataFrame({
+            f: xf.utils.dates.dated_series({
+                d: v for d, v in zip(ds, fvs) #
+            })
+            for f, fvs in enumerate(numpy.array(exists).T)
         }),
     )
+
     NOISE = 0
 
     model = xf.Model()
 
-    # TODO: hide some values
-
-    # and then pca mse interpolation to fill back in
-
-    # compare before vs after
-
-    model, loc_data = model.add_node(
+    model, loc_data_raw = model.add_node(
+        xf.inputs.dfs.DataFrame_Wide(),
+        input=True,
+    )
+    model, loc_exists = model.add_node(
         xf.inputs.dfs.DataFrame_Wide(),
         input=True,
     )
     model, loc_cov = model.add_node(
-        xf.cov.vanilla.Cov(data=loc_data.result()), static=True
+        xf.cov.vanilla.Cov(
+            data=loc_data_raw.result(),
+            exists=loc_exists.result(),
+        ),
+        static=True
+    )
+    model, loc_missing = model.add_node(
+        xf.params.random.Gaussian(shape=vs.shape)
+    )
+    model, loc_data = model.add_node(
+        xf.transforms.masks.Where(
+            loc_exists.result(),
+            loc_data_raw.result(),
+            loc_missing.param(),
+        )
     )
     model, loc_weights = model.add_node(
         xf.params.random.Orthogonal(
@@ -80,10 +103,20 @@ def test_ppca_missing() -> bool:
         )
     )
     model = model.add_node(
-        xf.constraints.linalg.Eigenvec(
-            cov=loc_cov.result(),
-            weights=loc_weights.param(),
-            eigvals=loc_eigval_sq.result(),
+        # NOTE: eigen vec seems to be too aggressive?
+        # or depends too much on noisy covariance estimate?
+        xf.constraints.linalg.Orthonormal(loc_weights.param(), T=True),
+        # xf.constraints.linalg.Eigenvec(
+        #     cov=loc_cov.result(),
+        #     weights=loc_weights.param(),
+        #     eigvals=loc_eigval_sq.result(),
+        # ),
+        constraint=True,
+    ).add_node(
+        xf.constraints.loss.MSE(
+            loc_data.result(),
+            loc_decode.result(),
+            condition=loc_exists.result(),
         ),
         constraint=True,
     ).init(data)
@@ -93,8 +126,8 @@ def test_ppca_missing() -> bool:
         iters = 2500,
         # max_error_unchanged=1000,
         rand_init=100,
-        # opt = optax.sgd(.1),
-        # opt=optax.noisy_sgd(.1),
+        # opt = optax.sgd(.01),
+        # opt=optax.noisy_sgd(.01),
         # jit=False,
     ).apply(data)
 
@@ -102,42 +135,30 @@ def test_ppca_missing() -> bool:
     sigma = loc_eigval_sq.result().access(model)
     factors = loc_encode.result().access(model)
 
-    # cov = jax.numpy.cov(factors.T)
-    # eigen_vals = jax.numpy.diag(cov)
+    print("missing:", missing.sum())
 
-    print(numpy.round(
-        numpy.matmul(eigen_vec.T, eigen_vec),
-        2
-    ))
+    missing_data = list(loc_missing.param().access(model).flatten())
 
-    eigen_vals = sigma
+    vs = list(vs.flatten())
+    missing = list(missing.flatten())
 
-    order = numpy.flip(numpy.argsort(eigen_vals))
-    # assert eigen_vals.shape[0] == N, eigen_vals.shape
+    vs_missing, _, vs_res = (
+        xt.iTuple(vs)
+        .zip(missing, missing_data)
+        .filterstar(
+            lambda v, is_missing, res: int(is_missing)
+        )
+        .zip()
+    )
 
-    eigen_vals = eigen_vals[order]
-    eigen_vec = eigen_vec[..., order]
-
-    eigvals, eigvecs = numpy.linalg.eig(numpy.cov(
-        numpy.transpose(data[0].values)
-    ))
-    _order = numpy.flip(numpy.argsort(eigvals))
-    eigvecs = eigvecs[..., _order]
-    eigvals = eigvals[_order]
-
-    eigvecs = xf.utils.funcs.match_sign_to(eigvecs, row=0)
-    eigen_vec = xf.utils.funcs.match_sign_to(eigen_vec, row=0)
-
-    print(numpy.round(eigen_vec, 4))
-    print(numpy.round(eigvecs, 4))
-
-    print(numpy.round(eigen_vals, 3))
-    print(numpy.round(eigvals, 3))
-
-    utils.assert_is_close(
-        eigen_vec.real[..., :1],
-        eigvecs.real[..., :1],
-        True,
+    xf.utils.tests.assert_is_close(
+        loc_data.result().access(model),
+        loc_decode.result().access(model),
+        atol=.2,
+    )
+    xf.utils.tests.assert_is_close(
+        numpy.array(vs_missing),
+        numpy.array(vs_res),
         atol=.1,
     )
     return True

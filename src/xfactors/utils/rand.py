@@ -43,6 +43,13 @@ def beta(a, b, shape=None, seed = 69):
         #
     )
 
+def bernoulli(p = None, shape = None, seed = 69):
+    return jax.random.bernoulli(
+        next_key(seed=seed),
+        p=p,
+        shape=shape,
+    )
+
 # ---------------------------------------------------------------
 
 def gaussian(shape=None, mu=None, var=None, seed = 69):

@@ -26,7 +26,8 @@ from ... import xfactors as xf
 
 # ---------------------------------------------------------------
 
-
+# NOTE: works differently to the below?
+# as we just multiply through by the mask?
 @xt.nTuple.decorate(init=xf.init_null)
 class Zero(typing.NamedTuple):
 
@@ -53,7 +54,7 @@ class Zero(typing.NamedTuple):
 class Positive(typing.NamedTuple):
 
     data: xf.Loc
-    v: numpy.ndarray
+    condition: typing.Union[xf.Loc, numpy.ndarray]
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
@@ -67,18 +68,17 @@ class Positive(typing.NamedTuple):
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         data = self.data.access(state)
         data_pos = jax.numpy.abs(data)
-        pos_mask = self.v
-        no_mask = 1 + (self.v * -1)
-        return jax.numpy.multiply(
-            data, no_mask
-        ) + jax.numpy.multiply(
-            data_pos, pos_mask
-        )
+        if isinstance(self.condition, xf.Loc):
+            mask = self.condition.access(state)
+        else:
+            mask = self.condition
+        return jax.numpy.where(mask, data_pos, data)
+        
 @xt.nTuple.decorate(init=xf.init_null)
 class Negative(typing.NamedTuple):
 
     data: xf.Loc
-    v: numpy.ndarray
+    condition: typing.Union[xf.Loc, numpy.ndarray]
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
@@ -91,12 +91,44 @@ class Negative(typing.NamedTuple):
         data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         data = self.data.access(state)
-        data_pos = -1 * jax.numpy.abs(data)
-        pos_mask = self.v
-        no_mask = 1 + (self.v * -1)
-        return jax.numpy.multiply(
-            data, no_mask
-        ) + jax.numpy.multiply(
-            data_pos, pos_mask
-        )
+        data_neg = -1 * jax.numpy.abs(data)
+        if isinstance(self.condition, xf.Loc):
+            mask = self.condition.access(state)
+        else:
+            mask = self.condition
+        return jax.numpy.where(mask, data_neg, data)
+
+# ---------------------------------------------------------------
+
+@xt.nTuple.decorate(init=xf.init_null)
+class Where(typing.NamedTuple):
+
+    condition: typing.Union[xf.Loc, numpy.ndarray]
+    x: typing.Union[xf.Loc, numpy.ndarray]
+    y: typing.Union[xf.Loc, numpy.ndarray]
+
+    def init(
+        self, site: xf.Site, model: xf.Model, data = None
+    ) -> tuple[Where, tuple, xf.SiteValue]: ...
+
+    def apply(
+        self,
+        site: xf.Site,
+        state: xf.Model,
+        data = None,
+    ) -> typing.Union[tuple, jax.numpy.ndarray]:
+        if isinstance(self.x, xf.Loc):
+            x = self.x.access(state)
+        else:
+            x = self.x
+        if isinstance(self.y, xf.Loc):
+            y = self.y.access(state)
+        else:
+            y = self.y
+        if isinstance(self.condition, xf.Loc):
+            mask = self.condition.access(state)
+        else:
+            mask = self.condition
+        return jax.numpy.where(mask, x, y)
+        
 # ---------------------------------------------------------------

@@ -4,6 +4,8 @@ import jax
 # ---------------------------------------------------------------
 
 def transpose(x):
+    if len(x.shape) == 2:
+        return x.T
     inds = list(range(len(x.shape)))
     return jax.numpy.transpose(x, tuple(
         (*inds[:-2], inds[-1], inds[-2])

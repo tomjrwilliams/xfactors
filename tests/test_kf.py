@@ -9,7 +9,6 @@ import optax
 import xtuples as xt
 import xfactors as xf
 
-from tests import utils
 
 # jax.config.update("jax_debug_nans", True)
 
@@ -403,8 +402,8 @@ def test_kf() -> bool:
         ),
     }.items(): print(k, v)
 
-    utils.assert_is_close(betas, observation, atol=.1)
-    utils.assert_is_close(
+    xf.utils.tests.assert_is_close(betas, observation, atol=.1)
+    xf.utils.tests.assert_is_close(
         xf.utils.funcs.to_diag(v_var), noise_obs, atol=.1
     )
 

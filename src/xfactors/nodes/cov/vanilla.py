@@ -23,6 +23,7 @@ import optax
 import xtuples as xt
 
 from ... import xfactors as xf
+from ... import utils
 
 # ---------------------------------------------------------------
 
@@ -30,12 +31,10 @@ from ... import xfactors as xf
 @xt.nTuple.decorate(init=xf.init_null)
 class Cov(typing.NamedTuple):
 
-    data: xf.Location
-
-    # ---
-
-    random: bool = False
-    static: bool = False
+    data: xf.Loc
+    exists: xf.OptionalLoc
+    
+    shrinkage: typing.Optional[str] = None
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
@@ -51,20 +50,22 @@ class Cov(typing.NamedTuple):
         data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         data = self.data.access(state)
-        res = jax.numpy.cov(
-            jax.numpy.transpose(data)
-        )
-        return res
+        if self.exists is None:
+            return utils.funcs.cov(data)
+        else:
+            # assume data is zero mask where exists
+            # data = n_points, n_features
+            exists = self.exists.access(state)
+            return utils.funcs.cov(data, exists=exists)
 
 @xt.nTuple.decorate(init=xf.init_null)
 class VCov(typing.NamedTuple):
 
-    data: xf.Location
-
-    # ---
-
-    random: bool = False
-    static: bool = False
+    
+    data: xf.Loc
+    exists: xf.OptionalLoc
+    
+    shrinkage: typing.Optional[str] = None
 
     def init(
         self, site: xf.Site, model: xf.Model, data = None
@@ -80,10 +81,11 @@ class VCov(typing.NamedTuple):
         data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
         data = self.data.access(state)
-        res = data.map(lambda vs: jax.numpy.cov(
-            jax.numpy.transpose(vs)
-        ))
-        return res
+        if self.exists is None:
+            return data.map(utils.funcs.cov)
+        else:
+            exists = self.exists.access(state)
+            return data.zip(exists).mapstar(utils.funcs.cov)
         
 # TODO move shrinkage here
 

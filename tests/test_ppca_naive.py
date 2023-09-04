@@ -8,7 +8,6 @@ import jax
 import xtuples as xt
 import xfactors as xf
 
-from tests import utils
 
 def test_ppca_naive() -> bool:
     xf.utils.rand.reset_keys()
@@ -97,7 +96,7 @@ def test_ppca_naive() -> bool:
     print(eigvecs)
 
     # for now we just check pc1 matches
-    utils.assert_is_close(
+    xf.utils.tests.assert_is_close(
         eigen_vec.real[..., :1],
         eigvecs.real[..., :1],
         True,

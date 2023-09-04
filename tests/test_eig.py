@@ -13,7 +13,6 @@ import xfactors as xf
 import optax
 import jaxopt
 
-from tests import utils
 
 def order_eig(evals, evecs):
     order = numpy.flip(numpy.argsort(evals))
@@ -76,14 +75,14 @@ def test_eig(iters=2500) -> bool:
     print(numpy.round(eigvals, 2))
     print(numpy.round(evals, 2))
 
-    utils.assert_is_close(
+    xf.utils.tests.assert_is_close(
         eigvals,
         evals,
         True,
         atol=0.2,
     )
 
-    utils.assert_is_close(
+    xf.utils.tests.assert_is_close(
         w,
         evecs,
         True,

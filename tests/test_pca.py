@@ -7,7 +7,6 @@ import pandas
 import xtuples as xt
 import xfactors as xf
 
-from tests import utils
 
 def test_pca() -> bool:
     xf.utils.rand.reset_keys()
@@ -48,12 +47,12 @@ def test_pca() -> bool:
 
     # multiply by root(eigenval) -> beta?
 
-    utils.assert_is_close(
+    xf.utils.tests.assert_is_close(
         eigen_val[:3],
         eigvals.real[:3],
         True,
     )
-    utils.assert_is_close(
+    xf.utils.tests.assert_is_close(
         eigen_vec.real[..., :3],
         eigvecs.real[..., :3],
         True,
