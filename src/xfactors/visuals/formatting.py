@@ -27,7 +27,7 @@ def unindent(v):
     ])
     return "\n".join([l[shared_padding:] for l in ls])
 
-def left_pad(v, l=1, pad=" "):
+def left_pad(v, l=1, pad=" ", sign = True):
     if v[0] != "-":
         v = "+" + v
     to_add = max([l - (len(v) - 1), 0])
@@ -36,7 +36,9 @@ def left_pad(v, l=1, pad=" "):
     if "-" in v:
         return "-" + (to_add * pad) + v[1:]
     else:
-        return "+" + (to_add * pad) + v[1:]
+        return (
+            "+" if sign else ""
+        ) + (to_add * pad) + v[1:]
 
 def right_pad(v, l=1, pad=" "):
     to_add = max([l - len(v), 0])

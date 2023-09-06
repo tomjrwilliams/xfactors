@@ -89,8 +89,12 @@ def test_ppca_naive() -> bool:
     eigvecs = eigvecs[..., _order]
     # assert False, (eigvals, eigen_vals,)
 
-    eigvecs = xf.utils.funcs.match_sign_to(eigvecs, row=0)
-    eigen_vec = xf.utils.funcs.match_sign_to(eigen_vec, row=0)
+    eigvecs = xf.utils.funcs.set_signs_to(
+        eigvecs, 0, numpy.ones(eigvecs.shape[0])
+    )
+    eigen_vec = xf.utils.funcs.set_signs_to(
+        eigen_vec, 0, numpy.ones(eigen_vec.shape[0])
+    )
 
     print(eigen_vec)
     print(eigvecs)

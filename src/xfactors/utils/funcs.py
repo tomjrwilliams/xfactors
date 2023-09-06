@@ -8,6 +8,8 @@ import jax
 import jax.numpy
 import jax.numpy.linalg
 
+import xtuples as xt
+
 from . import shapes
 from . import rand
 from . import tests
@@ -16,6 +18,25 @@ from . import tests
 
 sq = jax.numpy.square
 mm = jax.numpy.matmul
+
+# ---------------------------------------------------------------
+
+def set_signs_to(X, axis, signs, i = 0):
+    axis_size = X.shape[axis]
+    i_shape = xt.iTuple(enumerate(X.shape))
+    slice = jax.numpy.ravel(
+        jax.numpy.take(X, numpy.array(list(range(
+            axis_size
+        ))), axis = axis)
+    )[i * axis_size: (i + 1) * axis_size]
+    X_signs = jax.numpy.sign(slice)
+    scale = jax.numpy.multiply(X_signs, numpy.array(signs))
+    for dim, size in i_shape[axis + 1:]:
+        scale = shapes.expand_dims(scale, -1, size)
+    for dim, size in i_shape[:axis].reverse():
+        scale = shapes.expand_dims(scale, 0, size)
+    return jax.numpy.multiply(X, scale)
+
 
 # ---------------------------------------------------------------
 
@@ -61,23 +82,6 @@ def loss_diag(X):
     )
     return loss_mse(X, diag)
 
-def match_sign_to(X, row = None, col = None):
-    assert row is not None or col is not None
-    # assert X.shape[0] == X.shape[1] ?
-    if row is not None:
-        assert col is None
-        return jax.numpy.multiply(
-            X, shapes.expand_dims(
-                jax.numpy.sign(X[row]), 0, X.shape[0]
-            )
-        )
-    if col is not None:
-        assert row is None
-        return jax.numpy.multiply(
-            X, shapes.expand_dims(
-                jax.numpy.sign(X[..., col]), 1, X.shape[1]
-            )
-        )
 
 def loss_orthonormal(X):
     XXt = mm(X, shapes.transpose(X))
@@ -175,15 +179,19 @@ def cov(data, exists = None):
 
 # ---------------------------------------------------------------
 
+def euclidean(v, axis = None, small = 10 ** -3):
+    return jax.numpy.sqrt(
+        jax.numpy.sum(sq(v), axis = -1) + small
+    )
+    # return jax.numpy.linalg.norm(v, ord=2, axis=axis)
+
 def diffs_1d(data):
     data_ = shapes.expand_dims(data, 0, 1)
     return data_ - data_.T
 
 def diff_euclidean(l, r, small = 10 ** -3):
-    diffs_sq = sq(jax.numpy.subtract(l, r))
-    return jax.numpy.sqrt(
-        jax.numpy.sum(diffs_sq, axis = -1) + small
-    )
+    diffs = jax.numpy.subtract(l, r)
+    return euclidean(diffs, small=small)
 
 def diff_mahalanobis(
     data,
@@ -297,6 +305,47 @@ def alpha_beta_steady_state_residual_variance(
     return sq(sigma_noise) / (
         1 - sq(alpha)
     )
+
+# ---------------------------------------------------------------
+
+def svm_hyperplane(phi_x, w, b):
+    # b = scalar
+    # w = weight vector
+    # phi(x) = fixed transform of x (eg. kernel)
+    return mm(w.T, phi_x) + b
+
+def svm_perp_distance(t, Phi_X, w, b):
+    # t = target value, -1 or 1 
+    return jax.numpy.multiply(
+        t, svm_hyperplane(Phi_X, w, b)
+    ) / euclidean(w)
+
+
+# multi-class can be one vs rest
+# ie. t(0) vs t(1 ...), t(1) vs (2 ...) etc.
+
+# or can design some kind of separability margin
+# so particular points are only +1 for one class
+# eg. a hinge loss on total +1 predictions per label
+
+
+# slack >= 0
+def svm_constraint(t, slack, Phi_X, w, b):
+    y = svm_hyperplane(Phi_X, w, b)
+    return jax.numpy.multiply(t, y) + slack # >= 1
+
+
+# either set slack to zero (fixed)
+# then minimise sq(euclidean(w)) / 2, subject to constraint ^
+
+# or minimise C * sum(slack) + sq(euclidean(w)) / 2
+# where as C -> inf, recover the original slack=0
+
+# can write a very similar regression problem
+# by defining an error tube around the result
+# and loss = zero within the tube
+# so the slack is then the error beyond the tube
+    
 
 # ---------------------------------------------------------------
 

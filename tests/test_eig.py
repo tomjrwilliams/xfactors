@@ -17,7 +17,9 @@ import jaxopt
 def order_eig(evals, evecs):
     order = numpy.flip(numpy.argsort(evals))
     evecs = evecs[..., order]
-    evecs = xf.utils.funcs.match_sign_to(evecs, row=0)
+    evecs = xf.utils.funcs.set_signs_to(
+        evecs, 0, numpy.ones(evecs.shape[0])
+    )
     evals = evals[order]
     return evals, evecs
 

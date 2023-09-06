@@ -36,12 +36,11 @@ from ... import utils
 @xt.nTuple.decorate()
 class NDArray(typing.NamedTuple):
 
-    nd: numpy.ndarray
-
     def init(
         self, site: xf.Site, model: xf.Model, data = None
     ) -> tuple[NDArray, tuple, xf.SiteValue]:
-        return self, self.nd.shape, ()
+        assert isinstance(data, numpy.ndarray), type(data)
+        return self, data.shape, ()
     
     def apply(
         self,
@@ -49,6 +48,7 @@ class NDArray(typing.NamedTuple):
         state: xf.Model,
         data = None,
     ) -> typing.Union[tuple, jax.numpy.ndarray]:
-        return jax.numpy.array(self.nd)
+        assert isinstance(data, numpy.ndarray), type(data)
+        return jax.numpy.array(data)
 
 # ---------------------------------------------------------------
