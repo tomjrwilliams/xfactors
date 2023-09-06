@@ -18,6 +18,8 @@ from . import tests
 
 sq = jax.numpy.square
 mm = jax.numpy.matmul
+mul = jax.numpy.multiply
+exp = jax.numpy.exp
 
 # ---------------------------------------------------------------
 
@@ -30,12 +32,12 @@ def set_signs_to(X, axis, signs, i = 0):
         ))), axis = axis)
     )[i * axis_size: (i + 1) * axis_size]
     X_signs = jax.numpy.sign(slice)
-    scale = jax.numpy.multiply(X_signs, numpy.array(signs))
+    scale = mul(X_signs, numpy.array(signs))
     for dim, size in i_shape[axis + 1:]:
         scale = shapes.expand_dims(scale, -1, size)
     for dim, size in i_shape[:axis].reverse():
         scale = shapes.expand_dims(scale, 0, size)
-    return jax.numpy.multiply(X, scale)
+    return mul(X, scale)
 
 
 # ---------------------------------------------------------------
@@ -47,7 +49,7 @@ def loss_mabse(l, r):
 def loss_mse(l, r, mask = None):
     if mask is None:
         return sq(jax.numpy.subtract(l, r)).mean()
-    return sq(jax.numpy.multiply(jax.numpy.subtract(l, r), mask)).mean()
+    return sq(mul(jax.numpy.subtract(l, r), mask)).mean()
 
 def loss_sumse(l, r):
     return sq(jax.numpy.subtract(l, r)).sum()
@@ -71,13 +73,13 @@ def loss_descending(x):
     return -1 * jax.numpy.subtract(xl, xr).mean()
 
 def to_diag(v):
-    return jax.numpy.multiply(
+    return mul(
         jax.numpy.eye(v.shape[0]), v
     )
 
 def loss_diag(X):
     diag = jax.numpy.diag(X)
-    diag = jax.numpy.multiply(
+    diag = mul(
         jax.numpy.eye(X.shape[-1]), diag
     )
     return loss_mse(X, diag)
@@ -96,7 +98,7 @@ def loss_orthogonal(X):
 # https://proceedings.neurips.cc/paper_files/paper/2019/file/7dd0240cd412efde8bc165e864d3644f-Paper.pdf
 def loss_eigenvec(cov, w, eigvals):
     cov_w = mm(cov, w)
-    w_scale = jax.numpy.multiply(shapes.expand_dims(eigvals, 0, 1), w)
+    w_scale = mul(shapes.expand_dims(eigvals, 0, 1), w)
 
     _mse = loss_mse(cov_w, w_scale)
     _norm = loss_eigenvec_norm(w, eigvals)
@@ -110,10 +112,10 @@ def loss_eigenvec_norm(w, eigvals):
 
     # norm_unit = jax.nn.sigmoid(norm)
     # norm_unit = jax.numpy.tanh(norm_sq)
-    # norm_unit = (2 / (1 + jax.numpy.exp(-norm_sq))) - 1
+    # norm_unit = (2 / (1 + exp(-norm_sq))) - 1
     norm_unit = jax.numpy.clip(norm_sq, a_max=1.)
 
-    mul = jax.numpy.multiply(
+    mul = mul(
         norm_unit, 
         1 + (
             jax.numpy.eye(norm.shape[-1]) * -2
@@ -152,7 +154,7 @@ def cov(data, exists = None):
         -1,
         data.shape[-1]
     )
-    exists_mask = jax.numpy.multiply(
+    exists_mask = mul(
         exists_cross,
         jax.numpy.transpose(exists_cross, (0, 2, 1))
     )
@@ -166,7 +168,7 @@ def cov(data, exists = None):
     mu_diff_T = jax.numpy.transpose(
         mu_diff, (0, 2, 1)
     )
-    mu_diff_prod = jax.numpy.multiply(jax.numpy.multiply(
+    mu_diff_prod = mul(mul(
         mu_diff,
         mu_diff_T
     ), exists_mask)
@@ -235,7 +237,7 @@ def normalisation_gaussian(cov):
 
 def likelihood_gaussian(data, mu, cov):
     norm = normalisation_gaussian(cov)
-    prob_unnorm = jax.numpy.exp(
+    prob_unnorm = exp(
         (-1 / 2) * diff_mahalanobis(data, mu, cov = cov, sqrt=False)
     )
     return prob_unnorm * norm
@@ -264,7 +266,7 @@ def likelihood_gaussian_diag(data, mu, eigvals, eigvecs):
     y = mm(eigvecs, data - mu)
     y_sq = sq(y)
     # := (batch), n_dims
-    un_norm = jax.numpy.exp(- y_sq / (2 * eigvals))
+    un_norm = exp(- y_sq / (2 * eigvals))
     prob = norm * un_norm
     return jax.numpy.product(prob, axis=-1)
 
@@ -274,7 +276,7 @@ def log_likelihood_gaussian_diag(data, mu, eigvals, eigvecs):
     # assert not jax.numpy.isnan(norm).any()
     y = mm(eigvecs, data - mu)
     y_sq = sq(y)
-    un_norm = jax.numpy.exp(- y_sq / (2 * eigvals))
+    un_norm = exp(- y_sq / (2 * eigvals))
     # assert not jax.numpy.isnan(norm * un_norm).any(), [
     #     eigvals,
     # ]
@@ -316,7 +318,7 @@ def svm_hyperplane(phi_x, w, b):
 
 def svm_perp_distance(t, Phi_X, w, b):
     # t = target value, -1 or 1 
-    return jax.numpy.multiply(
+    return mul(
         t, svm_hyperplane(Phi_X, w, b)
     ) / euclidean(w)
 
@@ -332,7 +334,7 @@ def svm_perp_distance(t, Phi_X, w, b):
 # slack >= 0
 def svm_constraint(t, slack, Phi_X, w, b):
     y = svm_hyperplane(Phi_X, w, b)
-    return jax.numpy.multiply(t, y) + slack # >= 1
+    return mul(t, y) + slack # >= 1
 
 
 # either set slack to zero (fixed)
@@ -357,14 +359,14 @@ def expit(data):
 
 def logistic(data):
     return 1 / (
-        jax.numpy.exp(data) + 2 + jax.numpy.exp(-data)
+        exp(data) + 2 + exp(-data)
     )
 
 kernel_logistic = logistic
 
 def sigmoid(data):
     return (2 / numpy.pi) * (
-        1 / (jax.numpy.exp(data) + jax.numpy.exp(-data))
+        1 / (exp(data) + exp(-data))
     )
 
 kernel_sigmoid = sigmoid
@@ -383,7 +385,7 @@ def rbf(data, l = 1., sigma = 1.):
 
     l_sq_2 = 2 * sq(l)
 
-    return jax.numpy.exp(
+    return exp(
         -1 * (data_sq / l_sq_2)
     ) * sigma_sq
 
@@ -410,7 +412,7 @@ def kernel_gaussian(data, sigma = 1.):
 
     norm = 1 / (2 * sigma_sq)
 
-    return jax.numpy.exp(
+    return exp(
         1 - (norm * data_sq)
     )
 
@@ -420,7 +422,7 @@ def kernel_exponential(data, sigma = 1.):
 
     norm = 1 / sigma
 
-    return jax.numpy.exp(
+    return exp(
         1 - (norm * data_abs)
     )
 
@@ -430,7 +432,7 @@ def laplacian(data, sigma = 1.):
     sigma_sq = sq(sigma)
     data_sq = sq(data)
 
-    return jax.numpy.exp(
+    return exp(
         - sigma_sq * data_sq
     )
 
@@ -462,7 +464,7 @@ def kernel_ou(data, sigma):
 
     data_sq = sq(data)
     
-    return jax.numpy.exp(
+    return exp(
         (- data_sq) / sigma
     )
 
@@ -470,11 +472,11 @@ def kernel_ou(data, sigma):
 
 def sigmoid_curve(x, upper = 1, mid = 0, rate = 1):
     return upper / (
-        1 + jax.numpy.exp(-1 * rate * (x - mid))
+        1 + exp(-1 * rate * (x - mid))
     )
 
 def overextension(x, mid = 0):
-    return x * jax.numpy.exp(
+    return x * exp(
         -1 * sq(x - mid)
     )
 
@@ -488,7 +490,7 @@ def overextension_df(df, mid=0):
 # rate??
 def gaussian(x, rate = 1, mid = 0):
     return 2 / (
-        1 + jax.numpy.exp(rate * (x - mid).square)
+        1 + exp(rate * (x - mid).square)
     )
 
 def gaussian_flipped(x, rate = 1, mid = 0):
@@ -496,7 +498,7 @@ def gaussian_flipped(x, rate = 1, mid = 0):
 
 def gaussian_sigmoid(x, rate = 1, mid = 0):
     return 1 + (-1 / (
-        1 + jax.numpy.exp(-1 * rate * (x - mid).square)
+        1 + exp(-1 * rate * (x - mid).square)
     ))
 
 
@@ -504,11 +506,11 @@ def gaussian_sigmoid(x, rate = 1, mid = 0):
 
 
 def slope(x, rate = 1):
-    return jax.numpy.log(1 + jax.numpy.exp(rate * x))
+    return jax.numpy.log(1 + exp(rate * x))
 
 def trough(x, mid):
     return 1 / (
-        1 + jax.numpy.exp(-x (x - mid))
+        1 + exp(-x (x - mid))
     )
 
 
@@ -544,5 +546,65 @@ def velocity(
 # tanh(x) s curve
 # = (e^x - e^-x ) / (e^x + e^-x )
 # = (e^2x - 1) / (e^2x + 1)
+
+# ---------------------------------------------------------------
+
+# t = point on the curve
+# l1 ... = decay
+# b1 ... = factor embedding
+# exponential term = loading, function of t and l
+# so we fit the b1 ... = factor paths
+
+def nelson_siegel_1987(t, b1, b2, b3, l):
+    l_t = l * t
+    exp_l_t = exp(-l_t)
+    b2_exp = (1 - exp_l_t) / l_t
+    return (
+        b1
+        + mul(b2, b2_exp)
+        + mul(b3, b2_exp - exp_l_t)
+    )
+    # + error ** tau
+
+nelson_sigel = nelson_siegel_1987
+
+def bliss_1997(t, b1, b2, b3, l1, l2):
+    l1_t = l1 * t
+    l2_t = l2 * t
+    exp_l1_t = exp(-l1_t)
+    exp_l2_t = exp(-l2_t)
+    b2_exp = (1 - exp_l1_t) / l1_t
+    b3_exp = ((1 - exp_l2_t) / l2_t) - exp_l2_t
+    return (
+        b1
+        + mul(b2, b2_exp)
+        + mul(b3, b3_exp)
+    )
+    # + error ** tau
+
+bliss = bliss_1997
+
+def svensson_1994(t, b1, b2, b3, b4, l1, l2):
+    l2_t = l2 * t
+    exp_l2_t = exp(-l2_t)
+    b4_exp = ((1 - exp_l2_t) / l2_t) - exp_l2_t
+    return (
+        b1 
+        + nelson_siegel_1987(t, 0, b2, b3, l1)
+        + mul(b4, b4_exp)
+    )
+    # + error ** tau
+
+svensson = svensson_1994
+
+def five_factor_2011(t, b1, b2, b3, b4, b5, l1, l2):
+    return (
+        b1 
+        + nelson_siegel_1987(t, 0, b2, b4, l1)
+        + nelson_siegel_1987(t, 0, b3, b5, l2)
+    ) 
+    # + error ** tau
+
+five_factor = five_factor_2011
 
 # ---------------------------------------------------------------
