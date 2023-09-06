@@ -16,6 +16,14 @@ from . import tests
 
 # ---------------------------------------------------------------
 
+def if_none(v, alt, lazy = False):
+    return v if v is not None else (
+        alt if not lazy else alt()
+    )
+
+def if_none_lazy(v, alt):
+    return if_none(v, alt, lazy=True)
+    
 sq = jax.numpy.square
 mm = jax.numpy.matmul
 mul = jax.numpy.multiply
