@@ -36,7 +36,122 @@ from .. import xfactors as xf
 if_none = xf.utils.funcs.if_none
 if_none_lazy = xf.utils.funcs.if_none_lazy
 
-OptFloat = typing.Optional[float]
+# ---------------------------------------------------------------
+
+V = typing.Union[float, numpy.ndarray, jax.numpy.ndarray]
+
+IS_Independent = typing.TypeVar("IS_Independent", None, V)
+IS_Dependent = typing.TypeVar("IS_Dependent", None, V)
+
+CF_Independent = typing.TypeVar("CF_Independent", None, V)
+CF_Dependent = typing.TypeVar("CF_Dependent", None, V)
+
+BS_Independent = typing.TypeVar("BS_Independent", None, V)
+BS_Dependent = typing.TypeVar("BS_Dependent", None, V)
+
+Other_Independent = typing.TypeVar("Other_Independent", None, V)
+Other_Dependent = typing.TypeVar("Other_Dependent", None, V)
+
+# ---------------------------------------------------------------
+
+# TODO: and sub methods for each statement separately
+# by type name inspection
+
+# TODO: function to return tuple indices
+# with an lru_cache (so only calc once)
+# for optimal access time
+
+# TODO: below take an optional stmt kwarg
+
+def fields_independent(cls):
+    return
+
+def fields_dependent(cls):
+    return
+
+def fields_income_statement(cls):
+    return
+
+def fields_independent_income_statement(cls):
+    return
+
+def fields_dependent_income_statement(cls):
+    return
+
+def fields_cash_flow(cls):
+    return
+
+def fields_independent_cash_flow(cls):
+    return
+
+def fields_dependent_cash_flow(cls):
+    return
+
+def fields_balance_sheet(cls):
+    return
+
+def fields_independent_balance_sheet(cls):
+    return
+
+def fields_dependent_balance_sheet(cls):
+    return
+
+def fields_other(cls):
+    return
+
+def fields_independent_other(cls):
+    return
+
+def fields_dependent_other(cls):
+    return
+
+# ---------------------------------------------------------------
+
+def values_independent(self):
+    return
+
+def values_dependent(self):
+    return
+
+def values_income_statement(cls):
+    return
+
+def values_independent_income_statement(cls):
+    return
+
+def values_dependent_income_statement(cls):
+    return
+
+def values_cash_flow(cls):
+    return
+
+def values_independent_cash_flow(cls):
+    return
+
+def values_dependent_cash_flow(cls):
+    return
+
+def values_balance_sheet(cls):
+    return
+
+def values_independent_balance_sheet(cls):
+    return
+
+def values_dependent_balance_sheet(cls):
+    return
+
+def values_other(cls):
+    return
+
+def values_independent_other(cls):
+    return
+
+def values_dependent_other(cls):
+    return
+
+# TODO: given a field name map for a given source
+# can assert all fields per statement are mapped
+# or explicitly specified that they shouldn't be
 
 # ---------------------------------------------------------------
 
@@ -45,10 +160,10 @@ class Statements(typing.NamedTuple):
 
     # income statement
 
-    revenue: OptFloat = 0.
-    cogs: OptFloat = 0.
-    profit_gross: OptFloat = None
-    profit_gross_res: OptFloat = None
+    revenue: IS_Independent = 0.
+    cogs: IS_Independent = 0.
+    profit_gross: IS_Dependent = None
+    profit_gross_res: IS_Dependent = None
 
     def calc_profit_gross(self):
         return self.revenue - self.cogs
@@ -61,10 +176,10 @@ class Statements(typing.NamedTuple):
 
     # --
 
-    rd: OptFloat = 0.
-    sga: OptFloat = 0.
-    profit_operating: OptFloat = None # ebit
-    profit_operating_res: OptFloat = None
+    rd: IS_Independent = 0.
+    sga: IS_Independent = 0.
+    profit_operating: IS_Dependent = None # ebit
+    profit_operating_res: IS_Dependent = None
 
     def calc_profit_operating(self, profit_gross = None):
         profit_gross = if_none(profit_gross, self.profit_gross)
@@ -79,13 +194,13 @@ class Statements(typing.NamedTuple):
 
     # --
 
-    interest_in: OptFloat = 0.
-    interest_out: OptFloat = 0.
+    interest_in: IS_Independent = 0.
+    interest_out: IS_Independent = 0.
 
-    expense_other: OptFloat = 0.
+    expense_other: IS_Independent = 0.
 
-    profit_pretax: OptFloat = None
-    profit_pretax_res: OptFloat = None
+    profit_pretax: IS_Dependent = None
+    profit_pretax_res: IS_Dependent = None
 
     def calc_profit_pretax(self, profit_operating = None):
         profit_operating = if_none(profit_operating, self.profit_operating)
@@ -106,9 +221,9 @@ class Statements(typing.NamedTuple):
 
     # --
 
-    tax: OptFloat = 0.
-    profit_net: OptFloat = None
-    profit_net_res: OptFloat = None
+    tax: IS_Independent = 0.
+    profit_net: IS_Dependent = None
+    profit_net_res: IS_Dependent = None
 
     def calc_profit_net(self, profit_pretax = None):
         profit_pretax = if_none(profit_pretax, self.profit_pretax)
@@ -124,21 +239,21 @@ class Statements(typing.NamedTuple):
     @classmethod
     def income_statement(
         cls,
-        revenue: OptFloat = 0,
-        cogs: OptFloat = 0,
-        profit_gross: OptFloat = None,
+        revenue: IS_Independent = 0,
+        cogs: IS_Independent = 0,
+        profit_gross: IS_Dependent = None,
         # profit_gross_res
-        rd: OptFloat = 0,
-        sga: OptFloat = 0,
-        profit_operating: OptFloat = None,
+        rd: IS_Independent = 0,
+        sga: IS_Independent = 0,
+        profit_operating: IS_Dependent = None,
         # profit_operating_res
-        interest_in: OptFloat = 0,
-        interest_out: OptFloat = 0,
-        expense_other: OptFloat = 0,
-        profit_pretax: OptFloat = None,
+        interest_in: IS_Independent = 0,
+        interest_out: IS_Independent = 0,
+        expense_other: IS_Independent = 0,
+        profit_pretax: IS_Dependent = None,
         # profit_pretax_res
-        tax: OptFloat = 0,
-        profit_net: OptFloat = None,
+        tax: IS_Independent = 0,
+        profit_net: IS_Dependent = None,
         # profit_net_res
     ):
         self = cls(
@@ -185,13 +300,13 @@ class Statements(typing.NamedTuple):
 
     # -- cash flow --
 
-    da: OptFloat = 0.
-    # stock based comp : OptFloat = 0.
-    working_cap_change: OptFloat = 0.
-    cash_other: OptFloat = 0.
+    da: CF_Independent = 0.
+    # stock based comp : CF_Independent = 0.
+    working_cap_change: CF_Independent = 0.
+    cash_other: CF_Independent = 0.
 
-    cash_operating: OptFloat = None
-    cash_operating_res: OptFloat = None
+    cash_operating: CF_Dependent = None
+    cash_operating_res: CF_Dependent = None
 
     def calc_cash_operating(self, profit_net = None):
         profit_net = if_none(profit_net, self.profit_net)
@@ -212,11 +327,11 @@ class Statements(typing.NamedTuple):
 
     # --
 
-    capex: OptFloat = 0.
-    cash_intangibles: OptFloat = 0.
+    capex: CF_Independent = 0.
+    cash_intangibles: CF_Independent = 0.
     
-    cash_investing: OptFloat = None
-    cash_investing_res: OptFloat = None
+    cash_investing: CF_Dependent = None
+    cash_investing_res: CF_Dependent = None
 
     def calc_cash_investing(self):
         return (
@@ -232,16 +347,16 @@ class Statements(typing.NamedTuple):
 
     # --
 
-    cash_debt: OptFloat = 0.
-    cash_equity: OptFloat = 0.
+    cash_debt: CF_Independent = 0.
+    cash_equity: CF_Independent = 0.
     # - dividends
     # + change share issuance
     # - share repurchase
 
-    # cash_equity_res: OptFloat = 0. ?
+    # cash_equity_res: CF_Independent = 0. ?
 
-    cash_financing: OptFloat = None#
-    cash_financing_res: OptFloat = None
+    cash_financing: CF_Dependent = None#
+    cash_financing_res: CF_Dependent = None
 
     def calc_cash_financing(self):
         return self.cash_debt + self.cash_equity
@@ -254,8 +369,8 @@ class Statements(typing.NamedTuple):
 
     # --
     
-    cash_net: OptFloat = None
-    cash_net_res: OptFloat  = None
+    cash_net: CF_Dependent = None
+    cash_net_res: CF_Dependent  = None
 
     def calc_cash_net(
         self,
@@ -285,21 +400,21 @@ class Statements(typing.NamedTuple):
     @classmethod
     def cash_flow(
         cls,
-        profit_net: OptFloat = None,
-        da: OptFloat = 0,
-        working_cap_change: OptFloat = 0,
-        cash_other: OptFloat = 0,
-        cash_operating: OptFloat = None,
+        profit_net: CF_Dependent = None,
+        da: CF_Independent = 0,
+        working_cap_change: CF_Independent = 0,
+        cash_other: CF_Independent = 0,
+        cash_operating: CF_Dependent = None,
         # cash_operating_res
-        capex: OptFloat = 0,
-        cash_intangibles: OptFloat = 0,
-        cash_investing: OptFloat = None,
+        capex: CF_Independent = 0,
+        cash_intangibles: CF_Independent = 0,
+        cash_investing: CF_Dependent = None,
         # cash_investing_res
-        cash_debt: OptFloat = 0,
-        cash_equity: OptFloat = 0,
-        cash_financing: OptFloat = None,
+        cash_debt: CF_Independent = 0,
+        cash_equity: CF_Independent = 0,
+        cash_financing: CF_Dependent = None,
         # cash_financing_res
-        cash_net: OptFloat = None,
+        cash_net: CF_Dependent = None,
         # cash_net_res,
         self=None,
     ):
@@ -356,19 +471,19 @@ class Statements(typing.NamedTuple):
     # rather than just net
     # as gross is useful for industry embedding kernel
 
-    cash: OptFloat = 0.
-    securities: OptFloat = 0.
+    cash: BS_Independent = 0.
+    securities: BS_Independent = 0.
 
-    acc_receivable: OptFloat = 0.
-    inventory: OptFloat = 0.
-    tax_deferred: OptFloat = 0.
-    assets_other: OptFloat = 0.
+    acc_receivable: BS_Independent = 0.
+    inventory: BS_Independent = 0.
+    tax_deferred: BS_Independent = 0.
+    assets_other: BS_Independent = 0.
     # current incl non trade receivable, also non current below?
-    ppe: OptFloat = 0.
-    intangibles: OptFloat = 0.
+    ppe: BS_Independent = 0.
+    intangibles: BS_Independent = 0.
     
-    assets: OptFloat = None
-    assets_res: OptFloat = None
+    assets: BS_Dependent = None
+    assets_res: BS_Dependent = None
 
     def calc_assets(self):
         return (
@@ -391,14 +506,14 @@ class Statements(typing.NamedTuple):
 
     # --
 
-    acc_payable: OptFloat = 0.
-    accrued_expenses: OptFloat = 0.
-    revenue_deferred: OptFloat = 0.
-    debt: OptFloat = 0.
-    liabilities_other: OptFloat = 0.
+    acc_payable: BS_Independent = 0.
+    accrued_expenses: BS_Independent = 0.
+    revenue_deferred: BS_Independent = 0.
+    debt: BS_Independent = 0.
+    liabilities_other: BS_Independent = 0.
 
-    liabilities: OptFloat = None
-    liabilities_res: OptFloat = None
+    liabilities: BS_Dependent = None
+    liabilities_res: BS_Dependent = None
 
     def calc_liabilities(self):
         return (
@@ -418,21 +533,21 @@ class Statements(typing.NamedTuple):
         
     # --
 
-    working_cap_gross: OptFloat = 0.
-    
-    working_cap_net: OptFloat = 0.
+    working_cap_gross: BS_Independent = 0.
+
+    working_cap_net: BS_Independent = 0.
     # change in -> cash flow
 
     # net change ppe = da - capex (?)
 
     # --
 
-    equity_common: OptFloat = 0.
-    equity_treasury: OptFloat = 0.
-    retained_earnings: OptFloat = 0.
+    equity_common: BS_Independent = 0.
+    equity_treasury: BS_Independent = 0.
+    retained_earnings: BS_Independent = 0.
 
-    equity: OptFloat = None
-    equity_res: OptFloat = None
+    equity: BS_Dependent = None
+    equity_res: BS_Dependent = None
 
     def calc_equity(self):
         return (
@@ -456,28 +571,28 @@ class Statements(typing.NamedTuple):
     @classmethod
     def balance_sheet(
         cls,
-        cash: OptFloat = 0.,
-        securities: OptFloat = 0.,
-        acc_receivable: OptFloat = 0.,
-        inventory: OptFloat = 0.,
-        tax_deferred: OptFloat = 0.,
-        assets_other: OptFloat = 0.,
-        ppe: OptFloat = 0.,
-        intangibles: OptFloat = 0.,
-        assets: OptFloat = None,
-        # assets_res: OptFloat = None,
-        acc_payable: OptFloat = 0.,
-        accrued_expenses: OptFloat = 0.,
-        revenue_deferred: OptFloat = 0.,
-        debt: OptFloat = 0.,
-        liabilities_other: OptFloat = 0.,
-        liabilities: OptFloat = None,
-        # liabilities_res: OptFloat = None,
-        equity_common: OptFloat = 0.,
-        equity_treasury: OptFloat = 0.,
-        retained_earnings: OptFloat = 0.,
-        equity: OptFloat = None,
-        # equity_res: OptFloat = None,
+        cash: BS_Independent = 0.,
+        securities: BS_Independent = 0.,
+        acc_receivable: BS_Independent = 0.,
+        inventory: BS_Independent = 0.,
+        tax_deferred: BS_Independent = 0.,
+        assets_other: BS_Independent = 0.,
+        ppe: BS_Independent = 0.,
+        intangibles: BS_Independent = 0.,
+        assets: BS_Dependent = None,
+        # assets_res: BS_Dependent = None,
+        acc_payable: BS_Independent = 0.,
+        accrued_expenses: BS_Independent = 0.,
+        revenue_deferred: BS_Independent = 0.,
+        debt: BS_Independent = 0.,
+        liabilities_other: BS_Independent = 0.,
+        liabilities: BS_Dependent = None,
+        # liabilities_res: BS_Dependent = None,
+        equity_common: BS_Independent = 0.,
+        equity_treasury: BS_Independent = 0.,
+        retained_earnings: BS_Independent = 0.,
+        equity: BS_Dependent = None,
+        # equity_res: BS_Dependent = None,
     ):
         self = cls(
             cash=cash,
@@ -517,7 +632,7 @@ class Statements(typing.NamedTuple):
 
     # -- other --
     
-    employees: OptFloat = None
+    employees: Other_Independent = None
 
     # --
 

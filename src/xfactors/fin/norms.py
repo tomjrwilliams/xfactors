@@ -1,5 +1,6 @@
 
 from __future__ import annotations
+from this import d
 
 import typing
 import collections
@@ -24,20 +25,53 @@ from . import stmts
 
 # ---------------------------------------------------------------
 
-# TODO:
-
-# presumably both from and to periods here
-
-# path of geometric revenue growth rate
-
-# paths of arithmetic (absolute) change in ratios of the above
-
-# ---------------------------------------------------------------
-
 if_none = xf.utils.funcs.if_none
 if_none_lazy = xf.utils.funcs.if_none_lazy
 
-OptFloat = typing.Optional[float]
+# ---------------------------------------------------------------
+
+V = stmts.V
+
+# NOTE: no need for the independent vs dependent notion here
+# also, no model type semantic links given we can't have
+# type vars that refer to type vars
+# and presumably there'll be different spec models
+# with different fields
+
+IS_Norm = typing.TypeVar("IS_Norm", None, V)
+CF_Norm = typing.TypeVar("CF_Norm", None, V)
+BS_Norm = typing.TypeVar("BS_Norm", None, V)
+Other_Norm = typing.TypeVar("Other_Norm", None, V)
+
+# ---------------------------------------------------------------
+
+# TODO: optional kwarg specifying the _to key
+
+def fields_income_statement():
+    return
+
+def fields_cash_flow():
+    return
+
+def fields_balance_sheet():
+    return
+
+def fields_other():
+    return
+
+# ---------------------------------------------------------------
+
+def values_income_statement():
+    return
+
+def values_cash_flow():
+    return
+
+def values_balance_sheet():
+    return
+
+def values_other():
+    return
 
 # ---------------------------------------------------------------
 
@@ -76,11 +110,11 @@ class Norms(typing.NamedTuple):
 
     # -- income statement --
 
-    revenue_growth: OptFloat = 0.
-    cogs_to_revenue: OptFloat = 0.
+    revenue_growth: IS_Norm = 0.
+    cogs_to_revenue: IS_Norm = 0.
 
-    profit_gross_to_revenue: OptFloat = None
-    profit_gross_res_to_revenue: OptFloat = None
+    profit_gross_to_revenue: IS_Norm = 0.
+    profit_gross_res_to_revenue: IS_Norm = 0.
 
     def calc_revenue_growth(self):
         revenue_curr = self.curr.revenue
@@ -99,10 +133,10 @@ class Norms(typing.NamedTuple):
         
     # --
 
-    rd_to_revenue: OptFloat = 0.
-    sga_to_revenue: OptFloat = 0.
-    profit_operating_to_revenue: OptFloat = None
-    profit_operating_res_to_revenue: OptFloat = None
+    rd_to_revenue: IS_Norm = 0.
+    sga_to_revenue: IS_Norm = 0.
+    profit_operating_to_revenue: IS_Norm = 0.
+    profit_operating_res_to_revenue: IS_Norm = 0.
 
     def calc_rd_to_revenue(self):
         return self.calc_to_revenue("rd")
@@ -118,15 +152,15 @@ class Norms(typing.NamedTuple):
 
     # --
 
-    interest_in_to_revenue: OptFloat = 0.
-    interest_in_to_assets: OptFloat = 0.
-    interest_out_to_revenue: OptFloat = 0.
-    interest_out_to_liabilities: OptFloat = 0.
+    interest_in_to_revenue: IS_Norm = 0.
+    interest_in_to_assets: IS_Norm = 0.
+    interest_out_to_revenue: IS_Norm = 0.
+    interest_out_to_liabilities: IS_Norm = 0.
 
-    expense_other_to_revenue: OptFloat = 0.
+    expense_other_to_revenue: IS_Norm = 0.
 
-    profit_pretax_to_revenue: OptFloat = None
-    profit_pretax_res_to_revenue: OptFloat = None
+    profit_pretax_to_revenue: IS_Norm = 0.
+    profit_pretax_res_to_revenue: IS_Norm = 0.
 
     def calc_interest_in_to_revenue(self):
         return self.calc_to_revenue("interest_in")
@@ -151,9 +185,9 @@ class Norms(typing.NamedTuple):
 
     # --
 
-    tax_to_revenue: OptFloat = 0.
-    profit_net_to_revenue: OptFloat = None
-    profit_net_res_to_revenue: OptFloat = None
+    tax_to_revenue: IS_Norm = 0.
+    profit_net_to_revenue: IS_Norm = 0.
+    profit_net_res_to_revenue: IS_Norm = 0.
 
     def calc_tax_to_revenue(self):
         return self.calc_to_revenue("tax")
@@ -224,12 +258,12 @@ class Norms(typing.NamedTuple):
 
     # -- cash flows --
 
-    da_to_revenue: OptFloat = 0.
-    # stock based comp : OptFloat = 0.
-    working_cap_change_to_revenue: OptFloat = 0.
-    cash_other_to_revenue: OptFloat = 0.
-    cash_operating_to_revenue: OptFloat = None
-    cash_operating_res_to_revenue: OptFloat = None
+    da_to_revenue: CF_Norm = 0.
+    # stock based comp : CF_Norm = 0.
+    working_cap_change_to_revenue: CF_Norm = 0.
+    cash_other_to_revenue: CF_Norm = 0.
+    cash_operating_to_revenue: CF_Norm = 0.
+    cash_operating_res_to_revenue: CF_Norm = 0.
 
     def calc_da_to_revenue(self):
         return self.calc_to_revenue("da")
@@ -248,10 +282,10 @@ class Norms(typing.NamedTuple):
 
     # --
 
-    capex_to_revenue: OptFloat = 0.
-    cash_intangibles_to_revenue: OptFloat = 0.
-    cash_investing_to_revenue: OptFloat = None
-    cash_investing_res_to_revenue: OptFloat = None
+    capex_to_revenue: CF_Norm = 0.
+    cash_intangibles_to_revenue: CF_Norm = 0.
+    cash_investing_to_revenue: CF_Norm = 0.
+    cash_investing_res_to_revenue: CF_Norm = 0.
 
     def calc_capex_to_revenue(self):
         return self.calc_to_revenue("capex")
@@ -267,15 +301,15 @@ class Norms(typing.NamedTuple):
         
     # --
 
-    cash_debt_to_revenue: OptFloat = 0.
-    cash_equity_to_revenue: OptFloat = 0.
+    cash_debt_to_revenue: CF_Norm = 0.
+    cash_equity_to_revenue: CF_Norm = 0.
 
     # - dividends
     # + change share issuance
     # - share repurchase
 
-    cash_financing_to_revenue: OptFloat = None
-    cash_financing_res_to_revenue: OptFloat = None
+    cash_financing_to_revenue: CF_Norm = 0.
+    cash_financing_res_to_revenue: CF_Norm = 0.
 
     def calc_cash_debt_to_revenue(self):
         return self.calc_to_revenue("cash_debt")
@@ -291,8 +325,8 @@ class Norms(typing.NamedTuple):
         
     # --
     
-    cash_net_to_revenue: OptFloat = None
-    cash_net_res_to_revenue: OptFloat = None
+    cash_net_to_revenue: CF_Norm = 0.
+    cash_net_res_to_revenue: CF_Norm = 0.
 
     def calc_cash_net_to_revenue(self):
         return self.calc_to_revenue("cash_net")
@@ -355,29 +389,29 @@ class Norms(typing.NamedTuple):
 
     # to non cash assets?
 
-    cash_to_assets: OptFloat = 0.
-    securities_to_assets: OptFloat = 0.
+    cash_to_assets: BS_Norm = 0.
+    securities_to_assets: BS_Norm = 0.
 
-    acc_receivable_to_assets: OptFloat = 0.
-    acc_receivable_to_working_cap_gross: OptFloat = 0.
-    acc_receivable_to_revenue: OptFloat = 0.
+    acc_receivable_to_assets: BS_Norm = 0.
+    acc_receivable_to_working_cap_gross: BS_Norm = 0.
+    acc_receivable_to_revenue: BS_Norm = 0.
 
-    inventory_to_assets: OptFloat = 0.
-    inventory_to_revenue: OptFloat = 0.
+    inventory_to_assets: BS_Norm = 0.
+    inventory_to_revenue: BS_Norm = 0.
 
-    tax_deferred_to_assets: OptFloat = 0.
-    assets_other_to_assets: OptFloat = 0.
+    tax_deferred_to_assets: BS_Norm = 0.
+    assets_other_to_assets: BS_Norm = 0.
 
-    ppe_to_assets: OptFloat = 0.
-    ppe_to_revenue: OptFloat = 0.
+    ppe_to_assets: BS_Norm = 0.
+    ppe_to_revenue: BS_Norm = 0.
 
-    intangibles_to_assets: OptFloat = 0.
-    intangibles_to_revenue: OptFloat = 0.
+    intangibles_to_assets: BS_Norm = 0.
+    intangibles_to_revenue: BS_Norm = 0.
 
     # 
 
-    assets_to_revenue: OptFloat = None
-    assets_res_to_assets: OptFloat = None
+    assets_to_revenue: BS_Norm = 0.
+    assets_res_to_assets: BS_Norm = 0.
 
     def calc_cash_to_assets(self):
         return self.calc_to_assets("cash")
@@ -423,17 +457,17 @@ class Norms(typing.NamedTuple):
     def calc_assets_to_revenue(self):
         return self.calc_to_revenue("assets")
 
-    def calc_assets_res_to_revenue(self):
-        return self.calc_to_revenue("assets_res")
+    def calc_assets_res_to_assets(self):
+        return self.calc_to_assets("assets_res")
 
     # --
     
-    working_cap_gross_to_revenue: OptFloat = 0.
+    working_cap_gross_to_revenue: BS_Norm = 0.
 
     def calc_working_cap_gross_to_revenue(self):
         return self.calc_to_revenue("working_cap_gross")
 
-    working_cap_net_to_revenue: OptFloat = 0.
+    working_cap_net_to_revenue: BS_Norm = 0.
 
     def calc_working_cap_net_to_revenue(self):
         return self.calc_to_revenue("working_cap_net")
@@ -442,22 +476,22 @@ class Norms(typing.NamedTuple):
 
     # to liabilities
 
-    acc_payable_to_liabilities: OptFloat = 0.
-    acc_payable_to_working_cap_gross: OptFloat = 0.
-    acc_payable_to_revenue: OptFloat = 0.
+    acc_payable_to_liabilities: BS_Norm = 0.
+    acc_payable_to_working_cap_gross: BS_Norm = 0.
+    acc_payable_to_revenue: BS_Norm = 0.
 
-    accrued_expenses_to_liabilities: OptFloat = 0.
-    revenue_deferred_to_liabilities: OptFloat = 0.
+    accrued_expenses_to_liabilities: BS_Norm = 0.
+    revenue_deferred_to_liabilities: BS_Norm = 0.
     
-    debt_to_liabilities: OptFloat = 0.
-    debt_to_revenue: OptFloat = 0.
+    debt_to_liabilities: BS_Norm = 0.
+    debt_to_revenue: BS_Norm = 0.
 
-    liabilities_other_to_liabilities: OptFloat = 0.
+    liabilities_other_to_liabilities: BS_Norm = 0.
 
     #
 
-    liabilities_to_revenue: OptFloat = None
-    liabilities_res_to_liabilities: OptFloat = None
+    liabilities_to_revenue: BS_Norm = 0.
+    liabilities_res_to_liabilities: BS_Norm = 0.
 
     def calc_acc_payable_to_liabilities(self):
         return self.calc_to_liabilities("acc_payable")
@@ -495,16 +529,16 @@ class Norms(typing.NamedTuple):
 
     # to equity
 
-    equity_common_to_equity: OptFloat = 0.
-    equity_treasury_to_equity: OptFloat = 0.
-    retained_earnings_to_equity: OptFloat = 0.
+    equity_common_to_equity: BS_Norm = 0.
+    equity_treasury_to_equity: BS_Norm = 0.
+    retained_earnings_to_equity: BS_Norm = 0.
 
     #
 
-    equity_to_revenue: OptFloat = None
-    equity_to_assets: OptFloat = None
+    equity_to_revenue: BS_Norm = 0.
+    equity_to_assets: BS_Norm = 0.
 
-    equity_res_to_equity: OptFloat = None
+    equity_res_to_equity: BS_Norm = 0.
 
     def calc_equity_common_to_equity(self):
         return self.calc_to_equity("equity_common")
@@ -523,8 +557,8 @@ class Norms(typing.NamedTuple):
     def calc_equity_to_assets(self):
         return self.calc_to_assets("equity")
 
-    def calc_equity_res_to_liabilities(self):
-        return self.calc_to_liabilities("equity_res")
+    def calc_equity_res_to_equity(self):
+        return self.calc_to_equity("equity_res")
 
     #  --
 
@@ -572,8 +606,8 @@ class Norms(typing.NamedTuple):
             assets_to_revenue=(
                 self.calc_assets_to_revenue()
             ),
-            assets_res_to_revenue=(
-                self.calc_assets_res_to_revenue()
+            assets_res_to_assets=(
+                self.calc_assets_res_to_assets()
             ),
             working_cap_gross_to_revenue=(
                 self.calc_working_cap_gross_to_revenue()
@@ -626,14 +660,14 @@ class Norms(typing.NamedTuple):
             equity_to_assets=(
                 self.calc_equity_to_assets()
             ),
-            equity_res_to_liabilities=(
-                self.calc_equity_res_to_liabilities()
+            equity_res_to_equity=(
+                self.calc_equity_res_to_equity()
             ),
         )
 
     # -- other -- 
 
-    employee_to_revenue: OptFloat = 0.
+    employee_to_revenue: Other_Norm = 0.
 
     # rev per employee
     def calc_employee_to_revenue(self):

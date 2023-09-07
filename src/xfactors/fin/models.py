@@ -28,6 +28,16 @@ from . import data
 
 # TODO:
 
+# 
+
+# path of geometric revenue growth rate
+
+# paths of arithmetic (absolute) change in ratios 
+
+# ---------------------------------------------------------------
+
+# TODO:
+
 # cluster the above -> 'business models'
 
 # both by value range / walk and volatility thereof (second order stats on the paths)
