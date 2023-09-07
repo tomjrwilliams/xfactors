@@ -20,6 +20,10 @@ import xtuples as xt
 
 from .. import xfactors as xf
 
+from . import stmts
+from . import norms
+from . import data
+
 # ---------------------------------------------------------------
 
 # TODO:

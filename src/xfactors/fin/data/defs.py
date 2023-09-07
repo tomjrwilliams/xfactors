@@ -20,8 +20,8 @@ import xtuples as xt
 
 from .. import xfactors as xf
 
-from . import stmts
-from . import norms
+from .. import stmts
+from .. import norms
 
 # ---------------------------------------------------------------
 
@@ -72,21 +72,5 @@ class Norms(typing.NamedTuple):
     period: Period
 
     data: norms.Norms
-
-
-# ---------------------------------------------------------------
-
-def read_sec_kaggle():
-    return
-
-def parse_sec_kaggle():
-    return
-
-
-def read_sec():
-    return
-
-def parse_sec():
-    return
 
 # ---------------------------------------------------------------

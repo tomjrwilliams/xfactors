@@ -418,6 +418,8 @@ class Statements(typing.NamedTuple):
         
     # --
 
+    working_cap_gross: OptFloat = 0.
+    
     working_cap_net: OptFloat = 0.
     # change in -> cash flow
 
