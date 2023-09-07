@@ -26,13 +26,123 @@ from . import data
 
 # ---------------------------------------------------------------
 
-# TODO:
+# NOTE: modelling process
 
-# 
+# pull data as stmt history
+# map to norm
 
-# path of geometric revenue growth rate
+# take sub-set of the norm fields
 
-# paths of arithmetic (absolute) change in ratios 
+# iterate one step forward
+# either walk of revenue geometric growth
+# or arithmetic walk of the other ratios
+
+# use next(norm) to generate curr_stmt, given prev_stmt
+
+# minimise error
+# under appropriate constraints
+
+# ---------------------------------------------------------------
+
+@xt.nTuple.decorate()
+class Factor_Temporal(typing.NamedTuple):
+
+    # any factor with an embedding per time period
+
+    # specifying a group of fields
+    # presumably also including market data derivatives 
+    # including to specific other reference assets
+
+    # that are multiplied through by that particular embedding
+
+    # perhaps even derivatives of fields
+    # eg. rolling corr of change in field to a given price
+
+    # idea here is to separate out different market / sector
+    # exposures
+    # independent of the business model (below)
+
+    pass
+    
+# ---------------------------------------------------------------
+
+@xt.nTuple.decorate()
+class Factor_Discriminatory(typing.NamedTuple):
+
+    # factors with embeddings that are in some way constant (?)
+    # independent of time for the name in question
+
+    # ie. inventory / fixed assets share of assets / revenue
+
+    # idea with this is to separate out different business models
+    # independent of the market / sector exposures (above)
+
+    pass
+
+# where the superficial issue with the above is that the business model can change with time
+# but the above is not 'independent' of time
+# in the sense that we wouldn't get a different loading per period
+
+# but only in that the *embedding*
+# the loadings are multiplied through by
+# doesn't change
+
+# ---------------------------------------------------------------
+
+# NOTE: fields 
+
+# or derivatives thereof (eg. rolling corr of changes with a given market price)
+# or relevant market price derivatives for the name in question
+
+# grouped into either of the two factors above
+
+# then per period multiplied through by either 
+# the relevant factor embedding for the period (for the #1)
+
+# or the discriminatory embedding (s)? if such a thing
+
+# to get a combined vector of factor exposure values
+# and business model discrimination values
+
+# that are then passed into a final model
+# mapping to a stmt spanning set of norm fields
+
+# where spanning means that we can derive a full stmt
+# given a prev stmt and the fields
+
+# even if it means some operation in stmt space
+# eg. summing up / subbing through
+
+# where any fields in the stmt not mapped to
+# will thus be ignored
+# and end up in the relevant residual
+
+# ---------------------------------------------------------------
+
+# minimum spanning fields
+
+# - revenue
+# direct
+
+# - assets
+# could be direct to revenue, but probably better
+# to model each non-ignored item separately, then sum up at stmt level
+
+# - liab
+# as per assets
+
+# IS:
+# - either ignored, derived
+# or modelled from revenue
+
+# CF:
+# - either ignored
+# - investing: from revenue (capex, intangibles)
+# - financing: from revenue (change in assets / liab items)
+# - operating: mostly flow through from the relevant IS items 
+
+# - equity
+# residual from the rest of the stmts
 
 # ---------------------------------------------------------------
 
