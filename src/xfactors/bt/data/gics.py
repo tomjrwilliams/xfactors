@@ -103,13 +103,13 @@ FULL = xt.iTuple.from_keys(FULL_MAP)
 
 SECTOR_MAP = {
     k: v for k, v in FULL_MAP.items()
-    if len(k) == 2
+    if len(k.replace("GICS ", "")) == 2
 }
 SECTORS = xt.iTuple.from_keys(SECTOR_MAP)
 
 DETAILED_MAP = {
     k: v for k, v in FULL_MAP.items()
-    if len(k) > 2
+    if len(k.replace("GICS ", "")) > 2
 }
 DETAILED = xt.iTuple.from_keys(DETAILED_MAP)
 

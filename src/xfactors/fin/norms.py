@@ -151,6 +151,8 @@ class Norms(typing.NamedTuple):
         return self.calc_to_revenue("profit_operating_res")
 
     # --
+    
+    # to earnings?
 
     interest_in_to_revenue: IS_Norm = 0.
     interest_in_to_assets: IS_Norm = 0.
@@ -258,6 +260,8 @@ class Norms(typing.NamedTuple):
 
     # -- cash flows --
 
+    # to earnings?
+
     da_to_revenue: CF_Norm = 0.
     # stock based comp : CF_Norm = 0.
     working_cap_change_to_revenue: CF_Norm = 0.
@@ -281,6 +285,8 @@ class Norms(typing.NamedTuple):
         return self.calc_to_revenue("cash_operating_res")
 
     # --
+
+    # to earnings?
 
     capex_to_revenue: CF_Norm = 0.
     cash_intangibles_to_revenue: CF_Norm = 0.
@@ -388,6 +394,9 @@ class Norms(typing.NamedTuple):
     # -- balance sheet --
 
     # to non cash assets?
+
+    # debt etc. vs cash
+    # versus earnings
 
     cash_to_assets: BS_Norm = 0.
     securities_to_assets: BS_Norm = 0.

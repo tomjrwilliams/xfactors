@@ -209,3 +209,22 @@ class Factor_Discriminatory(typing.NamedTuple):
 # ie. say cost(x) correlated rev(y) and rev(y) not being bid up in price terms, expect cost(x) to be subdued (etc.)
 
 # ---------------------------------------------------------------
+
+# NOTE: in terms of strategy implementation
+
+# the point here is second order effects
+
+# ie. given a particular thesis, more specifically
+# a forecast for some variable
+
+# say, sales of some product category
+# the direct beneficiary might already have that priced in
+
+# or might have low operating leverage to the outcome
+
+# whereas second order relationships might either
+# not yet be priced in
+
+# or have a greater sensitivity, even if one step removed
+
+# ---------------------------------------------------------------
