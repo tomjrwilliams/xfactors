@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "xfactors"
 dynamic = ["version"]
-description = ''
+description = ""
 readme = "README.md"
 requires-python = ">=3.7"
 license = "MIT"
@@ -32,7 +32,7 @@ Issues = "https://github.com/unknown/xfactors/issues"
 Source = "https://github.com/unknown/xfactors"
 
 [tool.hatch.version]
-path = "src/xfactors/__about__.py"
+path = "xfactors/__init__.py"
 
 [tool.hatch.envs.default]
 dependencies = [
