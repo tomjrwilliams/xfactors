@@ -6,21 +6,15 @@ import os
 import sys
 import pathlib
 
-if pathlib.Path(os.getcwd()).parts[-1] == "xfactors":
-    sys.path.append("./__local__")
-
-    import PATHS
-
-    if PATHS.XTUPLES not in sys.path:
-        sys.path.append(PATHS.XTUPLES)
-
-    if PATHS.XTENORS not in sys.path:
-        sys.path.append(PATHS.XTENORS)
+import xtuples as xt
+# import xtenors as tenors
 
 from . import utils
 from . import visuals
-from . import nodes
+from . import data
+from . import eq
+from . import rates
 from . import bt
+from . import fin
 
-from .nodes import *
 from .xfactors import *
