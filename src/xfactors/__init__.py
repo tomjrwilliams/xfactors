@@ -4,6 +4,12 @@
 
 import os
 import sys
+
+sys.path.append(os.environ["xtuples"])
+sys.path.append(os.environ["xsm"])
+sys.path.append(os.environ["xtenors"])
+sys.path.append(os.environ["xrates"])
+
 import pathlib
 
 import xtuples as xt

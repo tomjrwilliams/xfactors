@@ -2,15 +2,13 @@
 #
 # SPDX-License-Identifier: MIT
 
+import os
 import sys
+
 sys.path.append("./__local__")
-
-import PATHS
-
-if PATHS.XTUPLES not in sys.path:
-    sys.path.append(PATHS.XTUPLES)
-
-if PATHS.XTENORS not in sys.path:
-    sys.path.append(PATHS.XTENORS)
-
 sys.path.append("./src")
+
+sys.path.append(os.environ["xtuples"])
+sys.path.append(os.environ["xsm"])
+sys.path.append(os.environ["xtenors"])
+sys.path.append(os.environ["xrates"])

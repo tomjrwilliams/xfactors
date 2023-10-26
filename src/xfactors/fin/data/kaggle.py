@@ -27,4 +27,8 @@ from . import defs
 
 # ---------------------------------------------------------------
 
+# https://www.kaggle.com/datasets/finnhub/reported-financials
+
+# follows: https://finnhub.io/docs/api#financials-reported
+
 # ---------------------------------------------------------------

@@ -27,4 +27,8 @@ from . import defs
 
 # ---------------------------------------------------------------
 
+# https://www.kaggle.com/datasets/securities-exchange-commission/financial-statement-extracts
+
+# https://www.sec.gov/dera/data/financial-statement-data-sets
+
 # ---------------------------------------------------------------
